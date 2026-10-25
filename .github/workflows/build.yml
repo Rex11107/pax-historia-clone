@@ -26,7 +26,7 @@ concurrency:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,7 +40,7 @@ jobs:
 
   pages:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment:
       name: github-pages
       url: ${{ steps.deploy.outputs.page_url }}
@@ -50,7 +50,7 @@ jobs:
 
   apk:
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       VERSION_CODE: ${{ github.run_number }}
       VERSION_NAME: 0.1.${{ github.run_number }}
@@ -60,7 +60,8 @@ jobs:
         with: { node-version: 22, cache: npm }
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 21, cache: gradle }
-      - uses: android-actions/setup-android@v3
+      # ubuntu-24.04 ha già l'Android SDK (ANDROID_HOME); Gradle scarica le piattaforme mancanti
+      - run: echo "sdk.dir=$ANDROID_HOME" > android/local.properties && ls "$ANDROID_HOME"
       - run: npm ci
       - run: npm run build
       - run: npx cap sync android
