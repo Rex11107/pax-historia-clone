@@ -92,23 +92,31 @@ export class MapView {
       if (s.owner[a] !== s.owner[b]) this.national.addPath(this.arcPaths[i]);
       else this.internal.addPath(this.arcPaths[i]);
     });
-    // etichette: provincia di ogni nazione più vicina al baricentro dei suoi territori
-    const acc = new Map<string, { x: number; y: number; w: number; area: number; ids: number[] }>();
-    for (const p of this.world.map.provinces) {
+    // etichette: nel blocco di territorio contiguo più popoloso di ogni nazione (la Francia in Francia, non in Algeria)
+    const map = this.world.map;
+    const seen = new Uint8Array(map.size);
+    const best = new Map<string, { ids: number[]; pop: number; area: number }>();
+    for (const p of map.provinces) {
+      if (seen[p.id]) continue;
       const o = s.owner[p.id];
-      const e = acc.get(o) ?? { x: 0, y: 0, w: 0, area: 0, ids: [] };
-      e.x += p.c[0] * p.area; e.y += -p.c[1] * p.area; e.w += p.area; e.area += p.area; e.ids.push(p.id);
-      acc.set(o, e);
+      const ids: number[] = [p.id];
+      seen[p.id] = 1;
+      for (let i = 0; i < ids.length; i++) for (const e of map.adj[ids[i]]) if (!e.strait && !seen[e.to] && s.owner[e.to] === o) { seen[e.to] = 1; ids.push(e.to); }
+      const pop = ids.reduce((x, id) => x + map.provinces[id].pop, 0);
+      const area = ids.reduce((x, id) => x + map.provinces[id].area, 0);
+      const cur = best.get(o);
+      if (!cur || pop > cur.pop) best.set(o, { ids, pop, area });
     }
     this.labels = [];
-    for (const [tag, e] of acc) {
+    for (const [tag, e] of best) {
       if (tag === 'NUL') continue;
-      const cx = e.x / e.w, cy = e.y / e.w;
-      let best = e.ids[0], bd = Infinity;
-      for (const id of e.ids) { const c = this.world.map.provinces[id].c; const d = (c[0] - cx) ** 2 + (-c[1] - cy) ** 2; if (d < bd) { bd = d; best = id; } }
-      const c = this.world.map.provinces[best].c;
-      const short = this.world.profiles[tag].short[1];
-      this.labels.push({ text: short, x: c[0], y: -c[1], size: Math.min(90, Math.max(14, Math.sqrt(e.area) / 9)) });
+      let x = 0, y = 0, wsum = 0;
+      for (const id of e.ids) { const pr = map.provinces[id]; const wgt = pr.area + pr.pop / 400; x += pr.c[0] * wgt; y += -pr.c[1] * wgt; wsum += wgt; }
+      const cx = x / wsum, cy = y / wsum;
+      let anchor = e.ids[0], bd = Infinity;
+      for (const id of e.ids) { const c = map.provinces[id].c; const d = (c[0] - cx) ** 2 + (-c[1] - cy) ** 2; if (d < bd) { bd = d; anchor = id; } }
+      const c = map.provinces[anchor].c;
+      this.labels.push({ text: this.world.profiles[tag].short[1], x: c[0], y: -c[1], size: Math.min(90, Math.max(14, Math.sqrt(e.area) / 9)) });
     }
     this.dirty = true;
   }

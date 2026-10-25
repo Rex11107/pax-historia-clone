@@ -181,6 +181,20 @@ async function main() {
       p.owner = o.to;
     }
   };
+  // Schegge di confine: il dataset 1880 e le province moderne non combaciano mai al metro.
+  // Un pezzo piccolo di una provincia moderna prende il proprietario prevalente di quella provincia.
+  const byPid = new Map();
+  for (const p of P) { const base = String(p.pid).split('~')[0]; p.base = base; const m = byPid.get(base) || { tot: 0, own: {} }; m.tot += p.area; if (p.owner) m.own[p.owner] = (m.own[p.owner] || 0) + p.area; byPid.set(base, m); }
+  let slivers = 0;
+  for (const p of P) {
+    if (p.fix) continue;
+    const m = byPid.get(p.base);
+    const top = Object.entries(m.own).sort((a, b) => b[1] - a[1])[0];
+    if (!top || top[0] === p.owner) continue;
+    const share = (m.own[p.owner] || 0) / m.tot;
+    if (!p.owner || (share < 0.2 && p.area < 2500)) { p.owner = top[0]; slivers++; }
+  }
+  log(`${slivers} schegge di confine riassegnate al proprietario prevalente`);
   P.forEach(applyOverrides);
 
   // pezzi senza stato storico: vicino più esteso, poi maggioranza dello stesso paese moderno, poi il più vicino

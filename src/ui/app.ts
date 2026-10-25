@@ -98,7 +98,14 @@ export class App {
     const [t, node] = views[this.tab]();
     title.textContent = t;
     body.replaceChildren(node);
-    if (this.tab === 'diplomacy' && this.chatWith) { const log = body.querySelector('.chat-log'); if (log) log.scrollTop = log.scrollHeight; }
+    // la conversazione usa quasi tutto lo schermo e si apre sull'ultimo messaggio (letto dall'inizio)
+    const inChat = this.tab === 'diplomacy' && !!this.chatWith;
+    $('#sheet').classList.toggle('tall', inChat);
+    if (inChat) {
+      const msgs = body.querySelectorAll('.msg');
+      const last = msgs[msgs.length - 1] as HTMLElement | undefined;
+      if (last) requestAnimationFrame(() => { body.scrollTop = Math.max(0, last.offsetTop - body.offsetTop - 8); });
+    }
   }
 
   private renderWelcome() {

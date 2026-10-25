@@ -1,6 +1,8 @@
 // Configurazione storica della mappa 1881.
 // Valori demografici approssimati (censimenti 1880-1881, arrotondati).
 
+const iso = (cc, list) => list.split(' ').map((x) => `${cc}-${x}`);
+
 // Nome dello stato in historical-basemaps world_1880 -> tag di gioco
 export const HIST_TO_TAG = {
   'Italy': 'ITA',
@@ -41,8 +43,17 @@ export const OVERRIDES = [
   { modern: 'ISL', to: 'DEN' },
   // Il dataset usa la Bulgaria di Santo Stefano: nel 1881 Macedonia, Rumelia orientale e Creta sono ottomane
   { from: 'BUL', notModern: 'BGR', to: 'TUR' },
-  { modern: 'BGR', when: ([, lat]) => lat < 42.3, to: 'TUR' },
-  { modern: 'BGR', when: ([lon, lat]) => lat < 42.65 && lon > 23.6, to: 'TUR' }, // Rumelia orientale (autonoma, sovranità ottomana)
+  // Balcani: assegnazione esplicita per provincia moderna (il dataset 1880 qui è impreciso)
+  { iso: iso('BG', '05 12 06 15 04 07 11 18 17 19 08 03 27 25 14 23 22 10'), to: 'BUL' }, // Principato di Bulgaria
+  { iso: iso('BG', '02 28 26 09 21 16 24 20 13 01'), to: 'TUR' }, // Rumelia orientale (autonoma) e Macedonia
+  { iso: iso('RO', 'MH DJ CL TR GR CT OT BT IS VS GL TL DB IF AG GJ VL PH VN BZ NT BC BR IL B'), to: 'ROM' },
+  { iso: iso('RO', 'SM AR BH TM CS MM CJ BN SJ HD CV BV SB MS HR AB SV'), to: 'AUH' }, // Transilvania, Banato, Bucovina
+  { iso: iso('UA', '77 21 46 26 61'), to: 'AUH' }, // Galizia, Bucovina settentrionale, Rutenia subcarpatica
+  { iso: iso('RS', '00 08 09 10 11 12 13 14 15 16 17 19 20 21 22 23 24'), to: 'SER' },
+  { iso: iso('RS', '01 02 03 04 05 06 07'), to: 'AUH' }, // Voivodina
+  { iso: iso('ME', '12 16 02 20 06 07 18 09 15 21 11 01'), to: 'MNE' },
+  { iso: iso('ME', '14 04 03 17 13'), to: 'TUR' }, // Sangiaccato di Novi Pazar, Plav-Gusinje
+  { iso: iso('ME', '10 19 08 05'), to: 'AUH' }, // Bocche di Cattaro
   // Grecia prima della cessione della Tessaglia (luglio 1881)
   { from: 'GRE', notModern: 'GRC', to: 'TUR' },
   { modern: 'GRC', when: ([lon, lat]) => lat > 39.05 && lon > 20.5, to: 'TUR' },
@@ -64,10 +75,12 @@ export const OVERRIDES = [
   { modern: 'ITA', from: 'SWI', to: 'ITA' }, { modern: 'ITA', from: 'FRA', to: 'ITA' }, { modern: 'FRA', from: 'SPA', to: 'FRA' }, { modern: 'FRA', from: 'SWI', to: 'FRA' },
   // Trentino e Alto Adige austriaci
   { iso: ['IT-TN', 'IT-BZ'], to: 'AUH' },
+  { modern: 'EGY', to: 'EGY' }, { modern: 'LBY', to: 'TUR' }, { modern: 'BIH', to: 'AUH' },
+  { modern: 'RUS', from: 'PER', to: 'RUS' },
   // Belgrado serba (il dataset la attribuisce all'Austria)
   { iso: ['RS-00'], to: 'SER' },
   // Isole Ionie greche dal 1864
-  { modern: 'GRC', when: ([lon, lat]) => lon < 20.95 && lat < 39.9, to: 'GRE' },
+  { iso: ['GR-F'], to: 'GRE' }, { iso: ['GR-D'], to: 'TUR' }, // Isole Ionie greche, Epiro ottomano (Arta ceduta solo a luglio 1881)
   { modern: 'ALB', to: 'TUR' }, { modern: 'MKD', to: 'TUR' }, { modern: 'KOS', to: 'TUR' },
 ];
 
@@ -75,8 +88,6 @@ export const OVERRIDES = [
 export const CORRECTION_POLYGONS = [
   // Schleswig settentrionale: prussiano dal 1864 fino al confine del fiume Kongeå
   { to: 'GER', ring: [[8.0, 54.78], [10.2, 54.78], [10.2, 55.46], [8.0, 55.46], [8.0, 54.78]] },
-  // Bocche di Cattaro e costa dalmata meridionale: austriache
-  { to: 'AUH', ring: [[18.40, 42.28], [18.84, 42.28], [18.84, 42.56], [18.40, 42.56], [18.40, 42.28]] },
 ];
 
 // Popolazione 1881 per nazione; le sotto-voci (paese moderno) hanno un totale proprio,
@@ -164,8 +175,14 @@ export const CHECKS = [
   ['Tbilisi', 44.79, 41.72, 'RUS'], ['Baku', 49.87, 40.41, 'RUS'], ['Costantinopoli', 28.98, 41.01, 'TUR'], ['Bucarest', 26.10, 44.43, 'ROM'],
   ['Belgrado', 20.47, 44.76, 'SER'], ['Cettigne', 18.92, 42.39, 'MNE'], ['Creta', 24.80, 35.30, 'TUR'], ['Corfù', 19.92, 39.62, 'GRE'],
   ['Palma', 2.65, 39.57, 'SPA'], ['Lisbona', -9.14, 38.72, 'POR'], ['Copenaghen', 12.45, 55.70, 'DEN'], ['Stoccolma', 18.07, 59.33, 'SWE'],
+  ['Suceava', 26.25, 47.65, 'AUH'], ['Cluj', 23.59, 46.77, 'AUH'], ['Timișoara', 21.23, 45.75, 'AUH'], ['Brașov', 25.60, 45.65, 'AUH'],
+  ['Černivci', 25.94, 48.29, 'AUH'], ['Iași', 27.59, 47.16, 'ROM'], ['Galați', 28.04, 45.44, 'ROM'], ['Craiova', 23.80, 44.32, 'ROM'],
+  ['Dobrič', 27.83, 43.57, 'BUL'], ['Silistra', 27.26, 44.11, 'BUL'], ['Ruse', 25.96, 43.85, 'BUL'], ['Vidin', 22.88, 43.99, 'BUL'],
+  ['Pirot', 22.59, 43.15, 'SER'], ['Vranje', 21.90, 42.55, 'SER'], ['Novi Sad', 19.84, 45.27, 'AUH'], ['Pljevlja', 19.36, 43.36, 'TUR'],
+  ['Adrianopoli', 26.56, 41.68, 'TUR'], ['Burgas', 27.47, 42.50, 'TUR'], ['Nikšić', 18.94, 42.78, 'MNE'], ['Podgorica', 19.26, 42.44, 'MNE'],
+  ['Porto Said', 32.30, 31.26, 'EGY'], ['Giannina', 20.85, 39.66, 'TUR'], ['Zante', 20.90, 37.78, 'GRE'], ['Foča', 18.78, 43.50, 'AUH'],
   ['Königsberg', 20.51, 54.71, 'GER'], ['Riga', 24.11, 56.95, 'RUS'], ['Odessa', 30.73, 46.48, 'RUS'], ['Budapest', 19.04, 47.50, 'AUH'],
   ['Praga', 14.42, 50.08, 'AUH'], ['Bolzano', 11.35, 46.50, 'AUH'], ['Gorizia', 13.62, 45.94, 'AUH'], ['Pola', 13.85, 44.87, 'AUH'],
-  ['Zara', 15.40, 44.10, 'AUH'], ['Cattaro', 18.77, 42.42, 'AUH'], ['Scutari', 19.51, 42.07, 'TUR'], ['Smirne', 27.14, 38.42, 'TUR'],
+  ['Zara', 15.40, 44.10, 'AUH'], ['Castelnuovo', 18.54, 42.46, 'AUH'], ['Scutari', 19.51, 42.07, 'TUR'], ['Smirne', 27.14, 38.42, 'TUR'],
   ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
 ];

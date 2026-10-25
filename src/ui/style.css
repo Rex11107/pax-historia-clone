@@ -40,7 +40,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 .top { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--top) + var(--safe-t)); padding: var(--safe-t) 12px 0; display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--paper); z-index: 5; }
 .top-id { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
 .date { font: italic 600 1.15rem var(--serif); white-space: nowrap; }
-.nation { font-size: 0.78rem; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.top-nation { font-size: 0.78rem; opacity: 0.75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .stats { display: flex; gap: 12px; margin-left: auto; font-size: 0.82rem; overflow-x: auto; scrollbar-width: none; }
 .stats span { white-space: nowrap; opacity: 0.9; }
 .stats b { font-weight: 700; font-variant-numeric: tabular-nums; }
@@ -63,6 +63,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .sheet { position: absolute; left: 0; right: 0; bottom: calc(var(--tabs) + var(--safe-b)); max-height: 64%; display: flex; flex-direction: column; background: var(--paper); border-top: 2px solid var(--ink); z-index: 5; transform: translateY(105%); transition: transform 0.22s ease-out; box-shadow: 0 -8px 24px rgba(31, 42, 51, 0.18); }
 .sheet.open { transform: none; }
+.sheet.tall { max-height: 86%; height: 86%; }
 .sheet-head { display: flex; align-items: center; padding: 6px 8px 0 16px; }
 .sheet-head h2 { font: italic 700 1.35rem/1.2 var(--serif); margin: 6px 0; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sheet-body { overflow-y: auto; padding: 4px 16px 20px; -webkit-overflow-scrolling: touch; }
@@ -142,8 +143,8 @@ textarea { resize: vertical; font-family: var(--serif); font-size: 1rem; }
 
 /* diplomazia */
 .chat { display: flex; flex-direction: column; gap: 6px; }
-.chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 38vh; overflow-y: auto; padding: 4px 0; }
-.msg { max-width: 88%; padding: 8px 12px; }
+.chat-log { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.msg { max-width: 88%; padding: 8px 12px; flex-shrink: 0; }
 .msg p { margin: 0; font-family: var(--serif); font-size: 1rem; line-height: 1.45; }
 .msg small { color: var(--muted); font-size: 0.75rem; }
 .msg.player { align-self: flex-end; background: var(--ink); color: var(--paper); }
