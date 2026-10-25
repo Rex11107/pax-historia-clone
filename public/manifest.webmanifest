@@ -1,0 +1,9 @@
+{
+  "name": "Regnum Historia",
+  "short_name": "Regnum",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#c4d3d4",
+  "theme_color": "#1f2a33",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

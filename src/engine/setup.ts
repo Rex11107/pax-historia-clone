@@ -49,7 +49,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   const state: GameState = {
     version: 1, seed, scenario: mapData.scenario, player,
     day: 0, turn: 1, owner, controller: [...owner], nations,
-    units: [], battles: {}, wars: [], treaties: [], situations: [], events: [], memory: [], chronicle: '', chats: {}, nextId: 0,
+    units: [], battles: {}, wars: [], treaties: [], situations: [], events: [], memory: [], chronicle: '', dispatches: [], chats: {}, nextId: 0,
   };
   INITIAL_TREATIES.forEach((t, i) => state.treaties.push({ id: `t${i}`, ...t, startDay: -365, endDay: null }));
   state.situations.push({

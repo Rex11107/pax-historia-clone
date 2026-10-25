@@ -1,0 +1,107 @@
+# Ogni push su main: test, sito su GitHub Pages, APK pubblicato nelle Releases.
+# Link fissi:
+#   sito: https://rex11107.github.io/pax-historia-clone/
+#   APK:  https://github.com/Rex11107/pax-historia-clone/releases/latest/download/regnum-historia.apk
+#
+# Firma dell'APK: se nei segreti del repository ci sono ANDROID_KEYSTORE_BASE64,
+# ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS e ANDROID_KEY_PASSWORD, l'APK è firmato con
+# quella chiave (gli aggiornamenti si installano sopra la versione precedente).
+# Senza segreti viene prodotto un APK di debug: si installa, ma ogni aggiornamento
+# richiede di disinstallare la versione precedente.
+name: Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: dist }
+
+  pages:
+    needs: test
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
+
+  apk:
+    needs: test
+    runs-on: ubuntu-latest
+    env:
+      VERSION_CODE: ${{ github.run_number }}
+      VERSION_NAME: 0.1.${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Chiave di firma (dai segreti, se presenti)
+        id: sign
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+            echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+            echo "mode=release" >> "$GITHUB_OUTPUT"
+          else
+            echo "mode=debug" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Compila APK firmato
+        if: steps.sign.outputs.mode == 'release'
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+          cp app/build/outputs/apk/release/app-release.apk ../regnum-historia.apk
+      - name: Compila APK di debug
+        if: steps.sign.outputs.mode == 'debug'
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../regnum-historia.apk
+      - name: Pubblica la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v0.1.${{ github.run_number }}"
+          MSG=$(git log -1 --pretty=%s)
+          NOTE="Build automatica da ${GITHUB_SHA::7}: $MSG"
+          if [ "${{ steps.sign.outputs.mode }}" = "debug" ]; then NOTE="$NOTE
+
+          APK di debug: per aggiornare disinstalla prima la versione precedente (esporta il salvataggio dalle Impostazioni)."; fi
+          gh release create "$TAG" regnum-historia.apk --title "Regnum Historia $TAG" --notes "$NOTE" --latest

@@ -39,6 +39,7 @@ export class Game {
   }
 
   static fromState(map: MapData, state: GameState, config: LLMConfig): Game {
+    state.dispatches ??= [];
     return new Game({ map: new GameMap(map), profiles: profilesFor(), state }, config);
   }
 
@@ -78,6 +79,8 @@ export class Game {
       }
       if (!out.narrative) out.narrative = fallbackNarrative(w, report);
       recordMemory(w, report.turn, summary || memorySummaryFallback(w, report));
+      w.state.dispatches.push({ turn: report.turn, day: report.toDay, text: out.narrative, notes: out.notes || undefined });
+      if (w.state.dispatches.length > 30) w.state.dispatches.splice(0, w.state.dispatches.length - 30);
       onPhase('salvataggio');
       await this.save('auto');
       this.lastOutcome = out;

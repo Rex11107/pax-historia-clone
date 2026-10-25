@@ -211,6 +211,7 @@ export interface GameState {
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];
   chronicle: string;
+  dispatches: { turn: number; day: number; text: string; notes?: string }[];
   chats: Record<Tag, ChatMessage[]>;
   nextId: number;
 }
