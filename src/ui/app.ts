@@ -43,6 +43,7 @@ export class App {
         onUnit: (u) => this.selectUnit(u.id),
       });
       this.bindChrome();
+      void this.map.loadPhysical('data/physical1881.json');
     } else this.map.setWorld(game.world);
     this.refreshTop();
     this.setTab(game.state.dispatches.length ? 'dispatches' : 'dispatches', false);
@@ -58,6 +59,11 @@ export class App {
     $('#settings-btn').addEventListener('click', () => this.setTab('settings'));
     $('#sheet-close').addEventListener('click', () => this.closeSheet());
     $('#end-turn').addEventListener('click', () => this.openTurnDialog());
+    $('#relief-btn').addEventListener('click', (e) => {
+      this.map.showRelief = !this.map.showRelief;
+      (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showRelief));
+      this.map.invalidate();
+    });
   }
 
   refreshTop() {
@@ -307,6 +313,7 @@ export class App {
         h('dt', null, 'Popolazione'), h('dd', null, p.pop.toLocaleString('it-IT')),
         h('dt', null, 'Superficie'), h('dd', null, `${p.area.toLocaleString('it-IT')} km²`),
         h('dt', null, 'Terreno'), h('dd', null, `${TERRAIN_NAME[p.terrain]}${p.coast ? ', costa' : ''}`),
+        ...(w.map.riversOf(id).length ? [h('dt', null, 'Fiumi di confine'), h('dd', null, w.map.riversOf(id).map((r) => `${r.name} (verso ${w.map.provinces[r.to].name})`).join(', '))] : []),
       ),
       units.length ? h('div', null, h('h3', null, 'Truppe presenti'), h('ul', { class: 'list' }, ...units.map((u) => h('li', { onclick: () => this.selectUnit(u.id) }, h('div', { class: 'row' }, h('span', null, u.name), h('span', { class: 'num' }, fmtK(u.strength))))))) : h('p', { class: 'muted' }, 'Nessuna truppa nella provincia.'),
       owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi ${al(w, owner)}`)) : null,

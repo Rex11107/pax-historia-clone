@@ -12,6 +12,8 @@ export interface MapData {
   arcSides: [number, number][];
   provinces: ProvinceData[];
   straits: [number, number, number][];
+  /** confini che corrono lungo un fiume: [a, b, nome] */
+  rivers?: [number, number, string][];
 }
 
 export interface ProvinceData {
@@ -100,6 +102,8 @@ export interface Unit {
   experience: number; // 0-1
   entrench: number; // 0-1
   location: number;
+  /** provincia da cui è arrivata (per lo svantaggio di attraversare un fiume) */
+  from?: number;
   move: Movement | null;
   orders: Order[];
   inBattle: boolean;

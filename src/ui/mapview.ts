@@ -35,6 +35,10 @@ export class MapView {
   cam: Camera = { x: 300, y: 900, scale: 0.25 };
   selectedProvince: number | null = null;
   selectedUnit: string | null = null;
+  /** livello fisico: laghi sempre, rilievi solo se attivato */
+  showRelief = false;
+  private phys: { relief: { cls: string; path: Path2D; bb: number[] }[]; rivers: { rank: number; path: Path2D; bb: number[] }[]; lakes: Path2D } | null = null;
+  private mountainPattern: CanvasPattern | null = null;
   previewPath: number[] | null = null;
   /** posizioni animate (durante il riepilogo del turno) */
   override: Record<string, [number, number]> | null = null;
@@ -80,6 +84,42 @@ export class MapView {
   }
 
   setWorld(w: World) { this.world = w; this.refreshPolitical(); }
+
+  /** Carica rilievi, fiumi e laghi (file separato, facoltativo). */
+  async loadPhysical(url: string) {
+    try {
+      const d = await (await fetch(url)).json() as { relief: { cls: string; rings: number[][] }[]; rivers: { rank: number; pts: number[] }[]; lakes: { rings: number[][] }[] };
+      const toPath = (flat: number[], close: boolean, p: Path2D, bb: number[]) => {
+        let x = 0, y = 0;
+        for (let i = 0; i < flat.length; i += 2) {
+          x += flat[i]; y += flat[i + 1];
+          if (i === 0) p.moveTo(x, y); else p.lineTo(x, y);
+          if (x < bb[0]) bb[0] = x; if (y < bb[1]) bb[1] = y; if (x > bb[2]) bb[2] = x; if (y > bb[3]) bb[3] = y;
+        }
+        if (close) p.closePath();
+      };
+      const nb = () => [Infinity, Infinity, -Infinity, -Infinity];
+      const lakes = new Path2D();
+      for (const l of d.lakes) for (const r of l.rings) toPath(r, true, lakes, nb());
+      this.phys = {
+        lakes,
+        relief: d.relief.map((r) => { const p = new Path2D(), bb = nb(); for (const ring of r.rings) toPath(ring, true, p, bb); return { cls: r.cls, path: p, bb }; }),
+        rivers: d.rivers.map((r) => { const p = new Path2D(), bb = nb(); toPath(r.pts, false, p, bb); return { rank: r.rank, path: p, bb }; }),
+      };
+      this.dirty = true;
+    } catch { /* il gioco funziona anche senza */ }
+  }
+
+  private reliefPattern(): CanvasPattern {
+    if (this.mountainPattern) return this.mountainPattern;
+    const c = document.createElement('canvas');
+    c.width = 14; c.height = 12;
+    const g = c.getContext('2d')!;
+    g.strokeStyle = 'rgba(70,52,34,0.55)'; g.lineWidth = 1.1;
+    g.beginPath(); g.moveTo(2, 9); g.lineTo(5.5, 3.5); g.lineTo(9, 9); g.stroke();
+    this.mountainPattern = this.ctx.createPattern(c, 'repeat')!;
+    return this.mountainPattern;
+  }
   invalidate() { this.dirty = true; }
 
   /** Ricalcola confini nazionali ed etichette dopo un cambio di proprietà. */
@@ -218,6 +258,37 @@ export class MapView {
     // velatura carta: le terre del giocatore restano piene, le altre leggermente schiarite
     ctx.fillStyle = 'rgba(238,240,234,0.18)';
     for (let i = 0; i < this.paths.length; i++) if (visible(i) && s.owner[i] !== s.player) ctx.fill(this.paths[i]);
+
+    // laghi, rilievi, fiumi
+    if (this.phys) {
+      const inView = (bb: number[]) => !(bb[2] < vx0 || bb[0] > vx1 || bb[3] < vy0 || bb[1] > vy1);
+      if (this.showRelief) {
+        for (const r of this.phys.relief) {
+          if (!inView(r.bb)) continue;
+          ctx.fillStyle = r.cls === 'Range/mtn' ? 'rgba(96,72,46,0.22)' : 'rgba(140,112,70,0.12)';
+          ctx.fill(r.path);
+          if (r.cls === 'Range/mtn') {
+            const pat = this.reliefPattern();
+            pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
+            ctx.fillStyle = pat;
+            ctx.fill(r.path);
+          }
+        }
+      }
+      ctx.fillStyle = SEA;
+      ctx.fill(this.phys.lakes);
+      const maxRank = this.showRelief ? (k > 0.6 ? 12 : 10) : k > 0.9 ? 9 : k > 0.45 ? 7 : 5;
+      ctx.strokeStyle = this.showRelief ? 'rgba(52,104,150,0.9)' : 'rgba(70,112,150,0.55)';
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      for (const r of this.phys.rivers) {
+        if (r.rank > maxRank || !inView(r.bb)) continue;
+        ctx.lineWidth = (r.rank <= 5 ? 2.2 : r.rank <= 7 ? 1.6 : r.rank <= 10 ? 1.1 : 0.8) / k;
+        ctx.stroke(r.path);
+      }
+      ctx.strokeStyle = 'rgba(31,42,51,0.4)';
+      ctx.lineWidth = 0.7 / k;
+      ctx.stroke(this.phys.lakes);
+    }
 
     if (k > 0.35) {
       ctx.strokeStyle = 'rgba(31,42,51,0.28)';

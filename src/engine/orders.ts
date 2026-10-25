@@ -165,6 +165,7 @@ function advance(w: World, u: Unit, o: Order, sink: GameEvent[]) {
     const need = u.move.legDays - u.move.progress;
     if (budget < need) { u.move.progress += budget; return; }
     budget -= need;
+    u.from = u.location;
     u.location = next;
     u.move.path.shift();
     u.entrench = 0;

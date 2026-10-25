@@ -40,7 +40,9 @@ export const OVERRIDES = [
   { modern: 'CYP', to: 'GBR' }, // Cipro amministrata dal Regno Unito dal 1878
   { modern: 'CYN', to: 'GBR' },
   { modern: 'TUN', to: 'TUN' }, // Beilicato di Tunisi (protettorato francese solo da maggio 1881)
-  { modern: 'ISL', to: 'DEN' },
+  { modern: 'ISL', to: 'DEN' }, { modern: 'FRO', to: 'DEN' },
+  { modern: 'DZA', from: 'MOR', when: ([, lat]) => lat > 31, to: 'FRA' }, // Oranese francese
+  { modern: 'JEY', to: 'GBR' }, { modern: 'GGY', to: 'GBR' }, { modern: 'IMN', to: 'GBR' },
   // Il dataset usa la Bulgaria di Santo Stefano: nel 1881 Macedonia, Rumelia orientale e Creta sono ottomane
   { from: 'BUL', notModern: 'BGR', to: 'TUR' },
   // Balcani: assegnazione esplicita per provincia moderna (il dataset 1880 qui è impreciso)
@@ -68,6 +70,7 @@ export const OVERRIDES = [
   { iso: ['TR-36', 'TR-75', 'TR-08'], to: 'RUS' },
   { modern: 'GEO', to: 'RUS' }, { modern: 'ARM', to: 'RUS' }, { modern: 'AZE', to: 'RUS' },
   // Confini rimasti identici fino a oggi: il paese moderno decide (corregge l'imprecisione del dataset)
+  { modern: 'DEU', to: 'GER' }, { modern: 'NLD', to: 'NED' }, // tutta la Germania attuale era tedesca nel 1881
   { modern: 'AUT', to: 'AUH' }, { modern: 'HUN', to: 'AUH' }, { modern: 'CZE', to: 'AUH' }, { modern: 'SVK', to: 'AUH' }, { modern: 'SVN', to: 'AUH' },
   { modern: 'DEU', from: 'AUH', to: 'GER' }, { modern: 'DEU', from: 'SWI', to: 'GER' }, { modern: 'DEU', from: 'DEN', to: 'GER' },
   { modern: 'CHE', to: 'SWI' }, { modern: 'LIE', to: 'AUH' }, { modern: 'ESP', to: 'SPA' }, { modern: 'AND', to: 'SPA' }, { modern: 'PRT', to: 'POR' },
@@ -181,8 +184,24 @@ export const CHECKS = [
   ['Pirot', 22.59, 43.15, 'SER'], ['Vranje', 21.90, 42.55, 'SER'], ['Novi Sad', 19.84, 45.27, 'AUH'], ['Pljevlja', 19.36, 43.36, 'TUR'],
   ['Adrianopoli', 26.56, 41.68, 'TUR'], ['Burgas', 27.47, 42.50, 'TUR'], ['Nikšić', 18.94, 42.78, 'MNE'], ['Podgorica', 19.26, 42.44, 'MNE'],
   ['Porto Said', 32.30, 31.26, 'EGY'], ['Giannina', 20.85, 39.66, 'TUR'], ['Zante', 20.90, 37.78, 'GRE'], ['Foča', 18.78, 43.50, 'AUH'],
+  ['Jersey', -2.13, 49.21, 'GBR'],
   ['Königsberg', 20.51, 54.71, 'GER'], ['Riga', 24.11, 56.95, 'RUS'], ['Odessa', 30.73, 46.48, 'RUS'], ['Budapest', 19.04, 47.50, 'AUH'],
   ['Praga', 14.42, 50.08, 'AUH'], ['Bolzano', 11.35, 46.50, 'AUH'], ['Gorizia', 13.62, 45.94, 'AUH'], ['Pola', 13.85, 44.87, 'AUH'],
   ['Zara', 15.40, 44.10, 'AUH'], ['Castelnuovo', 18.54, 42.46, 'AUH'], ['Scutari', 19.51, 42.07, 'TUR'], ['Smirne', 27.14, 38.42, 'TUR'],
   ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
+];
+
+// Nomi moderni anacronistici nel 1881 -> nomi d'epoca (si applicano a parole intere del nome).
+// owner: solo se la provincia appartiene a quella nazione.
+export const RENAMES = [
+  ['Kaliningrad', 'Königsberg'], ['Klaipėda', 'Memel', 'GER'], ['Sovetsk', 'Tilsit'], ['Chernyakhovsk', 'Insterburg'],
+  ['Olsztyn', 'Allenstein'], ['Ełk', 'Lyck'], ['Elbląg', 'Elbing'], ['Gdańsk', 'Danzica'], ['Szczecin', 'Stettino'], ['Koszalin', 'Köslin'],
+  ['Poznań', 'Posen', 'GER'], ['Bydgoszcz', 'Bromberg'], ['Opole', 'Oppeln'], ['Wrocław', 'Breslavia'], ['Legnica', 'Liegnitz'], ['Wałbrzych', 'Waldenburg'],
+  ['Zielona Góra', 'Grünberg'], ['Gorzów Wielkopolski', 'Landsberg'], ['Lubusz', 'Neumark', 'GER'], ['Grande Polonia', 'Posen', 'GER'],
+  ['Cuiavia-Pomerania', 'Bromberg', 'GER'], ['Varmia-Masuria', 'Prussia orientale', 'GER'], ['Danimarca meridionale', 'Schleswig settentrionale', 'GER'],
+  ['Volgograd', 'Tsaritsyn'], ['Ulyanovsk', 'Simbirsk'], ["Ul'janovsk", 'Simbirsk'], ['Kirov', 'Vjatka'], ['Tolyatti', 'Stavropol sul Volga'], ['Samara', 'Samara'],
+  ['Dnipropetrovs\'k', 'Ekaterinoslav'], ['Dnipro', 'Ekaterinoslav'], ['Zaporižžja', 'Aleksandrovsk'], ['Zaporizhzhia', 'Aleksandrovsk'], ["Donec'k", 'Juzovka'], ['Donetsk', 'Juzovka'],
+  ['Kirovohrad', 'Elisavetgrad'], ["Chmel'nyc'kyj", 'Proskurov'], ["Ivano-Frankivs'k", 'Stanislau'], ["Ternopil'", 'Tarnopol'], ['Černivci', 'Czernowitz'],
+  ['Murmansk', 'Kola'], ['Monchegorsk', 'Kola (sud)'], ['Severodvinsk', 'Onega'], ['Tbilisi', 'Tiflis'], ['Gyumri', 'Aleksandropol'], ['Ganja', 'Elisavetpol'], ['Gəncə', 'Elisavetpol'],
+  ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
 ];

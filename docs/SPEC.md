@@ -22,10 +22,13 @@ Stack: TypeScript, Vite, Capacitor 8 (Android), Vitest. Nessun framework UI. L'H
 
 ## Mappa
 
-- Province: Natural Earth admin-1 (dominio pubblico), province grandi divise con k-means + Voronoi, piccole accorpate (min ~2.600 km²). Nome = pezzo più popoloso.
+- Province: Natural Earth admin-1 (dominio pubblico). Quelle oltre 22.000 km² vengono tagliate lungo i fiumi che le attraversano e le catene montuose (mapshaper `-polygons`), poi riunite togliendo prima i confini sui fiumi minori; i pezzi ancora grandi sono divisi per bacini fluviali (confini sugli spartiacque). Niente tagli rettilinei. Ogni pezzo prende il nome della sua città principale.
+- Accorpamento delle province piccole (min ~2.600 km²) solo dentro la stessa regione moderna e, in Svizzera, la stessa area linguistica (Ticino italiano, Romandia francese): così una cessione futura segue linee credibili. Mai fra paesi moderni diversi.
+- Nomi d'epoca al posto di quelli moderni dove servono (Königsberg, Memel, Posen, Bromberg, Vjatka, Ekaterinoslav, Tiflis…), tabella `RENAMES`.
 - Proprietari 1881: sovrapposizione con historical-basemaps `world_1880` (GPL-3.0), poi correzioni in `map-config.mjs` (Alsazia-Lorena, Savoia/Nizza, Bessarabia, Kars, Caucaso, Rumelia orientale, Tessaglia, Creta, Belgrado, Cattaro, Schleswig…). 80 località di controllo: `STRICT_MAP=1 npm run map` fallisce se una è sbagliata.
 - Adiacenze dalla topologia (archi condivisi) + stretti fino a 45 km fra masse di terra distinte. Proiezione LAEA (52N 10E), coordinate in km.
-- Terreno approssimato da punti di catene montuose e colline (non da un DEM).
+- Terreno dai poligoni fisici di Natural Earth (catene montuose, altopiani, deserti, paludi), con un ripiego a punti.
+- Confini lungo i fiumi (415) marcati nei dati: chi attacca attraverso un fiume ha potenza ×0,75. Livello fisico separato `physical1881.json` (rilievi, fiumi, laghi) mostrato col pulsante "Rilievi e fiumi".
 
 ## Motore
 

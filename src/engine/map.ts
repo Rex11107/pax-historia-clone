@@ -15,6 +15,7 @@ export class GameMap {
   readonly provinces: ProvinceData[];
   readonly adj: Edge[][];
   readonly data: MapData;
+  private riverEdges = new Map<string, string>();
 
   constructor(data: MapData) {
     this.data = data;
@@ -25,6 +26,7 @@ export class GameMap {
       return Math.hypot(x1 - x2, y1 - y2);
     };
     for (const p of this.provinces) for (const q of p.n) if (q !== p.id) this.adj[p.id].push({ to: q, km: dist(p.id, q), strait: false });
+    for (const [a, b, name] of data.rivers ?? []) { this.riverEdges.set(`${a},${b}`, name); this.riverEdges.set(`${b},${a}`, name); }
     for (const [a, b] of data.straits) {
       if (!this.adj[a].some((e) => e.to === b)) this.adj[a].push({ to: b, km: dist(a, b), strait: true });
       if (!this.adj[b].some((e) => e.to === a)) this.adj[b].push({ to: a, km: dist(a, b), strait: true });
@@ -32,6 +34,13 @@ export class GameMap {
   }
 
   get size() { return this.provinces.length; }
+
+  /** nome del fiume che separa due province adiacenti, se c'è */
+  river(a: number, b: number): string | undefined { return this.riverEdges.get(`${a},${b}`); }
+
+  riversOf(a: number): { to: number; name: string }[] {
+    return this.adj[a].filter((e) => !e.strait && this.river(a, e.to)).map((e) => ({ to: e.to, name: this.river(a, e.to)! }));
+  }
 
   edge(a: number, b: number): Edge | undefined { return this.adj[a].find((e) => e.to === b); }
 

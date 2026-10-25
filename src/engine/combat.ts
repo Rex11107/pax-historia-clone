@@ -7,6 +7,7 @@ import { allied, atWar, clamp, di, emit, rand, the, The, treatyBetween, type Wor
 // perde circa l'1% al giorno; trincee e colline possono quasi raddoppiare la difesa.
 export const LOSS_FACTOR = 11;
 export const RETREAT_MORALE = 0.25;
+export const RIVER_PENALTY = 0.75;
 export const RETREAT_STRENGTH = 0.3;
 
 function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean): number {
@@ -23,6 +24,8 @@ function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean):
   if (u.type === 'cavalry' && (terrain === 'mountain' || terrain === 'forest' || terrain === 'marsh')) p *= 0.6;
   if (u.type === 'artillery' && !sideHasInfantry) p *= 0.6;
   if (defending) p *= TERRAIN_DEFENSE[terrain] * (1 + 0.5 * u.entrench);
+  // attaccare dopo aver attraversato un fiume costa caro
+  if (!defending && u.from !== undefined && w.map.river(u.from, u.location)) p *= RIVER_PENALTY;
   return p;
 }
 
