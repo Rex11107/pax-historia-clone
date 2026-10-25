@@ -1,7 +1,7 @@
 import { TERRAIN_DEFENSE } from './map';
 import { UNIT_STATS } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
-import { allied, atWar, clamp, emit, rand, treatyBetween, type World } from './world';
+import { allied, atWar, clamp, di, emit, rand, the, The, treatyBetween, type World } from './world';
 
 // Costanti di bilanciamento: un corpo da 20.000 uomini contro uno uguale in pianura
 // perde circa l'1% al giorno; trincee e colline possono quasi raddoppiare la difesa.
@@ -80,10 +80,10 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
     }
     const units = s.units.filter((u) => u.location === b.province);
     const winner = units.length ? units[0].nation : null;
-    const lossTxt = Object.entries(b.losses).map(([t, l]) => `${w.profiles[t].name} ${fmt(l)}`).join(', ');
+    const lossTxt = Object.entries(b.losses).map(([t, l]) => `${shortN(w, t)} ${fmt(l)}`).join(', ');
     emit(w, {
       type: 'battle_ended', province: b.province, nations: [...b.sides[0], ...b.sides[1]],
-      text: `Fine della battaglia di ${w.map.provinces[b.province].name} (${s.day - b.startDay + 1} giorni)${winner ? `: vittoria di ${w.profiles[winner].name}` : ''}. Perdite: ${lossTxt}.`,
+      text: `Fine della battaglia di ${w.map.provinces[b.province].name} (${s.day - b.startDay + 1} giorni)${winner ? `: vittoria ${di(w, winner)}` : ''}. Perdite: ${lossTxt}.`,
       data: { losses: b.losses, winner },
     }, sink);
     units.forEach((u) => (u.inBattle = false));
@@ -92,7 +92,7 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
       const owner = s.owner[b.province];
       const prev = s.controller[b.province];
       s.controller[b.province] = owner !== prev && allied(s, winner, owner) ? owner : winner;
-      emit(w, { type: 'province_captured', province: b.province, nations: [winner, prev], text: `${w.map.provinces[b.province].name} è occupata da ${w.profiles[winner].name}.` }, sink);
+      emit(w, { type: 'province_captured', province: b.province, nations: [winner, prev], text: `${w.map.provinces[b.province].name} è occupata dalle truppe ${di(w, winner)}.` }, sink);
     }
     delete s.battles[key];
   }
@@ -144,11 +144,12 @@ function checkViolation(w: World, a: Tag, d: Tag, sink: GameEvent[]) {
     const t = treatyBetween(s, a, d, type);
     if (!t) continue;
     t.violated = true;
-    emit(w, { type: 'treaty_violated', nations: [a, d], text: `${w.profiles[a].name} viola il trattato (${type}) con ${w.profiles[d].name}.` }, sink);
+    emit(w, { type: 'treaty_violated', nations: [a, d], text: `${The(w, a)} viola il trattato (${({ non_aggression: 'non aggressione', alliance: 'alleanza', guarantee: 'garanzia' } as Record<string, string>)[type]}) con ${the(w, d)}.` }, sink);
     for (const n of Object.keys(s.nations)) if (n !== a) s.nations[n].opinion[a] = Math.max(-100, (s.nations[n].opinion[a] ?? 0) - (n === d ? 40 : 12));
   }
 }
 
+const shortN = (w: World, t: Tag) => w.profiles[t].short[1];
 const dist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
-const names = (w: World, tags: Tag[]) => tags.map((t) => w.profiles[t].name).join(' e ');
+const names = (w: World, tags: Tag[]) => tags.map((t) => the(w, t)).join(' e ');
 export const fmt = (n: number) => Math.round(n).toLocaleString('it-IT');

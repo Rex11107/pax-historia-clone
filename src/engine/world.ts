@@ -48,6 +48,20 @@ export function rand(...key: (string | number)[]): number {
 
 export function nationName(w: World, tag: Tag) { return w.profiles[tag]?.name ?? tag; }
 
+// Nomi brevi con articolo e preposizioni articolate: "l'Italia", "della Francia", "al Regno Unito".
+const PREP: Record<string, Record<string, string>> = {
+  di: { "l'": "dell'", 'la ': 'della ', 'il ': 'del ', 'i ': 'dei ', 'le ': 'delle ', '': 'di ' },
+  a: { "l'": "all'", 'la ': 'alla ', 'il ': 'al ', 'i ': 'ai ', 'le ': 'alle ', '': 'a ' },
+  da: { "l'": "dall'", 'la ': 'dalla ', 'il ': 'dal ', 'i ': 'dai ', 'le ': 'dalle ', '': 'da ' },
+};
+const sh = (w: World, tag: Tag): [string, string] => w.profiles[tag]?.short ?? ['', tag];
+export const the = (w: World, tag: Tag) => sh(w, tag).join('');
+export const The = (w: World, tag: Tag) => { const t = the(w, tag); return t.charAt(0).toUpperCase() + t.slice(1); };
+export const di = (w: World, tag: Tag) => { const [a, n] = sh(w, tag); return PREP.di[a] + n; };
+export const al = (w: World, tag: Tag) => { const [a, n] = sh(w, tag); return PREP.a[a] + n; };
+export const dal = (w: World, tag: Tag) => { const [a, n] = sh(w, tag); return PREP.da[a] + n; };
+export const shortName = (w: World, tag: Tag) => sh(w, tag)[1];
+
 export function warsOf(s: GameState, tag: Tag): War[] {
   return s.wars.filter((x) => x.attackers.includes(tag) || x.defenders.includes(tag));
 }

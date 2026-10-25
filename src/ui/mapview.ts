@@ -107,8 +107,7 @@ export class MapView {
       let best = e.ids[0], bd = Infinity;
       for (const id of e.ids) { const c = this.world.map.provinces[id].c; const d = (c[0] - cx) ** 2 + (-c[1] - cy) ** 2; if (d < bd) { bd = d; best = id; } }
       const c = this.world.map.provinces[best].c;
-      const pr = this.world.profiles[tag];
-      const short = pr.name.replace(/^(Regno|Impero|Repubblica|Principato|Confederazione|Granducato|Sultanato|Chedivato|Beilicato|Regni Uniti) (d'|di |del |dei |delle |)/, '').replace(/^(\w)/, (m) => m.toUpperCase());
+      const short = this.world.profiles[tag].short[1];
       this.labels.push({ text: short, x: c[0], y: -c[1], size: Math.min(90, Math.max(14, Math.sqrt(e.area) / 9)) });
     }
     this.dirty = true;

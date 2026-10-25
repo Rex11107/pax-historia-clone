@@ -1,5 +1,5 @@
 import type { GameEvent, Tag, TreatyType } from './types';
-import { allied, atWar, changeOpinion, emit, nationName, newId, treatyBetween, warsOf, type World } from './world';
+import { al, allied, atWar, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
 
 export const TREATY_LABEL: Record<TreatyType, string> = {
   alliance: 'alleanza difensiva',
@@ -43,13 +43,13 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
       defenders.push(other); callers.push(other);
     }
   }
-  const war = { id: newId(s, 'w'), name: `Guerra: ${nationName(w, a)} contro ${nationName(w, b)}`, attackers: [a], defenders, startDay: s.day, casualties: {} };
+  const war = { id: newId(s, 'w'), name: `Guerra fra ${shortName(w, a)} e ${shortName(w, b)}`, attackers: [a], defenders, startDay: s.day, casualties: {} };
   s.wars.push(war);
   changeOpinion(s, b, a, -50);
   for (const n of Object.keys(s.nations)) if (n !== a && n !== b) changeOpinion(s, n, a, pact ? -15 : -4);
-  emit(w, { type: 'war_declared', nations: [a, ...defenders], text: `${nationName(w, a)} dichiara guerra a ${nationName(w, b)}${reason ? ` (${reason})` : ''}.${callers.length ? ` In virtù dei trattati entrano in guerra: ${callers.map((c) => nationName(w, c)).join(', ')}.` : ''}${pact ? ' Il patto di non aggressione è stato violato.' : ''}` }, sink);
+  emit(w, { type: 'war_declared', nations: [a, ...defenders], text: `${The(w, a)} dichiara guerra ${al(w, b)}${reason ? ` (${reason})` : ''}.${callers.length ? ` In virtù dei trattati entrano in guerra: ${callers.map((c) => the(w, c)).join(', ')}.` : ''}${pact ? ' Il patto di non aggressione è stato violato.' : ''}` }, sink);
   if (a === s.player || b === s.player || callers.includes(s.player)) {
-    s.situations.push({ id: war.id, title: war.name, startDay: s.day, nations: [a, ...defenders], summary: `Guerra in corso: ${nationName(w, a)} contro ${defenders.map((d) => nationName(w, d)).join(', ')}.` });
+    s.situations.push({ id: war.id, title: war.name, startDay: s.day, nations: [a, ...defenders], summary: `Guerra in corso: ${the(w, a)} contro ${defenders.map((d) => the(w, d)).join(', ')}.` });
   }
   for (const t of [a, ...defenders]) if (t !== s.player) s.nations[t].policies.mobilization = 'full';
   return null;
@@ -87,9 +87,9 @@ export function makePeace(w: World, a: Tag, b: Tag, terms: { cedeTo?: Tag; provi
   }
   relocateStranded(w);
   for (const t of [a, b]) if (t !== s.player && !warsOf(s, t).length) s.nations[t].policies.mobilization = 'peace';
-  const cededTxt = ceded.size ? ` ${nationName(w, terms.cedeTo!)} ottiene: ${[...ceded].map((p) => w.map.provinces[p].name).join(', ')}.` : '';
+  const cededTxt = ceded.size ? ` ${The(w, terms.cedeTo!)} ottiene: ${[...ceded].map((p) => w.map.provinces[p].name).join(', ')}.` : '';
   const indTxt = terms.indemnity ? ` Indennità di ${terms.indemnity} milioni.` : '';
-  emit(w, { type: 'peace', nations: [a, b], text: `Pace fra ${nationName(w, a)} e ${nationName(w, b)}.${cededTxt}${indTxt}` }, sink);
+  emit(w, { type: 'peace', nations: [a, b], text: `Pace fra ${the(w, a)} e ${the(w, b)}.${cededTxt}${indTxt}` }, sink);
   checkAlive(w, sink);
   return null;
 }
@@ -117,7 +117,7 @@ function checkAlive(w: World, sink?: GameEvent[]) {
       s.units = s.units.filter((u) => u.nation !== n.tag);
       s.wars.forEach((x) => { x.attackers = x.attackers.filter((t) => t !== n.tag); x.defenders = x.defenders.filter((t) => t !== n.tag); });
       s.wars = s.wars.filter((x) => x.attackers.length && x.defenders.length);
-      emit(w, { type: 'nation_annexed', nations: [n.tag], text: `${nationName(w, n.tag)} cessa di esistere.` }, sink);
+      emit(w, { type: 'nation_annexed', nations: [n.tag], text: `${The(w, n.tag)} cessa di esistere.` }, sink);
     } else if (s.owner[n.capital] !== n.tag) {
       const own = s.owner.map((o, i) => (o === n.tag ? i : -1)).filter((i) => i >= 0);
       n.capital = own.sort((x, y) => w.map.provinces[y].pop - w.map.provinces[x].pop)[0];
@@ -131,7 +131,7 @@ export function addTreaty(w: World, type: TreatyType, a: Tag, b: Tag, years: num
   if (existing) existing.endDay = years ? s.day + years * 365 : null;
   else s.treaties.push({ id: newId(s, 't'), type, a, b, startDay: s.day, endDay: years ? s.day + Math.round(years * 365) : null });
   changeOpinion(s, a, b, 8); changeOpinion(s, b, a, 8);
-  emit(w, { type: 'treaty_signed', nations: [a, b], text: `Firmato un ${TREATY_LABEL[type]} fra ${nationName(w, a)} e ${nationName(w, b)}${years ? ` per ${years} anni` : ''}.` }, sink);
+  emit(w, { type: 'treaty_signed', nations: [a, b], text: `${type === 'alliance' || type === 'guarantee' ? 'Firmata una' : 'Firmato un'} ${TREATY_LABEL[type]} fra ${the(w, a)} e ${the(w, b)}${years ? ` per ${years} anni` : ''}.` }, sink);
 }
 
 /**
@@ -160,7 +160,7 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
       const giver = p.giver ?? from;
       if (!p.amount || p.amount <= 0) return 'importo non valido';
       if (p.amount > 400) return 'sussidio troppo alto (massimo 400 milioni in un accordo)';
-      if (s.nations[giver].treasury < p.amount) return `${nationName(w, giver)} non ha ${p.amount} milioni in cassa`;
+      if (s.nations[giver].treasury < p.amount) return `${The(w, giver)} non ha ${p.amount} milioni in cassa`;
       return null;
     }
     case 'join_war': {
@@ -186,13 +186,13 @@ function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null 
   for (const id of list) {
     const pv = w.map.provinces[id];
     if (!pv) return `provincia inesistente: ${id}`;
-    if (s.owner[id] !== giver) return `${pv.name} non appartiene a ${nationName(w, giver)}`;
-    if (id === s.nations[giver].capital) return `${pv.name} è la capitale di ${nationName(w, giver)}`;
+    if (s.owner[id] !== giver) return `${pv.name} non appartiene ${al(w, giver)}`;
+    if (id === s.nations[giver].capital) return `${pv.name} è la capitale ${di(w, giver)}`;
   }
   // leva: senza occupazione militare o grande stanchezza di guerra nessuno cede territorio
   const occupied = list.filter((id) => s.controller[id] === receiver).length;
   const exhausted = s.nations[giver].warExhaustion >= 50 || s.nations[giver].stability < 20;
-  if (atWar(s, from, to) && occupied < list.length && !exhausted) return `${nationName(w, giver)} non cede province che ${nationName(w, receiver)} non occupa (stanchezza di guerra ${Math.round(s.nations[giver].warExhaustion)}/100)`;
+  if (atWar(s, from, to) && occupied < list.length && !exhausted) return `${The(w, giver)} non cede province che ${the(w, receiver)} non occupa (stanchezza di guerra ${Math.round(s.nations[giver].warExhaustion)}/100)`;
   if (!atWar(s, from, to) && list.length > 1) return 'in tempo di pace si può negoziare al massimo una provincia alla volta';
   return null;
 }
@@ -217,7 +217,7 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
       const receiver = giver === from ? to : from;
       for (const id of p.provinces ?? []) { s.owner[id] = receiver; s.controller[id] = receiver; }
       relocateStranded(w);
-      emit(w, { type: 'cession', nations: [giver, receiver], text: `${nationName(w, giver)} cede a ${nationName(w, receiver)}: ${(p.provinces ?? []).map((id) => w.map.provinces[id].name).join(', ')}.` }, sink);
+      emit(w, { type: 'cession', nations: [giver, receiver], text: `${The(w, giver)} cede ${al(w, receiver)}: ${(p.provinces ?? []).map((id) => w.map.provinces[id].name).join(', ')}.` }, sink);
       break;
     }
     case 'subsidy': {
@@ -226,7 +226,7 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
       s.nations[giver].treasury -= p.amount!;
       s.nations[receiver].treasury += p.amount!;
       changeOpinion(s, receiver, giver, Math.min(20, p.amount! / 10));
-      emit(w, { type: 'subsidy', nations: [giver, receiver], text: `${nationName(w, giver)} versa ${p.amount} milioni a ${nationName(w, receiver)}.` }, sink);
+      emit(w, { type: 'subsidy', nations: [giver, receiver], text: `${The(w, giver)} versa ${p.amount} milioni ${al(w, receiver)}.` }, sink);
       break;
     }
     case 'join_war': {
@@ -234,7 +234,7 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
       if (war) {
         (war.attackers.includes(from) ? war.attackers : war.defenders).push(to);
         changeOpinion(s, p.against!, to, -40);
-        emit(w, { type: 'war_joined', nations: [to, from, p.against!], text: `${nationName(w, to)} entra in guerra al fianco di ${nationName(w, from)} contro ${nationName(w, p.against!)}.` }, sink);
+        emit(w, { type: 'war_joined', nations: [to, from, p.against!], text: `${The(w, to)} entra in guerra al fianco ${di(w, from)} contro ${the(w, p.against!)}.` }, sink);
         if (to !== s.player) s.nations[to].policies.mobilization = 'full';
       }
       break;
@@ -248,7 +248,7 @@ export function expireTreaties(w: World, sink: GameEvent[]) {
   s.treaties = s.treaties.filter((t) => {
     if (t.violated) return false;
     if (t.endDay !== null && t.endDay <= s.day) {
-      emit(w, { type: 'treaty_expired', nations: [t.a, t.b], text: `Scade il ${TREATY_LABEL[t.type]} fra ${nationName(w, t.a)} e ${nationName(w, t.b)}.` }, sink);
+      emit(w, { type: 'treaty_expired', nations: [t.a, t.b], text: `Scade ${t.type === 'alliance' || t.type === 'guarantee' ? 'la' : 'il'} ${TREATY_LABEL[t.type]} fra ${the(w, t.a)} e ${the(w, t.b)}.` }, sink);
       return false;
     }
     return true;
@@ -259,10 +259,10 @@ export function expireTreaties(w: World, sink: GameEvent[]) {
 export function describeProposal(w: World, from: Tag, to: Tag, p: Proposal): string {
   const pv = (ids?: number[]) => (ids ?? []).map((id) => w.map.provinces[id]?.name ?? `#${id}`).join(', ');
   switch (p.type) {
-    case 'peace': return `pace${p.provinces?.length ? ` con cessione di ${pv(p.provinces)} da parte di ${nationName(w, p.giver ?? to)}` : ' bianca'}${p.amount ? ` e indennità di ${p.amount} M` : ''}`;
-    case 'cede_provinces': return `cessione di ${pv(p.provinces)} da parte di ${nationName(w, p.giver ?? to)}`;
-    case 'subsidy': return `sussidio di ${p.amount} M pagato da ${nationName(w, p.giver ?? from)}`;
-    case 'join_war': return `entrata in guerra contro ${nationName(w, p.against ?? '')}`;
+    case 'peace': return `pace${p.provinces?.length ? ` con cessione di ${pv(p.provinces)} da parte ${di(w, p.giver ?? to)}` : ' bianca'}${p.amount ? ` e indennità di ${p.amount} M` : ''}`;
+    case 'cede_provinces': return `cessione di ${pv(p.provinces)} da parte ${di(w, p.giver ?? to)}`;
+    case 'subsidy': return `sussidio di ${p.amount} M pagato ${dal(w, p.giver ?? from)}`;
+    case 'join_war': return `entrata in guerra contro ${the(w, p.against ?? '')}`;
     default: return `${TREATY_LABEL[p.type]}${p.years ? ` (${p.years} anni)` : ''}`;
   }
 }

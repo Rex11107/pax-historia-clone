@@ -34,6 +34,8 @@ export interface ProvinceData {
 export interface NationProfile {
   tag: Tag;
   name: string;
+  /** nome breve con articolo per i testi: [articolo, nome] es. ["l'", 'Italia'] */
+  short: [string, string];
   adjective: string;
   color: string;
   government: string;

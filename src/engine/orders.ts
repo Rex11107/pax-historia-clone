@@ -1,6 +1,6 @@
 import { TERRAIN_SPEED, type Edge } from './map';
 import type { Condition, GameEvent, Order, Unit, UnitType } from './types';
-import { allied, atWar, canEnter, clamp, emit, hostilePresent, hostileUnitsAt, nationName, type World } from './world';
+import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, type World } from './world';
 
 export const UNIT_STATS: Record<UnitType, { speed: number; attack: number; defense: number }> = {
   infantry: { speed: 22, attack: 1, defense: 1 },
@@ -108,7 +108,7 @@ function capture(w: World, u: Unit, p: number, sink: GameEvent[]) {
   const owner = s.owner[p];
   const newCtrl = owner !== ctrl && allied(s, u.nation, owner) ? owner : u.nation;
   s.controller[p] = newCtrl;
-  emit(w, { type: 'province_captured', province: p, nations: [newCtrl, ctrl], text: `${w.map.provinces[p].name} passa sotto il controllo di ${nationName(w, newCtrl)} (tolta a ${nationName(w, ctrl)}).` }, sink);
+  emit(w, { type: 'province_captured', province: p, nations: [newCtrl, ctrl], text: `${w.map.provinces[p].name} passa sotto il controllo ${di(w, newCtrl)} (tolta ${al(w, ctrl)}).` }, sink);
 }
 
 /** Un giorno di esecuzione degli ordini per un'unità. */

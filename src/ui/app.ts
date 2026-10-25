@@ -4,7 +4,7 @@ import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } 
 import { TERRAIN_NAME } from '../engine/map';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
-import { atWar, enemiesOf, formatDate, nationName, opinion, treatyBetween } from '../engine/world';
+import { al, atWar, di, enemiesOf, formatDate, nationName, opinion, treatyBetween } from '../engine/world';
 import { declareWar } from '../engine/diplomacy';
 import { chatJSON, usage } from '../llm/client';
 import { deleteSave, listSaves, loadGame, saveSettings, type Settings } from '../storage/storage';
@@ -213,7 +213,7 @@ export class App {
     const mine = u.nation === s.player;
     const p = w.map.provinces[u.location];
     const info = h('div', null,
-      h('p', { class: 'sub' }, `${UNIT_TYPE[u.type]} di ${nationName(w, u.nation)} a ${p.name} (${TERRAIN_NAME[p.terrain]})`),
+      h('p', { class: 'sub' }, `${UNIT_TYPE[u.type]} ${di(w, u.nation)} a ${p.name} (${TERRAIN_NAME[p.terrain]})`),
       h('p', null, h('b', null, `${u.strength.toLocaleString('it-IT')}`), ` uomini su ${u.maxStrength.toLocaleString('it-IT')}`),
       this.bars(u),
       mine ? h('p', { class: 'sub' }, `Trinceramento ${Math.round(u.entrench * 100)}% · esperienza ${Math.round(u.experience * 100)}% · ${this.orderSummary(u)}`) : null,
@@ -302,7 +302,7 @@ export class App {
         h('dt', null, 'Terreno'), h('dd', null, `${TERRAIN_NAME[p.terrain]}${p.coast ? ', costa' : ''}`),
       ),
       units.length ? h('div', null, h('h3', null, 'Truppe presenti'), h('ul', { class: 'list' }, ...units.map((u) => h('li', { onclick: () => this.selectUnit(u.id) }, h('div', { class: 'row' }, h('span', null, u.name), h('span', { class: 'num' }, fmtK(u.strength))))))) : h('p', { class: 'muted' }, 'Nessuna truppa nella provincia.'),
-      owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi a ${nationName(w, owner)}`)) : null,
+      owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi ${al(w, owner)}`)) : null,
       canRecruit ? h('div', null, h('h3', null, 'Arruolamento'), h('div', { class: 'buttons' }, ...(Object.keys(RECRUIT) as UnitType[]).map((t) => h('button', { onclick: () => this.doRecruit(t, id) }, `${RECRUIT[t].label} · ${RECRUIT[t].cost} M`)))) : null,
     );
   }
