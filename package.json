@@ -1,0 +1,44 @@
+{
+  "name": "regnum-historia",
+  "version": "0.1.0",
+  "description": "Grand strategy storico con AI: Europa e Mediterraneo, 1881",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "map": "node scripts/map/build-map.mjs",
+    "cap:sync": "cap sync android"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Rex11107/pax-historia-clone.git"
+  },
+  "author": "Ivan Brunelli",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/Rex11107/pax-historia-clone/issues"
+  },
+  "homepage": "https://github.com/Rex11107/pax-historia-clone#readme",
+  "devDependencies": {
+    "@capacitor/cli": "^8.5.3",
+    "@turf/turf": "^7.4.0",
+    "@types/geojson": "^7946.0.16",
+    "@types/node": "^26.6.5",
+    "@types/topojson-client": "^3.1.5",
+    "mapshaper": "^0.7.98",
+    "topojson-client": "^3.1.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/preferences": "^8.0.1"
+  },
+  "private": true,
+  "type": "module"
+}
