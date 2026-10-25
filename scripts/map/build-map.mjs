@@ -6,6 +6,7 @@
 //  - Natural Earth 10m admin-1 (dominio pubblico) -> geometria delle province
 //  - Natural Earth 10m populated places (dominio pubblico) -> peso demografico
 //  - aourednik/historical-basemaps world_1880 (GPL-3.0) -> confini politici 1880
+//  - HydroBASINS v1c (HydroSHEDS, Lehner & Grill 2013; uso libero con attribuzione) -> spartiacque
 //
 // Pipeline:
 //  1. ritaglio sull'area di gioco, suddivisione delle province troppo grandi
@@ -21,6 +22,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
+import { prepareBasins, splitByBasins } from './basins.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES } from './map-config.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -76,6 +78,19 @@ async function download() {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`download fallito ${url}: ${res.status}`);
     fs.writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
+  }
+  // HydroBASINS livello 7 (HydroSHEDS, uso libero con attribuzione): Europa/Medio Oriente e Africa
+  const hydro = path.join(RAW, 'hydro');
+  fs.mkdirSync(hydro, { recursive: true });
+  for (const r of ['eu', 'af']) {
+    if (fs.existsSync(path.join(hydro, `hybas_${r}_lev07_v1c.shp`))) continue;
+    const url = `https://data.hydrosheds.org/file/HydroBASINS/standard/hybas_${r}_lev07_v1c.zip`;
+    log('scarico', url);
+    const res = await fetch(url);
+    if (!res.ok) { log(`HydroBASINS non raggiungibile (${res.status}): uso i fiumi di Natural Earth`); continue; }
+    const zip = path.join(hydro, `hybas_${r}_lev07.zip`);
+    fs.writeFileSync(zip, Buffer.from(await res.arrayBuffer()));
+    execFileSync('unzip', ['-oq', zip, '-d', hydro]);
   }
 }
 
@@ -395,7 +410,11 @@ async function main() {
   ms(path.join(RAW, 'ne_10m_lakes.geojson'), '-clip', `bbox=${BBOX}`, '-filter', 'scalerank <= 7', '-each', 'name=name_it || name_en || name', '-filter-fields', 'name',
     '-simplify', 'interval=2000', 'keep-shapes', '-o', path.join(TMP, 'lakes.geojson'));
   const placesAll0 = readJSON(path.join(RAW, 'ne_places.geojson')).features;
-  const prov = splitByRivers(readJSON(path.join(TMP, 'prov.geojson')), placesAll0);
+  // province grandi: spartiacque di HydroBASINS se disponibile, altrimenti fiumi di Natural Earth
+  const hydroOk = fs.existsSync(path.join(RAW, 'hydro', 'hybas_eu_lev07_v1c.shp'));
+  const prov = hydroOk
+    ? splitByBasins(readJSON(path.join(TMP, 'prov.geojson')), { ms, TMP, basinsPath: prepareBasins({ ms, RAW, TMP, BBOX }), places: placesAll0, splitArea: SPLIT_AREA, target: FACE_TARGET, minPiece: FACE_MIN, exo, log })
+    : splitByRivers(readJSON(path.join(TMP, 'prov.geojson')), placesAll0);
   // orientamento degli anelli coerente (i pezzi nati da unioni/differenze di turf possono averlo invertito)
   for (const f of prov.features) turf.rewind(f, { mutate: true });
   fs.writeFileSync(path.join(TMP, 'prov_split_raw.geojson'), JSON.stringify(prov));

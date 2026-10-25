@@ -41,4 +41,4 @@ Senza configurazione l'APK è di debug: si installa, ma per aggiornarlo bisogna 
 
 ## Licenze e fonti
 
-Codice sotto GPL-3.0-or-later (richiesta dai dati di [historical-basemaps](https://github.com/aourednik/historical-basemaps)). Geografia da [Natural Earth](https://www.naturalearthdata.com/) (pubblico dominio). Caratteri Alegreya e Alegreya Sans (SIL Open Font License). Nessun asset di giochi commerciali.
+Codice sotto GPL-3.0-or-later (richiesta dai dati di [historical-basemaps](https://github.com/aourednik/historical-basemaps)). Geografia da [Natural Earth](https://www.naturalearthdata.com/) (pubblico dominio). Spartiacque da HydroBASINS: Lehner, B., Grill G. (2013), Global river hydrography and network routing: baseline data and new approaches to study the world's large river systems, *Hydrological Processes* 27(15): 2171–2186, dati su [www.hydrosheds.org](https://www.hydrosheds.org) (uso libero anche commerciale; nel repository c'è solo il risultato derivato, non i dati originali). Caratteri Alegreya e Alegreya Sans (SIL Open Font License). Nessun asset di giochi commerciali.

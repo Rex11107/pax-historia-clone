@@ -22,7 +22,7 @@ Stack: TypeScript, Vite, Capacitor 8 (Android), Vitest. Nessun framework UI. L'H
 
 ## Mappa
 
-- Province: Natural Earth admin-1 (dominio pubblico). Quelle oltre 22.000 km² vengono tagliate lungo i fiumi che le attraversano e le catene montuose (mapshaper `-polygons`), poi riunite togliendo prima i confini sui fiumi minori; i pezzi ancora grandi sono divisi per bacini fluviali (confini sugli spartiacque). Niente tagli rettilinei. Ogni pezzo prende il nome della sua città principale.
+- Province: Natural Earth admin-1 (dominio pubblico). Quelle oltre 22.000 km² vengono divise con HydroBASINS livello 7 (`scripts/map/basins.mjs`): si sceglie il livello Pfafstetter più grossolano che dà abbastanza bacini, i gruppi troppo grandi scendono di livello, i pezzi piccoli si uniscono al vicino col confine più lungo. I confini interni corrono sugli spartiacque. Ripiego senza HydroBASINS: tagli lungo i fiumi di Natural Earth. Niente tagli rettilinei. Ogni pezzo prende il nome della sua città principale.
 - Accorpamento delle province piccole (min ~2.600 km²) solo dentro la stessa regione moderna e, in Svizzera, la stessa area linguistica (Ticino italiano, Romandia francese): così una cessione futura segue linee credibili. Mai fra paesi moderni diversi.
 - Nomi d'epoca al posto di quelli moderni dove servono (Königsberg, Memel, Posen, Bromberg, Vjatka, Ekaterinoslav, Tiflis…), tabella `RENAMES`.
 - Proprietari 1881: sovrapposizione con historical-basemaps `world_1880` (GPL-3.0), poi correzioni in `map-config.mjs` (Alsazia-Lorena, Savoia/Nizza, Bessarabia, Kars, Caucaso, Rumelia orientale, Tessaglia, Creta, Belgrado, Cattaro, Schleswig…). 80 località di controllo: `STRICT_MAP=1 npm run map` fallisce se una è sbagliata.
