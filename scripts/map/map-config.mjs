@@ -207,6 +207,15 @@ export const RENAMES = [
   ['Baden-Württemberg', 'Württemberg', 'GER'], ['Meclemburgo-Pomerania Anteriore', 'Meclemburgo', 'GER'], ['Sassonia-Anhalt', 'Anhalt', 'GER'],
   ['Renania Settentrionale-Vestfalia', 'Lippe', 'GER'], ['Schleswig-Holstein', 'Lubecca ed Eutin', 'GER'], ['Assia', 'Waldeck', 'GER'], ['Jena', 'Turingia', 'GER'],
   ['Braunschweig', 'Brunswick', 'GER'], ['Gießen', 'Alta Assia', 'GER'], ['Mainz', 'Assia-Darmstadt', 'GER'], ['Stralsund (nord)', 'Rügen', 'GER'], ['Renania-Palatinato', 'Birkenfeld', 'GER'],
+  // Austria-Ungheria: nomi ufficiali dell'epoca (tedeschi in Cisleitania, ungheresi in Transleitania)
+  ...[['Liberec', 'Reichenberg'], ['Pardubice', 'Pardubitz'], ['Olomouc', 'Olmütz'], ['Ostrava', 'Mährisch Ostrau'], ['Pizen', 'Pilsen'], ['Plzeň', 'Pilsen'],
+    ['České Budějovice', 'Budweis'], ['Brno', 'Brünn'], ['Drohobych', 'Drohobycz'], ['Ivano-Frankivsk', 'Stanislau'], ['Chernivtsi', 'Czernowitz'], ['Ternopil', 'Tarnopol'],
+    ['Suceava', 'Suczawa'], ['Uzhgorod', 'Ungvár'], ['Žilina', 'Zsolna'], ['Bistrița', 'Beszterce'], ['Tirgu Mures', 'Marosvásárhely'], ['Baia Mare', 'Nagybánya'],
+    ['Trnava', 'Nagyszombat'], ['Trenčín', 'Trencsén'], ['Nitra', 'Nyitra'], ['Banská Bystrica', 'Besztercebánya'], ['Prešov', 'Eperjes'], ['Satu Mare', 'Szatmárnémeti'],
+    ['Timișoara', 'Temesvár'], ['Timiș', 'Temes'], ['Zrenjanin', 'Nagybecskerek'], ['Hunedoara', 'Vajdahunyad'], ['Reșița', 'Resicabánya'], ['Subotica', 'Szabadka'],
+    ['Novi Sad', 'Újvidék'], ['Oradea', 'Nagyvárad'], ['Cluj-Napoca', 'Kolozsvár'], ['Cluj', 'Kolozs'], ['Alba Lulia', 'Gyulafehérvár'], ['Sibiu', 'Nagyszeben'],
+    ['Brașov', 'Brassó'], ['Miercurea Cuic', 'Csíkszereda'], ['Sfintu-Gheorghe', 'Sepsiszentgyörgy'], ['Covasna', 'Háromszék'], ['Mureș', 'Maros'], ['Bihor', 'Bihar'],
+    ['Caraș-Severin', 'Krassó-Szörény'], ['Transcarpazia', 'Máramaros'], ['Kimpolung', 'Kimpolung'], ['Deva', 'Déva'], ['Arad', 'Arad']].map(([a, b]) => [a, b, 'AUH']),
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
 ];
 
@@ -220,6 +229,9 @@ export const PROTECTED = [
   { id: 'AND', name: 'Andorra', owner: 'AND', match: { modern: 'AND' }, pop: 6000, terrain: 'mountain', coast: false },
   { id: 'CEU', name: 'Ceuta', owner: 'SPA', match: { pid: 'ESP-5815' }, pop: 10000, terrain: 'hills', coast: true, region: 'Andalusia' },
   { id: 'MEL', name: 'Melilla', owner: 'SPA', match: { pid: 'ESP-5835' }, pop: 5000, terrain: 'plain', coast: true, region: 'Andalusia' },
+  // città-stato dell'Adriatico, contese nelle rivendicazioni dell'epoca
+  { id: 'TRS', name: 'Trieste', owner: 'AUH', match: { reg: 'H:Triest mit Gebiet' }, pop: 145000, terrain: 'hills', coast: true },
+  { id: 'FIU', name: 'Fiume', owner: 'AUH', match: { reg: 'H:Fiume', bbox: [14.25, 45.25, 14.6, 45.45] }, pop: 21000, terrain: 'hills', coast: true },
   // Helgoland non è in Natural Earth: un punto, collegato via mare alla costa tedesca più vicina
   { id: 'HEL', name: 'Helgoland', owner: 'GBR', point: [7.886, 54.182], pop: 2000, terrain: 'plain', coast: true },
 ];

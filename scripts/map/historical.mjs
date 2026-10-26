@@ -38,6 +38,19 @@ const DE_IT = {
   Troppau: 'Troppau', Czernowitz: 'Czernowitz', Teschen: 'Teschen', Pilsen: 'Pilsen', Budweis: 'Budweis', Reichenberg: 'Reichenberg', Eger: 'Eger',
 };
 
+// Lingua prevalente dei distretti cisleitani misti (censimento 1880, approssimata): serve a tenere separate
+// le aree che una rivendicazione dell'epoca avrebbe chiesto (Sudeti tedeschi, Slesia polacca, Istria italiana).
+const LANG = {
+  de: ['Asch', 'Aussig', 'Bischofteinitz', 'Braunau', 'Brüx', 'Dauba', 'Eger', 'Falkenau', 'Friedland', 'Gablonz an der Neisse', 'Graslitz', 'Kaaden', 'Kaplitz',
+    'Karlsbad', 'Komotau', 'Krumau', 'Leitmeritz', 'Luditz', 'Mies', 'Podersam', 'Reichenberg', 'Rumburg', 'Sankt Joachimsthal', 'Schluckenau', 'Tachau', 'Tepl',
+    'Tetschen', 'Plan', 'Gabel', 'Teplitz', 'Trautenau', 'Böhmisch Leipa', 'Prachatitz', 'Hohenelbe', 'Saaz', 'Landskron',
+    'Znaim', 'Nikolsburg', 'Mährisch Schönberg', 'Mährisch Trübau', 'Römerstadt', 'Sternberg', 'Neutitschein', 'Auspitz',
+    'Jägerndorf', 'Freiwaldau', 'Freudenthal'],
+  pl: ['Teschen', 'Freistadt'],
+  it: ['Lussin', 'Capodistria', 'Rovigno', 'Parenzo', 'Pola'],
+  hr: ['Pisino', 'Volosca'],
+};
+const LANG_OF = new Map(Object.entries(LANG).flatMap(([l, names]) => names.map((n) => [n, l])));
 const TRENTINO_DISTRICTS = new Set(['Trient', 'Rovereto', 'Riva', 'Tione', 'Cles', 'Borgo', 'Primiero', 'Cavalese', 'Mezzolombardo']);
 const clean = (n) => String(n || '').replace(/\s*\((Stadt|Landbezirk|Umgebung|Land|Stadt und Land)\)/g, '').replace(/^Stadt\s+/, '').trim();
 const ruParent = (s) => String(s).replace(/ (governorate|region|oblast)( incl\..*)?$/i, '').replace(/ Cossack host lands/, ' (Cosacchi del Don)').trim();
@@ -156,7 +169,10 @@ export function buildHistoricalBase({ ms, RAW, TMP, BBOX, provPath, places, exo,
         name = DE_IT[n] || exo(n);
       }
       const m = modernOf(pt) || {};
-      feats.push({ type: 'Feature', geometry: f.geometry, properties: { pid: id, iso: m.iso || '', pname: name, modern: m.modern || '', reg: `H:${parent}`, nreg: m.reg || null, own: L.own } });
+      // solo nelle terre miste: Freistadt in Alta Austria non è la Freistadt slesiana
+      const mixed = /Böhmen|Mähren|schlesien|Istrien/.test(parent);
+      const lang = L.ristat || !mixed ? null : LANG_OF.get(clean(p.name)) ?? null;
+      feats.push({ type: 'Feature', geometry: f.geometry, properties: { pid: id, iso: m.iso || '', pname: name, modern: m.modern || '', reg: `H:${parent}`, nreg: m.reg || null, own: L.own, lang } });
     }
     const raw = path.join(TMP, `h_${L.src}_raw.geojson`);
     fs.writeFileSync(raw, JSON.stringify({ type: 'FeatureCollection', features: feats }));
@@ -218,7 +234,7 @@ export function buildHistoricalBase({ ms, RAW, TMP, BBOX, provPath, places, exo,
       // exclavi delle unità d'epoca: prendono il nome della loro città principale (Schmalkalden, Rinteln…)
       let pname = p.pname;
       if (p.own && pid !== p.pid) { const t = townIn(f, 3000); if (t) pname = exo(t); }
-      features.push({ type: 'Feature', geometry: f.geometry, properties: { pid, iso: p.iso || '', pname, modern: p.modern, reg: reg ?? null, nreg: p.nreg ?? (p.own ? null : p.reg ?? null), own: p.own || null } });
+      features.push({ type: 'Feature', geometry: f.geometry, properties: { pid, iso: p.iso || '', pname, modern: p.modern, reg: reg ?? null, nreg: p.nreg ?? (p.own ? null : p.reg ?? null), own: p.own || null, lang: p.lang ?? null } });
     }
   }
   const out = path.join(TMP, 'prov_hist.geojson');

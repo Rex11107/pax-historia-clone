@@ -17,18 +17,18 @@ import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 
-export const ZONE_BBOX = [4.5, 35.3, 20.2, 48.3];
+export const ZONE_BBOX = [4.5, 35.3, 27.0, 51.2];
 const AUH_ZONE = new Set(['Gefürstete Grafschaft Tirol', 'Trentino', 'Land Vorarlberg', 'Herzogtum Kärnten', 'Herzogtum Steiermark', 'Herzogtum Krain',
   'Triest mit Gebiet', 'Gefürstete Grafschaft Görz und Gradisca', 'Markgrafschaft Istrien', 'Königreich Dalmatien', 'Herzogtum Salzburg',
   'Croazia-Slavonia', 'Confine militare', 'Fiume']);
 const FRA_ZONE = new Set(["Provence-Alpes-Côte-d'Azur", 'Corse', 'Auvergne-Rhône-Alpes']);
 
-/** Area di lavoro della prima fase: Italia e vicinanze. */
+/** Area di lavoro: Italia e vicinanze, poi tutta l'Austria-Ungheria. */
 export function inZone(p) {
   if (['ITA', 'SMR', 'SWI', 'MCO', 'LIE'].includes(p.owner)) return true;
   if (p.owner === 'GBR' && p.modern === 'MLT') return true;
   if (p.owner === 'FRA') return FRA_ZONE.has(p.nreg) || p.modern === 'MCO';
-  if (p.owner === 'AUH') return p.modern === 'BIH' || AUH_ZONE.has(String(p.reg || '').replace(/^H:/, ''));
+  if (p.owner === 'AUH') return true; // seconda fase: tutta l'Austria-Ungheria
   return false;
 }
 

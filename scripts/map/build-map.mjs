@@ -460,6 +460,7 @@ async function main() {
   const N = geoms.length;
   log(`${N} pezzi dopo la sovrapposizione`);
   const cent = feats.map((f) => turf.centroid(f).geometry.coordinates);
+  const inBB = ([x, y], b) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
   const P = feats.map((f, i) => {
     const pr = f.properties;
     let owner = pr.hist ? HIST_TO_TAG[pr.hist] : null;
@@ -468,9 +469,9 @@ async function main() {
     if (!pr.fix && pr.own) owner = pr.own; // unità d'epoca: il proprietario è certo
     // microstati e possedimenti minuscoli: proprietario fisso, gruppo proprio
     const base = String(pr.pid).split('~')[0];
-    const prot = PROTECTED.find((x) => x.match && ((x.match.modern && x.match.modern === pr.modern) || (x.match.pid && x.match.pid === base)));
+    const prot = PROTECTED.find((x) => x.match && ((x.match.modern && x.match.modern === pr.modern) || (x.match.pid && x.match.pid === base) || (x.match.reg && x.match.reg === pr.reg && (!x.match.bbox || inBB(turf.centroid(f).geometry.coordinates, x.match.bbox)))));
     if (prot) owner = prot.owner;
-    return { i, fix: prot?.owner || pr.fix || pr.own || null, prot: prot?.id ?? null, hist: !!pr.own, pid: pr.pid, iso: pr.iso, reg: pr.reg, nreg: pr.nreg ?? pr.reg, name: prot ? prot.name : cleanName(pr.pname), modern: pr.modern, owner, area: km2(f), feat: f };
+    return { i, lang: pr.lang ?? null, fix: prot?.owner || pr.fix || pr.own || null, prot: prot?.id ?? null, hist: !!pr.own, pid: pr.pid, iso: pr.iso, reg: pr.reg, nreg: pr.nreg ?? pr.reg, name: prot ? prot.name : cleanName(pr.pname), modern: pr.modern, owner, area: km2(f), feat: f };
   });
   const applyOverrides = (p) => {
     if (p.fix) { p.owner = p.fix; return; }
@@ -570,24 +571,35 @@ async function main() {
     const zoneIdx = P.filter((p) => p.zone).map((p) => p.i);
     if (zoneIdx.length) {
       const metrics = topoMetrics(topo, geoms);
-      const lang = (p) => (p.modern === 'CHE' ? CH_LANG[p.iso] || 'de' : p.iso === 'IT-BZ' ? 'de' : '');
+      // aree linguistiche (approssimate) che una rivendicazione dell'epoca separerebbe
+      const SK_HU = [[17.0, 48.0], [17.8, 48.2], [18.3, 48.12], [18.8, 48.12], [19.4, 48.22], [20.0, 48.35], [20.6, 48.52], [21.3, 48.42], [22.6, 48.42]];
+      const southOf = ([lon, lat], line) => { for (let i = 1; i < line.length; i++) if (lon <= line[i][0] || i === line.length - 1) { const [x0, y0] = line[i - 1], [x1, y1] = line[i]; return lat < y0 + ((Math.max(x0, Math.min(lon, x1)) - x0) / (x1 - x0)) * (y1 - y0); } return false; };
+      const lang = (p) => p.modern === 'CHE' ? CH_LANG[p.iso] || 'de'
+        : p.iso === 'IT-BZ' ? 'de'
+        : p.lang ? p.lang
+        : p.modern === 'SVK' && southOf(cent[p.i], SK_HU) ? 'hu' // fascia magiara della Slovacchia meridionale
+        : ['RO-HR', 'RO-CV'].includes(p.iso) ? 'hu' // terra dei Siculi
+        : p.modern === 'HUN' && p.owner === 'AUH' ? 'hu'
+        : '';
       const coastKm = coastDistance(topo, geoms);
       // linee che contano per le rivendicazioni dell'epoca, anche se producono province piccole:
       // la città di Trieste, la contea di Nizza, la costa dalmata (minoranze italiane) separata dall'interno croato
       const claim = (p) => {
         const reg = String(p.reg || '');
         if (reg === 'H:Triest mit Gebiet') return 'trieste';
+        if (p.prot === 'FIU') return 'fiume'; // il poligono del corpus separatum di HistoGIS ha parti spurie in Slavonia
         if (p.owner === 'FRA' && p.iso === 'FR-06') return eastOfVar(cent[p.i]) ? 'nizza' : '';
         if (reg === 'H:Königreich Dalmatien') return coastKm(cent[p.i]) < 14 ? 'costa' : 'interno';
         return '';
       };
+      for (const i of zoneIdx) { P[i].claim = claim(P[i]); P[i].langKey = lang(P[i]); }
       const groups = compactClusters(zoneIdx, P, metrics, {
         // la contea di Gorizia resta unita anche a cavallo del confine italo-sloveno di oggi
         key: (p) => `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : p.modern}|${lang(p)}|${p.prot || ''}|${claim(p)}`,
         looseKey: (p) => `${p.owner}|${lang(p)}|${p.prot || ''}|${['costa', 'interno'].includes(claim(p)) ? 'dalmazia' : claim(p)}`,
         soft: (p) => regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
         min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
-        keepSmall: (p) => !!p.prot || claim(p) === 'trieste',
+        keepSmall: (p) => !!p.prot || ['trieste', 'fiume'].includes(claim(p)),
       });
       for (const g of groups) for (const i of g.slice(1)) join(g[0], i);
     }
@@ -603,12 +615,26 @@ async function main() {
     for (const r0 of smallRoots) {
       const r = find(r0);
       if (gArea[r] >= 600 || P[r].prot) continue;
-      // zona italiana: solo le isole vere (senza confini di terra) si uniscono a distanza
-      if (P[r].zone && P.some((p) => find(p.i) === r && nbr[p.i].some((j) => find(j) !== r))) continue;
+      // zona compatta: i frammenti con vicini di terra vanno al vicino con la stessa rivendicazione
+      // (Trieste, Fiume e i microstati restano a sé); solo le isole vere si uniscono a distanza
+      if (P[r].zone) {
+        if (P[r].claim === 'trieste' || P[r].claim === 'fiume') continue;
+        const touch = new Map();
+        for (const p of P) if (find(p.i) === r) for (const j of nbr[p.i]) { const g = find(j); if (g !== r) touch.set(g, (touch.get(g) || 0) + 1); }
+        if (touch.size) {
+          if (gArea[r] >= 500) continue;
+          const ok = (g) => P[g].owner === P[r].owner && !P[g].prot && (!P[r].claim || P[g].claim === P[r].claim) && (!P[r].langKey || P[g].langKey === P[r].langKey);
+          const t = [...touch.entries()].filter(([g]) => ok(g)).sort((a, b) => b[1] - a[1] || gArea[b[0]] - gArea[a[0]])[0];
+          if (t) { join(t[0], r); isl++; continue; }
+          // tocca solo schegge: si comporta come un'isola
+        }
+      }
       const mine = P.filter((p) => find(p.i) === r);
       let best = null, bd = 60;
       for (const q of P) {
-        if (q.owner !== P[r].owner || find(q.i) === r || gArea[find(q.i)] < gArea[r]) continue;
+        if (q.owner !== P[r].owner || find(q.i) === r || gArea[find(q.i)] < gArea[r] || P[find(q.i)].prot) continue;
+        if (P[r].zone && P[r].claim && P[find(q.i)].claim !== P[r].claim) continue;
+        if (P[r].zone && P[r].langKey && P[find(q.i)].langKey !== P[r].langKey) continue;
         for (const m of mine) { const d = turf.distance(cent[m.i], cent[q.i]); if (d < bd) { bd = d; best = q; } }
       }
       if (best) { join(best.i, r); isl++; }
@@ -648,7 +674,7 @@ async function main() {
     let byNameList = null, byTown = false;
     if (mem[0].zone && !P[r].prot) {
       const t = mem.filter((m) => m.topTown).sort((a, b) => b.topPop - a.topPop)[0];
-      if (t && t.topPop >= 8000) { name = exo(t.topTown); byTown = true; }
+      if (t && t.topPop >= 8000 && !PROTECTED.some((x) => x.name === exo(t.topTown))) { name = exo(t.topTown); byTown = true; }
       else byNameList = [...byName.entries()].sort((a, b) => b[1] - a[1]).map((x) => x[0]);
     }
     // regione storica: quella che copre la maggior parte dell'area del gruppo
