@@ -17,8 +17,13 @@ import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 
-const SPLIT_BIG = new Set(['GBR', 'IRL', 'IMN', 'DEU', 'DNK', 'NLD', 'ESP', 'PRT', 'SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR']);
+const SPLIT_BIG = new Set(['GBR', 'IRL', 'IMN', 'DEU', 'DNK', 'NLD', 'ESP', 'PRT', 'SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR',
+  'MAR', 'DZA', 'TUN', 'LBY', 'EGY', 'SAH', 'MRT']);
 export const ZONE_BBOX = [-11.0, 34.5, 30.5, 61.0];
+// Nord Africa (sesta fase): la fascia a sud della zona europea, fino al Sinai
+const AFRICA_BBOX = [-11.0, 27.0, 35.2, 34.5];
+const ZONE_BOXES = [ZONE_BBOX, [-11.0, 27.0, 35.2, 37.6]];
+export const AFRICA_MODERN = new Set(['MAR', 'DZA', 'TUN', 'LBY', 'EGY', 'SAH', 'MRT']);
 const AUH_ZONE = new Set(['Gefürstete Grafschaft Tirol', 'Trentino', 'Land Vorarlberg', 'Herzogtum Kärnten', 'Herzogtum Steiermark', 'Herzogtum Krain',
   'Triest mit Gebiet', 'Gefürstete Grafschaft Görz und Gradisca', 'Markgrafschaft Istrien', 'Königreich Dalmatien', 'Herzogtum Salzburg',
   'Croazia-Slavonia', 'Confine militare', 'Fiume']);
@@ -28,12 +33,16 @@ const FRA_ZONE = new Set(["Provence-Alpes-Côte-d'Azur", 'Corse', 'Auvergne-Rhô
 export function inZone(p) {
   if (['ITA', 'SMR', 'SWI', 'MCO', 'LIE'].includes(p.owner)) return true;
   if (p.owner === 'GBR' && p.modern === 'MLT') return true;
-  if (p.owner === 'FRA') return FRA_ZONE.has(p.nreg) || p.modern === 'MCO';
+  if (p.owner === 'FRA') return FRA_ZONE.has(p.nreg) || p.modern === 'MCO' || p.modern === 'DZA'; // sesta fase: Algeria
   if (p.owner === 'AUH') return true; // seconda fase: tutta l'Austria-Ungheria
   if (['GER', 'DEN', 'NED', 'LUX'].includes(p.owner)) return true; // terza fase: Germania, Danimarca, Paesi Bassi
   if (p.owner === 'GBR' && ['GBR', 'IRL', 'IMN', 'JEY', 'GGY', 'ALD'].includes(p.modern)) return true; // quarta fase: isole britanniche
   // quinta fase: Spagna e Balcani (con la Rumelia ottomana: Albania, Macedonia, Tracia, Kosovo, Tessaglia, Epiro, Creta)
   if (['SPA', 'AND', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'POR'].includes(p.owner)) return true;
+  // sesta fase: Nord Africa (Marocco, Algeria francese, Tunisia, Tripolitania ottomana, Egitto)
+  if (['MOR', 'TUN', 'EGY'].includes(p.owner)) return true;
+  if (p.owner === 'FRA' && p.modern === 'DZA') return true;
+  if (p.owner === 'TUR' && ['LBY', 'DZA'].includes(p.modern)) return true;
   if (p.owner === 'TUR') {
     if (['GRC', 'ALB', 'MKD', 'KOS', 'BGR', 'SRB', 'MNE', 'BIH'].includes(p.modern)) return true;
     if (p.modern === 'TUR') { const [x, y] = turf.centroid(p.feat).geometry.coordinates; return x < 29.3 && y > 40.05; } // Tracia orientale
@@ -46,8 +55,13 @@ export function prepareBasins8({ ms, RAW, TMP }) {
   if (fs.existsSync(out)) return out;
   const dir = path.join(RAW, 'hydro');
   if (!fs.existsSync(path.join(dir, 'hybas_eu_lev08_v1c.shp'))) return null;
-  ms('-i', path.join(dir, 'hybas_eu_lev08_v1c.shp'), path.join(dir, 'hybas_af_lev08_v1c.shp'), 'combine-files', '-merge-layers', 'force',
-    '-clip', `bbox=${ZONE_BBOX}`, '-each', 'b8=HYBAS_ID', '-filter-fields', 'b8', '-simplify', 'interval=500', 'keep-shapes', '-o', out);
+  const parts = [ZONE_BBOX, AFRICA_BBOX].map((bb, k) => {
+    const o = path.join(TMP, `basins8_part${k}.geojson`);
+    ms('-i', path.join(dir, 'hybas_eu_lev08_v1c.shp'), path.join(dir, 'hybas_af_lev08_v1c.shp'), 'combine-files', '-merge-layers', 'force',
+      '-clip', `bbox=${bb}`, '-each', 'b8=HYBAS_ID', '-filter-fields', 'b8', '-simplify', 'interval=500', 'keep-shapes', '-o', o);
+    return JSON.parse(fs.readFileSync(o, 'utf8')).features;
+  });
+  fs.writeFileSync(out, JSON.stringify(turf.featureCollection(parts.flat())));
   return out;
 }
 
@@ -55,7 +69,7 @@ export function prepareBasins8({ ms, RAW, TMP }) {
  * Taglia le province della zona sui bacini di livello 8. pid degli atomi: `${pid}~a${k}`.
  */
 export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, riverPath, riverModern }) {
-  const inBox = (f) => { const [x, y] = turf.centroid(f).geometry.coordinates; return x > ZONE_BBOX[0] && x < ZONE_BBOX[2] && y > ZONE_BBOX[1] && y < ZONE_BBOX[3]; };
+  const inBox = (f) => { const [x, y] = turf.centroid(f).geometry.coordinates; return ZONE_BOXES.some((b) => x > b[0] && x < b[2] && y > b[1] && y < b[3]); };
   const zone = [], rest = [];
   for (const f of fc.features) (inBox(f) ? zone : rest).push(f);
   const zp = path.join(TMP, 'atom_src.geojson');
@@ -74,7 +88,10 @@ export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, ri
     const A = turf.area(a) / 1e6;
     // solo nei paesi rifatti da questa fase in poi: le province già approvate non cambiano
     if (A < 3500 || !SPLIT_BIG.has(a.properties.modern)) { atoms.push(a); continue; }
-    const k = Math.ceil(A / 2000);
+    // nel deserto bastano pezzi grandi: le province lì saranno enormi
+    const piece = AFRICA_MODERN.has(a.properties.modern) && turf.centroid(a).geometry.coordinates[1] < 31.5 ? 12000 : 2000;
+    if (A < piece * 1.75) { atoms.push(a); continue; }
+    const k = Math.ceil(A / piece);
     const bb = turf.bbox(a);
     const pts = [];
     const step = Math.sqrt(((bb[2] - bb[0]) * (bb[3] - bb[1])) / 600);
@@ -208,7 +225,7 @@ export function topoMetrics(topo, geoms, riverNear = null) {
  * @param P pezzi ({area, owner, …}); key(p) vincolo rigido; soft(p) regione (vincolo morbido)
  * @returns array di gruppi (array di indici di pezzi)
  */
-export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, soft2 = () => '', softPenalty = () => 0.55, riverOwners = new Set(), log }) {
+export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, soft2 = () => '', softPenalty = () => 0.55, riverOwners = new Set(), aspectStrip = () => false, log }) {
   const { perim, shared, sharedRiver } = metrics;
   const inSet = new Set(atoms);
   const cl = new Map(); // id -> {ids:Set, A, Pm, nb: Map<clusterId, len>, key}
@@ -261,9 +278,15 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     if (small === null) break;
     const S = cl.get(small);
     let best = null, bs = -1;
+    // limiti della più piccola delle due scale: un atomo del deserto non gonfia una provincia abitata (e viceversa);
+    // se così non c'è nessun vicino possibile (un'oasi chiusa fra province desertiche), vale la scala più grande
+    for (const relaxed of [false, true]) {
+    if (best !== null) break;
     for (const [o, l] of S.nb) {
       const O = cl.get(o);
-      if (O.key !== S.key || O.A + S.A > max * S.f || span(union(O.bb, S.bb)) > maxSpan * Math.sqrt(S.f)) continue;
+      if (relaxed && S.f === O.f) continue;
+      const f = relaxed ? Math.max(S.f, O.f) : Math.min(S.f, O.f);
+      if (O.key !== S.key || O.A + S.A > max * f || span(union(O.bb, S.bb)) > maxSpan * Math.sqrt(f)) continue;
       const A = O.A + S.A, Pm = O.Pm + S.Pm - 2 * l;
       let sc = pp(A, Pm);
       if (softOf(O) !== softOf(S)) sc *= softPenalty(P[small]);
@@ -276,6 +299,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       // a parità di forma, meglio completare una provincia ancora piccola
       sc *= 1 + 0.25 * Math.max(0, 1 - O.A / (target * S.f));
       if (sc > bs) { bs = sc; best = o; }
+    }
     }
     if (best === null) { S.stuck = true; continue; }
     mergeInto(best, small);
@@ -345,9 +369,16 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     for (const i of ids) { A += P[i].area; Pm += perim[i]; for (const [j, l] of shared[i]) if (set.has(j)) Pm -= l; const b = turf.bbox(P[i].feat); bb = bb ? union(bb, b) : b; }
     return { A, Pm, bb };
   };
+  // riempimento: area / diagonale² (le coste frastagliate non contano); dove le province sono enormi (deserto)
+  // conta il lato più lungo, così anche un rettangolo 1:4 è una striscia
+  const maxSide = (bb) => Math.max(turf.distance([bb[0], (bb[1] + bb[3]) / 2], [bb[2], (bb[1] + bb[3]) / 2]), turf.distance([(bb[0] + bb[2]) / 2, bb[1]], [(bb[0] + bb[2]) / 2, bb[3]]));
+  const strictOf = (c) => aspectStrip(P[[...c.ids][0]]);
+  const fillv = (A, bb, strict) => (strict ? A / Math.max(1, maxSide(bb) ** 2) : A / Math.max(1, span(bb) ** 2));
+  const limit = (strict) => (strict ? 0.3 : 0.12);
   // striscia + vicino: atomi proiettati sull'asse dei due atomi più lontani, taglio alla mediana dell'area
   const resplit = (id, nbm) => {
     const c = cl.get(id);
+    const st = strictOf(c);
     for (const [o] of [...nbm.entries()].sort((a, b) => b[1] - a[1])) {
       const O = cl.get(o);
       if (O.key !== c.key || keepSmall(P[[...O.ids][0]])) continue;
@@ -366,8 +397,8 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       if (!g2.length || !connected(g1) || !connected(g2)) continue;
       const s1 = stats(g1), s2 = stats(g2);
       if (s1.A < min * 0.8 * c.f || s2.A < min * 0.8 * c.f) continue;
-      const f1 = s1.A / Math.max(1, span(s1.bb) ** 2), f2 = s2.A / Math.max(1, span(s2.bb) ** 2);
-      const before = Math.min(c.A / Math.max(1, span(c.bb) ** 2), O.A / Math.max(1, span(O.bb) ** 2));
+      const f1 = fillv(s1.A, s1.bb, st), f2 = fillv(s2.A, s2.bb, st);
+      const before = Math.min(fillv(c.A, c.bb, st), fillv(O.A, O.bb, st));
       if (Math.min(f1, f2) <= before + 0.03) continue;
       c.ids = new Set(g1); c.A = s1.A; c.Pm = s1.Pm; c.bb = s1.bb;
       O.ids = new Set(g2); O.A = s2.A; O.Pm = s2.Pm; O.bb = s2.bb;
@@ -378,9 +409,8 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     return false;
   };
   for (let pass = 0; pass < 3; pass++) {
-    // striscia: poca superficie rispetto all'estensione (area / diagonale²); le coste frastagliate non contano
-    const fill = (c) => c.A / Math.max(1, span(c.bb) ** 2);
-    const bad = [...cl.entries()].filter(([, c]) => c.ids.size && fill(c) < 0.12).sort((a, b) => fill(a[1]) - fill(b[1]));
+    const fill = (c) => fillv(c.A, c.bb, strictOf(c));
+    const bad = [...cl.entries()].filter(([, c]) => c.ids.size && fill(c) < limit(strictOf(c))).sort((a, b) => fill(a[1]) - fill(b[1]));
     for (const [id] of bad) {
       if (!cl.has(id)) continue;
       const c = cl.get(id);
@@ -392,7 +422,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       for (const [o, l] of nbm) {
         const O = cl.get(o);
         if (O.key !== c.key || O.A + c.A > max * 1.35 * O.f) continue;
-        const f2 = (O.A + c.A) / Math.max(1, span(union(O.bb, c.bb)) ** 2);
+        const f2 = fillv(O.A + c.A, union(O.bb, c.bb), strictOf(c));
         if (f2 > bs && f2 >= fill(O) * 0.7 && l > 5) { bs = f2; best = o; }
       }
       if (best === null) continue;
@@ -404,6 +434,21 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     }
   }
   if (strips) log(`${strips} province a striscia fuse col vicino`);
+  // enclavi: una provincia chiusa dentro un'altra dello stesso gruppo (nessuna costa, un solo vicino) le si unisce
+  let encl = 0;
+  for (const [id, c] of [...cl]) {
+    if (!cl.has(id) || keepSmall(P[[...c.ids][0]])) continue;
+    const nbm = clusterNb(id);
+    if (nbm.size !== 1) continue;
+    const [[o, l]] = [...nbm];
+    const O = cl.get(o);
+    if (O.key !== c.key || l < 0.9 * c.Pm) continue;
+    O.Pm = O.Pm + c.Pm - 2 * l; O.A += c.A; O.bb = union(O.bb, c.bb);
+    for (const i of c.ids) { O.ids.add(i); of.set(i, o); }
+    cl.delete(id);
+    encl++;
+  }
+  if (encl) log(`${encl} enclavi unite alla provincia che le circonda`);
 
   const groups = [...cl.values()].map((c) => [...c.ids]);
   const ppv = [...cl.values()].filter((c) => c.ids.size).map((c) => pp(c.A, c.Pm)).sort((a, b) => a - b);

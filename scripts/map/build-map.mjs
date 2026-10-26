@@ -29,13 +29,15 @@ import { buildHistoricalBase } from './historical.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED, POLISH_AREAS, ANACHRONISTIC } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
-import { atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
+import { AFRICA_MODERN, atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RAW = path.join(ROOT, 'data-raw');
 const TMP = path.join(RAW, 'tmp');
 const OUT = path.join(ROOT, 'public/data/europe1881.json');
-const LOCK_FILE = path.join(ROOT, 'scripts/map/lock/europe1881-v0.1.19.json');
+const LOCK_FILE = path.join(ROOT, 'scripts/map/lock/europe1881-v0.1.20.json');
+// nazioni approvate dall'utente: riprendono la divisione della mappa di riferimento
+const LOCK_OWNERS = new Set(['ITA', 'SMR', 'SWI', 'MCO', 'LIE', 'FRA', 'AUH', 'GER', 'DEN', 'NED', 'LUX', 'GBR', 'SPA', 'AND', 'SER', 'MNE', 'BUL', 'ROM', 'POR']);
 const BBOX = [-11, 27, 50, 71];
 
 const NE = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/';
@@ -63,12 +65,33 @@ const IT_REG = { Molise: 'Abruzzo', "Valle d'Aosta": 'Piemonte' };
 // densità 1881 (ab/km²): Italia ~100, Spagna ~33, Romania ~40, Serbia ~36, Bulgaria ~30, Grecia ~30, Rumelia ottomana ~25
 // nei Balcani un po' più fitte di quanto direbbe la densità: è un teatro conteso e serve dettaglio
 const SIZE_SCALE = { SPA: 1.7, ROM: 1.2, SER: 1.1, BUL: 1.2, GRE: 1.2, TUR: 1.25, POR: 1.0 };
-const FREE_OWNERS = new Set(['SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR']);
+const FREE_OWNERS = new Set(['SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR', 'MOR', 'TUN', 'EGY']);
+// Nord Africa: dimensione dalla densità delle località (GeoNames) attorno all'atomo; deserto = province enormi
+const AFRICA_BASE = { EGY: 0.9, TUN: 1.0, MOR: 1.5, FRA: 1.3, TUR: 1.5 };
+
 const RIVER_MODERN = new Set(['SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR', 'PRT']);
 // fiumi che fanno da confine naturale fra province (Balcani e Portogallo); il Danubio è già confine di stato
 const CUT_RIVERS = new Set(['Morava', 'Maritsa', 'Evros', 'Olt', 'Haliacmon', 'Struma', 'Mesta', 'Tundža', 'Iskăr', 'Jiu', 'Argeș', 'Siret', 'Drin', 'Aspropotamo', 'Fiume Peneo',
   'Jantra', 'Timok', 'Ialomița', 'Ialomita', 'Vedea', 'Arda', 'Morava occidentale', 'Voiussa', 'Fiume Devoli', 'Kamchiya', 'Ergene', 'Buzău', 'Ogosta', 'Lim', 'Sitnica',
   'Tajo', 'Tagus', 'Duero', 'Guadiana', 'Mondego', 'Zêzere', 'Sado', 'Sorraia']);
+// località di GeoNames (CC BY 4.0) con almeno 1.000 abitanti, lette una volta sola
+let geoCache = null;
+function geoCities() {
+  if (geoCache) return geoCache;
+  const p = path.join(RAW, 'geonames', 'cities500.json');
+  geoCache = fs.existsSync(p) ? readJSON(p).map((c) => ({ name: c.name, lon: Number(c.lon), lat: Number(c.lat), pop: Number(c.pop) })).filter((c) => c.pop >= 1000) : [];
+  return geoCache;
+}
+// canale di Suez dalle linee di Natural Earth
+function suezCanal() {
+  const p = path.join(TMP, 'rivers.geojson');
+  if (!fs.existsSync(p)) return null;
+  const lines = readJSON(p).features.filter((f) => f.properties.name === 'Suez Canal').flatMap((f) => (f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates));
+  if (!lines.length) return null;
+  // le due bocche fino al mare aperto (Port Tewfik e Porto Said), così il Sinai è davvero staccato
+  lines.push([[32.5777, 30.0114], [32.567, 29.93], [32.56, 29.86]], [[32.3139, 31.2727], [32.32, 31.34]]);
+  return lines;
+}
 const riverLines = (features) => features.filter((f) => CUT_RIVERS.has(f.properties.name) || (f.properties.name == null && f.properties.rank <= 7 && (() => { const c = turf.centroid(f).geometry.coordinates; return c[0] > 19 && c[0] < 30 && c[1] < 44.5; })()));
 const ES_NATION = { 'Cataluña': 'ca', 'País Vasco': 'eu', 'Foral de Navarra': 'eu', Galicia: 'gl' };
 const GB_NATION = { 'Highlands and Islands': 'sco', 'North Eastern': 'sco', Eastern: 'sco', 'South Western': 'sco', 'West Wales and the Valleys': 'cym', 'East Wales': 'cym', 'Northern Ireland': 'ni' };
@@ -76,7 +99,7 @@ const ZONE_MIN = 2800;      // km2: province compatte della zona italiana
 const ZONE_TARGET = 4500;
 const ZONE_MAX = 7500;
 // città importanti nel 1881 assenti da Natural Earth (servono a dare il nome alle province)
-const EXTRA_PLACES = [['Gorizia', 13.62, 45.94, 21000], ['Knin', 16.2, 44.04, 8000]];
+const EXTRA_PLACES = [['Gorizia', 13.62, 45.94, 21000], ['Knin', 16.2, 44.04, 8000], ['Porto Said', 32.29, 31.25, 17000], ['Ismailia', 32.27, 30.59, 10000]];
 const STRAIT_KM = 45;       // distanza massima per uno stretto attraversabile
 
 const log = (...a) => console.log('[map]', ...a);
@@ -457,6 +480,14 @@ async function main() {
   for (const f of prov.features) turf.rewind(f, { mutate: true });
   fs.writeFileSync(path.join(TMP, 'prov_split_raw.geojson'), JSON.stringify(prov));
   ms(path.join(TMP, 'prov_split_raw.geojson'), '-clean', '-o', path.join(TMP, 'prov_split.geojson'));
+  // canale di Suez (aperto nel 1869): una fascia d'acqua separa l'Africa dal Sinai; si attraversa come uno stretto
+  const canal = suezCanal();
+  if (canal) {
+    const cp = path.join(TMP, 'canal.geojson');
+    fs.writeFileSync(cp, JSON.stringify(turf.featureCollection([turf.buffer(turf.multiLineString(canal), 1.2, { units: 'kilometers', steps: 4 })])));
+    ms(path.join(TMP, 'prov_split.geojson'), '-erase', cp, '-explode', '-o', 'force', path.join(TMP, 'prov_split.geojson'));
+    log('canale di Suez tagliato');
+  }
   // zona italiana: atomi piccoli (unità amministrative x bacini di livello 8) da raggruppare in province compatte
   const b8 = prepareBasins8({ ms, RAW, TMP });
   if (b8) {
@@ -464,13 +495,22 @@ async function main() {
     const rivFe = readJSON(path.join(TMP, 'rivers.geojson')).features;
     const lineOf = (name, start) => { for (const f of rivFe) { if (f.properties.name !== name) continue; for (const l of f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates) if (Math.abs(l[0][0] - start[0]) < 0.01 && Math.abs(l[0][1] - start[1]) < 0.01) return l; } return null; };
     const up = lineOf('Rhein', [8.881114, 47.656358]), down = lineOf('Rhine', [8.229991, 48.965399]);
-    let cutPath = null;
+    const cuts = [];
     if (up && down) {
       const line = [...up, ...down.slice(1)];
       const end = line[line.length - 1];
-      cutPath = path.join(TMP, 'cut.geojson');
-      fs.writeFileSync(cutPath, JSON.stringify(turf.featureCollection([turf.polygon([[...line, [3.5, end[1]], [3.5, 47.3], [line[0][0], 47.3], line[0]]], { cutSide: 1 })])));
+      cuts.push(turf.polygon([[...line, [3.5, end[1]], [3.5, 47.3], [line[0][0], 47.3], line[0]]], { cutSide: 1 }));
     }
+    // valle e delta del Nilo: gli atomi si fermano dove finisce la terra coltivata (lì vive quasi tutto l'Egitto)
+    const nile = rivFe.filter((f) => ['Nile', 'Nilo', 'Rosetta Branch', 'Damietta Branch'].includes(f.properties.name));
+    if (nile.length) {
+      let valley = turf.polygon([[[31.25, 30.1], [30.05, 31.35], [31.0, 31.6], [31.9, 31.55], [32.15, 31.2], [31.25, 30.1]]]); // delta
+      for (const f of nile) valley = turf.union(turf.featureCollection([valley, turf.buffer(f, 25, { units: 'kilometers', steps: 3 })])) || valley;
+      valley = turf.union(turf.featureCollection([valley, turf.circle([30.75, 29.35], 28, { units: 'kilometers', steps: 16 })])) || valley; // Fayyum
+      cuts.push({ ...valley, properties: { nile: 1 } });
+    }
+    let cutPath = null;
+    if (cuts.length) { cutPath = path.join(TMP, 'cut.geojson'); fs.writeFileSync(cutPath, JSON.stringify(turf.featureCollection(cuts))); }
     // fiumi maggiori dei Balcani e del Portogallo: diventano confini naturali (fascia di 0,5 km)
     const riverPath = path.join(TMP, 'strips.geojson');
     const strips = riverLines(rivFe).map((f) => turf.buffer(f, 0.25, { units: 'kilometers', steps: 2 })).filter(Boolean).map((f) => ({ ...f, properties: { riv: 1 } }));
@@ -649,11 +689,12 @@ async function main() {
       for (const i of zoneIdx) P[i].rhine = rhine(P[i]);
       // nazioni approvate: stessa divisione della mappa di riferimento (scripts/map/lock)
       const lock = process.env.MAP_LOCK === '0' ? null : loadLock(LOCK_FILE);
+      const lockable = (p) => LOCK_OWNERS.has(p.owner) && !AFRICA_MODERN.has(p.modern);
       const lockOf = new Map();
       if (lock) {
         for (const i of zoneIdx) {
           const p = P[i];
-          if (FREE_OWNERS.has(p.owner) || p.prot || ['trieste', 'fiume'].includes(p.claim)) continue; // microstati e città libere seguono le loro regole
+          if (!lockable(p) || p.prot || ['trieste', 'fiume'].includes(p.claim)) continue; // microstati e città libere seguono le loro regole
           const bb = turf.bbox(p.feat), votes = new Map();
           const pts = [turf.pointOnFeature(p.feat).geometry.coordinates];
           for (let a = 1; a < 5; a++) for (let b = 1; b < 5; b++) { const q = [bb[0] + ((bb[2] - bb[0]) * a) / 5, bb[1] + ((bb[3] - bb[1]) * b) / 5]; if (turf.booleanPointInPolygon(q, p.feat)) pts.push(q); }
@@ -663,7 +704,7 @@ async function main() {
         }
         // atomi senza corrispondenza (coste ritoccate): al vicino bloccato dello stesso stato
         for (let pass = 0; pass < 6; pass++) for (const i of zoneIdx) {
-          if (FREE_OWNERS.has(P[i].owner) || lockOf.has(i) || P[i].prot || ['trieste', 'fiume'].includes(P[i].claim)) continue;
+          if (!lockable(P[i]) || lockOf.has(i) || P[i].prot || ['trieste', 'fiume'].includes(P[i].claim)) continue;
           const c = new Map();
           for (const j of nbr[i]) if (lockOf.has(j) && P[j].owner === P[i].owner) c.set(lockOf.get(j), (c.get(lockOf.get(j)) || 0) + 1);
           const best = [...c.entries()].sort((x, y) => y[1] - x[1])[0];
@@ -672,7 +713,7 @@ async function main() {
         // isolette cancellate dalla semplificazione della mappa di riferimento: alla provincia bloccata più vicina
         const lockedList = [...lockOf.keys()];
         for (const i of zoneIdx) {
-          if (FREE_OWNERS.has(P[i].owner) || lockOf.has(i) || P[i].prot || ['trieste', 'fiume'].includes(P[i].claim)) continue;
+          if (!lockable(P[i]) || lockOf.has(i) || P[i].prot || ['trieste', 'fiume'].includes(P[i].claim)) continue;
           let best = null, bd = 80;
           for (const j of lockedList) if (P[j].owner === P[i].owner && P[j].claim === P[i].claim && P[j].langKey === P[i].langKey && (P[j].feat.properties.rhineW || 0) === (P[i].feat.properties.rhineW || 0)) { const d = turf.distance(cent[i], cent[j]); if (d < bd) { bd = d; best = j; } }
           if (best != null) lockOf.set(i, lockOf.get(best));
@@ -683,22 +724,52 @@ async function main() {
         log(`province bloccate: ${lg.size} dalla mappa approvata (${lockOf.size} atomi)`);
       }
       const freeIdx = zoneIdx.filter((i) => !lockOf.has(i));
+      // Nord Africa: densità di località moderne entro 30 km (abitanti per km², solo indicativa)
+      // Eubea: isola a sé, non una striscia con la costa della Locride (la parte del poligono di Natural Earth che contiene Calcide est)
+      const euboea = (() => { const h = readJSON(path.join(RAW, 'ne_admin1.geojson')).features.find((f) => f.properties.iso_3166_2 === 'GR-H'); if (!h) return null; const parts = h.geometry.type === 'MultiPolygon' ? h.geometry.coordinates.map((c) => turf.polygon(c)) : [turf.polygon(h.geometry.coordinates)]; return parts.find((q) => turf.booleanPointInPolygon([23.9, 38.55], q)) || null; })();
+      const isle = (p) => (euboea && (p.owner === 'GRE' || p.modern === 'GRC') && turf.booleanPointInPolygon(turf.pointOnFeature(p.feat), euboea) ? 'eubea' : '');
+      const dens = new Map();
+      {
+        const CELL = 0.5, grid = new Map();
+        for (const c of geoCities()) { const k = `${Math.floor(c.lon / CELL)},${Math.floor(c.lat / CELL)}`; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(c); }
+        for (const i of freeIdx) {
+          if (!AFRICA_MODERN.has(P[i].modern)) continue;
+          const [x, y] = cent[i]; let sum = 0;
+          for (let gx = Math.floor(x / CELL) - 1; gx <= Math.floor(x / CELL) + 1; gx++) for (let gy = Math.floor(y / CELL) - 1; gy <= Math.floor(y / CELL) + 1; gy++)
+            for (const c of grid.get(`${gx},${gy}`) || []) if (turf.distance([x, y], [c.lon, c.lat]) < 30) sum += c.pop;
+          dens.set(i, sum / (Math.PI * 900));
+        }
+      }
+      const eco = (p) => (p.feat.properties.nile ? 'nilo' : (dens.get(p.i) ?? 99) < 5 ? 'deserto' : 'abitato');
+      const africaScale = (p) => {
+        if (p.feat.properties.nile) return 0.9;
+        const d = dens.get(p.i) ?? 99, b = AFRICA_BASE[p.owner] ?? 2;
+        // le oasi stanno dentro le province del deserto (niente enclavi fra una classe e l'altra)
+        return d >= 80 ? b : d >= 20 ? b * 1.5 : d >= 5 ? b * 2.5 : 24;
+      };
+      if (dens.size) { const h = {}; for (const [i, d] of dens) { const k = `${P[i].owner}:${d >= 80 ? 'a' : d >= 20 ? 'b' : d >= 5 ? 'c' : 'e'}`; h[k] = (h[k] || 0) + Math.round(P[i].area); } log('densità Nord Africa (km² per classe)', JSON.stringify(h)); }
       const groups = compactClusters(freeIdx, P, metrics, {
         // la contea di Gorizia resta unita anche a cavallo del confine italo-sloveno di oggi
         // Balcani e Portogallo: niente linee rigide (né confini moderni né vilayet), solo preferenze
-        key: (p) => `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : FREE_OWNERS.has(p.owner) ? '' : p.modern}|${lang(p)}|${p.prot || ''}|${FREE_OWNERS.has(p.owner) ? '' : claim(p)}|${p.rhine}`,
-        soft2: (p) => (FREE_OWNERS.has(p.owner) ? p.modern : ''),
+        // Grecia moderna e Kosovo: linee rigide anche dentro l'Impero ottomano (aree di rivendicazione greca e serba/albanese)
+        key: (p) => `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : FREE_OWNERS.has(p.owner) ? (p.owner === 'TUR' && ['GRC', 'KOS', 'ALB'].includes(p.modern) ? p.modern : '') : p.modern}|${lang(p)}|${p.prot || ''}|${FREE_OWNERS.has(p.owner) ? '' : claim(p)}|${p.rhine}|${isle(p)}|${p.modern === 'EGY' && p.feat.properties.nile ? 'nilo' : ''}`,
+        soft2: (p) => (AFRICA_MODERN.has(p.modern) ? eco(p) : FREE_OWNERS.has(p.owner) ? p.modern : ''),
         riverOwners: FREE_OWNERS,
+        aspectStrip: (p) => AFRICA_MODERN.has(p.modern),
         looseKey: (p) => `${p.owner}|${lang(p)}|${p.prot || ''}|${['costa', 'interno'].includes(claim(p)) ? 'dalmazia' : claim(p)}|${p.rhine}`,
         soft: (p) => regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
         min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
         keepSmall: (p) => !!p.prot || ['trieste', 'fiume'].includes(claim(p)),
         // controllo delle strisce più severo dove non c'è già una mappa approvata
-        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR']),
+        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR', 'MOR', 'TUN', 'EGY', 'FRA']),
         // terre poco popolate, province più grandi (radice del rapporto di densità con l'Italia del 1881)
-        sizeScale: (p) => SIZE_SCALE[p.owner] ?? 1,
+        // il Kosovo in tre province (Priştine, İpek, Prizren) invece di una sola
+        sizeScale: (p) => (AFRICA_MODERN.has(p.modern) ? africaScale(p) : p.owner === 'TUR' && p.modern === 'KOS' ? 0.8 : p.owner === 'TUR' && p.modern === 'ALB' ? 0.9 : SIZE_SCALE[p.owner] ?? 1),
       });
       for (const g of groups) for (const i of g.slice(1)) join(g[0], i);
+      // un'isola con chiave propria (Eubea) resta una provincia sola anche se lunga
+      const isles = new Map();
+      for (const i of freeIdx) { const k = isle(P[i]); if (!k) continue; if (isles.has(k)) join(isles.get(k), i); else isles.set(k, i); }
     }
   }
 
@@ -772,8 +843,8 @@ async function main() {
         const k = `${x},${y}`; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(p);
       }
     }
-    for (const c of readJSON(geoPath)) {
-      const pop = Number(c.pop), lon = Number(c.lon), lat = Number(c.lat);
+    for (const c of geoCities()) {
+      const { pop, lon, lat } = c;
       if (pop < 1000 || ANACHRONISTIC.has(c.name)) continue;
       for (const p of grid.get(`${Math.floor(lon / CELL)},${Math.floor(lat / CELL)}`) || []) {
         const bb = p.bb;
@@ -931,7 +1002,25 @@ async function main() {
     return t.total - Object.entries(t).filter(([k]) => k !== 'total').reduce((s, [, v]) => s + v, 0);
   };
   const byPool = new Map();
-  for (const p of provinces) { const w = p.modernPop + p.info.area * 0.15; p.w = w; const k = poolOf(p); byPool.set(k, (byPool.get(k) || 0) + w); }
+  // Nord Africa: peso dalle località di GeoNames (anche i villaggi, la popolazione del 1881 era soprattutto rurale);
+  // nel deserto la superficie non porta abitanti
+  {
+    const af = provinces.filter((p) => AFRICA_MODERN.has(p.info.modern));
+    for (const p of af) p.gsum = 0;
+    for (const c of geoCities()) {
+      if (c.lat > 37.6 || c.lon > 35.5) continue;
+      for (const p of af) {
+        const bb = p.bb || (p.bb = turf.bbox(p.f));
+        if (c.lon < bb[0] || c.lon > bb[2] || c.lat < bb[1] || c.lat > bb[3]) continue;
+        if (turf.booleanPointInPolygon([c.lon, c.lat], p.f)) { p.gsum += Math.sqrt(c.pop); break; }
+      }
+    }
+  }
+  for (const p of provinces) {
+    let w;
+    if (p.gsum != null) { const a = Math.max(1, p.info.area); w = p.gsum + a * 0.15 * Math.min(1, Math.max(0.02, (p.gsum / a) * 5)); }
+    else w = p.modernPop + p.info.area * 0.15;
+    p.w = w; const k = poolOf(p); byPool.set(k, (byPool.get(k) || 0) + w); }
   for (const p of provinces) {
     const k = poolOf(p); const tot = poolTotal(k);
     p.pop = tot != null ? Math.round((tot * p.w) / byPool.get(k)) : Math.round(p.info.area * 2);
@@ -1045,6 +1134,8 @@ async function main() {
 
   // output: geometria proiettata come anelli interi (km), condivisi tramite archi
   const parr = arcs.map((arc) => arc.map((c) => laea(c).map((v) => Math.round(v * 10) / 10)));
+  // linee (canali) con la stessa codifica degli archi
+  const flatArc = (line) => { const flat = []; let px = 0, py = 0; for (const c of line) { const [x, y] = laea(c); const ix = Math.round(x * 10), iy = Math.round(y * 10); flat.push(ix - px, iy - py); px = ix; py = iy; } return flat; };
   const outArcs = parr.map((arc) => { const flat = []; let px = 0, py = 0; for (const [x, y] of arc) { const ix = Math.round(x * 10), iy = Math.round(y * 10); flat.push(ix - px, iy - py); px = ix; py = iy; } return flat; });
   const arcSides = arcUse.map((u) => (u.length === 2 ? [u[0], u[1]] : [u[0] ?? -1, -1]));
 
@@ -1106,6 +1197,7 @@ async function main() {
       _region: p.info.region,
     })),
     straits: strList,
+    canals: canal ? canal.map((line) => ({ name: 'Canale di Suez', pts: flatArc(line) })) : [],
     rivers: riverEdges,
   };
   // nomi d'epoca al posto dei nomi moderni

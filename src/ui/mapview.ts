@@ -3,7 +3,7 @@
 
 import { decodeArcs, provinceRings } from '../engine/map';
 import { unitPosition } from '../engine/orders';
-import type { Unit } from '../engine/types';
+import type { MapData, Unit } from '../engine/types';
 import type { World } from '../engine/world';
 
 export const INK = '#1f2a33';
@@ -47,6 +47,8 @@ export class MapView {
   /** province troppo piccole per la geometria: disegnate come simbolo */
   private tiny: number[] = [];
   private dpr = 1;
+  /** canali (Suez): sempre visibili, disegnati come acqua */
+  private canals: { name: string; path: Path2D; mid: [number, number] }[] = [];
 
   constructor(canvas: HTMLCanvasElement, world: World, private cb: MapCallbacks) {
     this.canvas = canvas;
@@ -76,6 +78,13 @@ export class MapView {
     });
     world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) this.coast.addPath(this.arcPaths[i]); });
     this.tiny = world.map.provinces.filter((p) => p.tiny).map((p) => p.id);
+    for (const c of world.map.data.canals ?? []) {
+      const [pts] = decodeArcs({ arcs: [c.pts] } as MapData);
+      const path = new Path2D();
+      for (let i = 0; i < pts.length; i += 2) if (i === 0) path.moveTo(pts[i], pts[i + 1]); else path.lineTo(pts[i], pts[i + 1]);
+      const m = (pts.length >> 2) << 1;
+      this.canals.push({ name: c.name, path, mid: [pts[m], pts[m + 1]] });
+    }
     this.refreshPolitical();
     this.bindInput();
     new ResizeObserver(() => this.resize()).observe(canvas);
@@ -294,6 +303,15 @@ export class MapView {
       ctx.stroke(this.phys.lakes);
     }
 
+    // canali: acqua con un filo d'inchiostro ai lati
+    if (this.canals.length) {
+      ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+      for (const c of this.canals) {
+        ctx.strokeStyle = 'rgba(31,42,51,0.6)'; ctx.lineWidth = 4.2 / k; ctx.stroke(c.path);
+        ctx.strokeStyle = SEA; ctx.lineWidth = 2.6 / k; ctx.stroke(c.path);
+      }
+    }
+
     if (k > 0.35) {
       ctx.strokeStyle = 'rgba(31,42,51,0.28)';
       ctx.lineWidth = 0.7 / k;
@@ -372,6 +390,21 @@ export class MapView {
         if (taken.some((b) => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]))) continue;
         taken.push(box);
         ctx.fillText(p.name, x, y + 16);
+      }
+    }
+
+    // nome del canale, da vicino (una volta sola anche se il canale ha più tratti)
+    if (k >= 0.7) {
+      const seen = new Set<string>();
+      ctx.font = 'italic 500 11px Alegreya, Georgia, serif';
+      ctx.fillStyle = 'rgba(40,82,120,0.9)';
+      for (const c of this.canals) {
+        if (seen.has(c.name)) continue;
+        seen.add(c.name);
+        const [x, y] = this.worldToScreen(c.mid[0], c.mid[1]);
+        ctx.textAlign = 'left';
+        ctx.fillText(c.name, x + 8, y);
+        ctx.textAlign = 'center';
       }
     }
 

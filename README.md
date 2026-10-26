@@ -15,7 +15,7 @@ Il principio del progetto è **il modello propone, il codice dispone**.
 
 | Livello | Dove | Cosa fa |
 | --- | --- | --- |
-| Mappa | `scripts/map/` → `public/data/europe1881.json` | 1.472 province compatte, con microstati e possedimenti (Gibilterra, Helgoland, San Marino, Monaco…): unità amministrative d'epoca (HistoGIS per Prussia, Baviera, Baden e Cisleitania; RISTAT per l'Impero russo) e, altrove, Natural Earth; proprietari dai confini 1880 di historical-basemaps, verificati su 116 località storiche |
+| Mappa | `scripts/map/` → `public/data/europe1881.json` | 1.422 province compatte, con microstati e possedimenti (Gibilterra, Helgoland, San Marino, Monaco…): unità amministrative d'epoca (HistoGIS per Prussia, Baviera, Baden e Cisleitania; RISTAT per l'Impero russo) e, altrove, Natural Earth; proprietari dai confini 1880 di historical-basemaps, verificati su 118 località storiche |
 | Motore | `src/engine/` | movimento giorno per giorno tra province, ferrovie, stretti, rifornimenti, combattimento riproducibile, economia, politiche interne, trattati, guerre, riflessi delle nazioni non giocanti |
 | AI | `src/llm/` | Game Master (direttive → ordini validati, dispaccio di fine turno, mosse delle altre nazioni entro limiti), agenti-nazione con profilo e regole di comportamento, memoria a livelli |
 | Interfaccia | `src/ui/` | mappa su canvas, pannelli Esercito, Diplomazia, Governo, Dispacci; tutto il calcolo resta nel motore |

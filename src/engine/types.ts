@@ -14,6 +14,8 @@ export interface MapData {
   straits: [number, number, number][];
   /** confini che corrono lungo un fiume: [a, b, nome] */
   rivers?: [number, number, string][];
+  /** canali navigabili (Suez): linee con la stessa codifica degli archi */
+  canals?: { name: string; pts: number[] }[];
 }
 
 export interface ProvinceData {
