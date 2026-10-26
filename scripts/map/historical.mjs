@@ -38,6 +38,7 @@ const DE_IT = {
   Troppau: 'Troppau', Czernowitz: 'Czernowitz', Teschen: 'Teschen', Pilsen: 'Pilsen', Budweis: 'Budweis', Reichenberg: 'Reichenberg', Eger: 'Eger',
 };
 
+const TRENTINO_DISTRICTS = new Set(['Trient', 'Rovereto', 'Riva', 'Tione', 'Cles', 'Borgo', 'Primiero', 'Cavalese', 'Mezzolombardo']);
 const clean = (n) => String(n || '').replace(/\s*\((Stadt|Landbezirk|Umgebung|Land|Stadt und Land)\)/g, '').replace(/^Stadt\s+/, '').trim();
 const ruParent = (s) => String(s).replace(/ (governorate|region|oblast)( incl\..*)?$/i, '').replace(/ Cossack host lands/, ' (Cosacchi del Don)').trim();
 // Nome dell'uezd: è l'aggettivo della sua città ("Novgorodskii" -> "Novgorod"). Le forme irregolari
@@ -148,6 +149,8 @@ export function buildHistoricalBase({ ms, RAW, TMP, BBOX, provPath, places, exo,
       } else {
         parent = L.parentName || parents.find((q) => inside(pt, q))?.properties.name || parents.map((q) => [q, turf.distance(pt, turf.centroid(q))]).sort((a, b) => a[1] - b[1])[0]?.[0].properties.name || '?';
         parent = PARENT_IT[parent] || parent;
+        // il Trentino (distretti di lingua italiana del Tirolo) è un contenitore a sé: non si accorpa con l'Alto Adige
+        if (parent === 'Gefürstete Grafschaft Tirol' && TRENTINO_DISTRICTS.has(clean(p.name))) parent = 'Trentino';
         id = `${L.src}${p.hid}`;
         const n = clean(p.name);
         name = DE_IT[n] || exo(n);
