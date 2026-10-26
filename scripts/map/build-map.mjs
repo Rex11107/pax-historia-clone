@@ -28,12 +28,14 @@ import { prepareBasins, splitByBasins } from './basins.mjs';
 import { buildHistoricalBase } from './historical.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED, POLISH_AREAS, ANACHRONISTIC } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
+import { loadLock } from './lock.mjs';
 import { atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RAW = path.join(ROOT, 'data-raw');
 const TMP = path.join(RAW, 'tmp');
 const OUT = path.join(ROOT, 'public/data/europe1881.json');
+const LOCK_FILE = path.join(ROOT, 'scripts/map/lock/europe1881-v0.1.19.json');
 const BBOX = [-11, 27, 50, 71];
 
 const NE = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/';
@@ -59,7 +61,15 @@ const IT_COMP = { 'IT-RI': 'Umbria', 'IT-AO': 'Piemonte', 'IT-UD': 'Veneto', 'IT
 const IT_REG = { Molise: 'Abruzzo', "Valle d'Aosta": 'Piemonte' };
 // nazioni costitutive del Regno Unito (regioni di Natural Earth)
 // densità 1881 (ab/km²): Italia ~100, Spagna ~33, Romania ~40, Serbia ~36, Bulgaria ~30, Grecia ~30, Rumelia ottomana ~25
-const SIZE_SCALE = { SPA: 1.7, ROM: 1.5, SER: 1.5, BUL: 1.6, GRE: 1.6, TUR: 1.6 };
+// nei Balcani un po' più fitte di quanto direbbe la densità: è un teatro conteso e serve dettaglio
+const SIZE_SCALE = { SPA: 1.7, ROM: 1.2, SER: 1.1, BUL: 1.2, GRE: 1.2, TUR: 1.25, POR: 1.0 };
+const FREE_OWNERS = new Set(['SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR']);
+const RIVER_MODERN = new Set(['SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR', 'PRT']);
+// fiumi che fanno da confine naturale fra province (Balcani e Portogallo); il Danubio è già confine di stato
+const CUT_RIVERS = new Set(['Morava', 'Maritsa', 'Evros', 'Olt', 'Haliacmon', 'Struma', 'Mesta', 'Tundža', 'Iskăr', 'Jiu', 'Argeș', 'Siret', 'Drin', 'Aspropotamo', 'Fiume Peneo',
+  'Jantra', 'Timok', 'Ialomița', 'Ialomita', 'Vedea', 'Arda', 'Morava occidentale', 'Voiussa', 'Fiume Devoli', 'Kamchiya', 'Ergene', 'Buzău', 'Ogosta', 'Lim', 'Sitnica',
+  'Tajo', 'Tagus', 'Duero', 'Guadiana', 'Mondego', 'Zêzere', 'Sado', 'Sorraia']);
+const riverLines = (features) => features.filter((f) => CUT_RIVERS.has(f.properties.name) || (f.properties.name == null && f.properties.rank <= 7 && (() => { const c = turf.centroid(f).geometry.coordinates; return c[0] > 19 && c[0] < 30 && c[1] < 44.5; })()));
 const ES_NATION = { 'Cataluña': 'ca', 'País Vasco': 'eu', 'Foral de Navarra': 'eu', Galicia: 'gl' };
 const GB_NATION = { 'Highlands and Islands': 'sco', 'North Eastern': 'sco', Eastern: 'sco', 'South Western': 'sco', 'West Wales and the Valleys': 'cym', 'East Wales': 'cym', 'Northern Ireland': 'ni' };
 const ZONE_MIN = 2800;      // km2: province compatte della zona italiana
@@ -461,7 +471,11 @@ async function main() {
       cutPath = path.join(TMP, 'cut.geojson');
       fs.writeFileSync(cutPath, JSON.stringify(turf.featureCollection([turf.polygon([[...line, [3.5, end[1]], [3.5, 47.3], [line[0][0], 47.3], line[0]]], { cutSide: 1 })])));
     }
-    const atoms = atomize(readJSON(path.join(TMP, 'prov_split.geojson')), { ms, TMP, basinsPath: b8, log, cutPath, modernLayer: readJSON(path.join(TMP, 'prov.geojson')).features });
+    // fiumi maggiori dei Balcani e del Portogallo: diventano confini naturali (fascia di 0,5 km)
+    const riverPath = path.join(TMP, 'strips.geojson');
+    const strips = riverLines(rivFe).map((f) => turf.buffer(f, 0.25, { units: 'kilometers', steps: 2 })).filter(Boolean).map((f) => ({ ...f, properties: { riv: 1 } }));
+    fs.writeFileSync(riverPath, JSON.stringify(turf.featureCollection(strips)));
+    const atoms = atomize(readJSON(path.join(TMP, 'prov_split.geojson')), { ms, TMP, basinsPath: b8, log, cutPath, riverPath, riverModern: RIVER_MODERN, modernLayer: readJSON(path.join(TMP, 'prov.geojson')).features });
     fs.writeFileSync(path.join(TMP, 'prov_split.geojson'), JSON.stringify(atoms));
   }
 
@@ -593,7 +607,16 @@ async function main() {
   {
     const zoneIdx = P.filter((p) => p.zone).map((p) => p.i);
     if (zoneIdx.length) {
-      const metrics = topoMetrics(topo, geoms);
+      // vicinanza ai fiumi maggiori (griglia di punti ogni ~1 km)
+      const RC = 0.05, rgrid = new Map();
+      for (const f of riverLines(readJSON(path.join(TMP, 'rivers.geojson')).features)) for (const line of f.geometry.type === 'LineString' ? [f.geometry.coordinates] : f.geometry.coordinates) {
+        for (let k = 1; k < line.length; k++) {
+          const [a, b] = [line[k - 1], line[k]]; const n = Math.max(1, Math.ceil(turf.distance(a, b)));
+          for (let t = 0; t <= n; t++) { const pt = [a[0] + ((b[0] - a[0]) * t) / n, a[1] + ((b[1] - a[1]) * t) / n]; const key = `${Math.floor(pt[0] / RC)},${Math.floor(pt[1] / RC)}`; if (!rgrid.has(key)) rgrid.set(key, []); rgrid.get(key).push(pt); }
+        }
+      }
+      const riverNear = (x, y) => { const gx = Math.floor(x / RC), gy = Math.floor(y / RC); for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 1; dy++) for (const pt of rgrid.get(`${gx + dx},${gy + dy}`) || []) if (turf.distance([x, y], pt) < 1.2) return true; return false; };
+      const metrics = topoMetrics(topo, geoms, riverNear);
       // aree linguistiche (approssimate) che una rivendicazione dell'epoca separerebbe
       const SK_HU = [[17.0, 48.0], [17.8, 48.2], [18.3, 48.12], [18.8, 48.12], [19.4, 48.22], [20.0, 48.35], [20.6, 48.52], [21.3, 48.42], [22.6, 48.42]];
       const southOf = ([lon, lat], line) => { for (let i = 1; i < line.length; i++) if (lon <= line[i][0] || i === line.length - 1) { const [x0, y0] = line[i - 1], [x1, y1] = line[i]; return lat < y0 + ((Math.max(x0, Math.min(lon, x1)) - x0) / (x1 - x0)) * (y1 - y0); } return false; };
@@ -624,15 +647,54 @@ async function main() {
       // il Reno come confine: le province tedesche non lo scavalcano (riva sinistra e riva destra)
       const rhine = (p) => (p.owner === 'GER' ? (p.feat.properties.rhineW ? 'sx' : 'dx') : '');
       for (const i of zoneIdx) P[i].rhine = rhine(P[i]);
-      const groups = compactClusters(zoneIdx, P, metrics, {
+      // nazioni approvate: stessa divisione della mappa di riferimento (scripts/map/lock)
+      const lock = process.env.MAP_LOCK === '0' ? null : loadLock(LOCK_FILE);
+      const lockOf = new Map();
+      if (lock) {
+        for (const i of zoneIdx) {
+          const p = P[i];
+          if (FREE_OWNERS.has(p.owner) || p.prot || ['trieste', 'fiume'].includes(p.claim)) continue; // microstati e città libere seguono le loro regole
+          const bb = turf.bbox(p.feat), votes = new Map();
+          const pts = [turf.pointOnFeature(p.feat).geometry.coordinates];
+          for (let a = 1; a < 5; a++) for (let b = 1; b < 5; b++) { const q = [bb[0] + ((bb[2] - bb[0]) * a) / 5, bb[1] + ((bb[3] - bb[1]) * b) / 5]; if (turf.booleanPointInPolygon(q, p.feat)) pts.push(q); }
+          for (const q of pts) { const pr = lock.locate(q, p.owner); if (pr) votes.set(pr.id, (votes.get(pr.id) || 0) + 1); }
+          const best = [...votes.entries()].sort((x, y) => y[1] - x[1])[0];
+          if (best) lockOf.set(i, best[0]);
+        }
+        // atomi senza corrispondenza (coste ritoccate): al vicino bloccato dello stesso stato
+        for (let pass = 0; pass < 6; pass++) for (const i of zoneIdx) {
+          if (FREE_OWNERS.has(P[i].owner) || lockOf.has(i) || P[i].prot || ['trieste', 'fiume'].includes(P[i].claim)) continue;
+          const c = new Map();
+          for (const j of nbr[i]) if (lockOf.has(j) && P[j].owner === P[i].owner) c.set(lockOf.get(j), (c.get(lockOf.get(j)) || 0) + 1);
+          const best = [...c.entries()].sort((x, y) => y[1] - x[1])[0];
+          if (best) lockOf.set(i, best[0]);
+        }
+        // isolette cancellate dalla semplificazione della mappa di riferimento: alla provincia bloccata più vicina
+        const lockedList = [...lockOf.keys()];
+        for (const i of zoneIdx) {
+          if (FREE_OWNERS.has(P[i].owner) || lockOf.has(i) || P[i].prot || ['trieste', 'fiume'].includes(P[i].claim)) continue;
+          let best = null, bd = 80;
+          for (const j of lockedList) if (P[j].owner === P[i].owner && P[j].claim === P[i].claim && P[j].langKey === P[i].langKey && (P[j].feat.properties.rhineW || 0) === (P[i].feat.properties.rhineW || 0)) { const d = turf.distance(cent[i], cent[j]); if (d < bd) { bd = d; best = j; } }
+          if (best != null) lockOf.set(i, lockOf.get(best));
+        }
+        const lg = new Map();
+        for (const [i, id] of lockOf) { if (!lg.has(id)) lg.set(id, []); lg.get(id).push(i); }
+        for (const [id, list] of lg) { for (const i of list.slice(1)) join(list[0], i); for (const i of list) P[i].lockName = lock.byId.get(id).name; }
+        log(`province bloccate: ${lg.size} dalla mappa approvata (${lockOf.size} atomi)`);
+      }
+      const freeIdx = zoneIdx.filter((i) => !lockOf.has(i));
+      const groups = compactClusters(freeIdx, P, metrics, {
         // la contea di Gorizia resta unita anche a cavallo del confine italo-sloveno di oggi
-        key: (p) => `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : p.modern}|${lang(p)}|${p.prot || ''}|${claim(p)}|${p.rhine}`,
+        // Balcani e Portogallo: niente linee rigide (né confini moderni né vilayet), solo preferenze
+        key: (p) => `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : FREE_OWNERS.has(p.owner) ? '' : p.modern}|${lang(p)}|${p.prot || ''}|${FREE_OWNERS.has(p.owner) ? '' : claim(p)}|${p.rhine}`,
+        soft2: (p) => (FREE_OWNERS.has(p.owner) ? p.modern : ''),
+        riverOwners: FREE_OWNERS,
         looseKey: (p) => `${p.owner}|${lang(p)}|${p.prot || ''}|${['costa', 'interno'].includes(claim(p)) ? 'dalmazia' : claim(p)}|${p.rhine}`,
         soft: (p) => regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
         min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
         keepSmall: (p) => !!p.prot || ['trieste', 'fiume'].includes(claim(p)),
         // controllo delle strisce più severo dove non c'è già una mappa approvata
-        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR']),
+        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR']),
         // terre poco popolate, province più grandi (radice del rapporto di densità con l'Italia del 1881)
         sizeScale: (p) => SIZE_SCALE[p.owner] ?? 1,
       });
@@ -649,7 +711,7 @@ async function main() {
     let isl = 0;
     for (const r0 of smallRoots) {
       const r = find(r0);
-      if (gArea[r] >= 600 || P[r].prot) continue;
+      if (gArea[r] >= 600 || P[r].prot || P[r].lockName) continue;
       // zona compatta: i frammenti con vicini di terra vanno al vicino con la stessa rivendicazione
       // (Trieste, Fiume e i microstati restano a sé); solo le isole vere si uniscono a distanza
       if (P[r].zone) {
@@ -671,7 +733,7 @@ async function main() {
       const mine = P.filter((p) => find(p.i) === r);
       let best = null, bd = 60;
       for (const q of P) {
-        if (q.owner !== P[r].owner || find(q.i) === r || gArea[find(q.i)] < gArea[r] || P[find(q.i)].prot) continue;
+        if (q.owner !== P[r].owner || find(q.i) === r || gArea[find(q.i)] < gArea[r] || P[find(q.i)].prot || P[find(q.i)].lockName) continue;
         if (P[r].zone && P[r].claim && P[find(q.i)].claim !== P[r].claim) continue;
         if (P[r].zone && P[r].langKey && P[find(q.i)].langKey !== P[r].langKey) continue;
         if (P[r].zone && (P[find(q.i)].rhine || '') !== (P[r].rhine || '')) continue;
@@ -735,7 +797,9 @@ async function main() {
     // zona italiana: la provincia prende il nome della sua città principale; senza città, il nome
     // amministrativo più esteso che non sia già il nome di un'altra provincia
     let byNameList = null, byTown = false;
-    if (mem[0].zone && !P[r].prot) {
+    const lockName = mem.find((m) => m.lockName)?.lockName || null;
+    if (lockName) name = lockName;
+    else if (mem[0].zone && !P[r].prot) {
       const t = mem.filter((m) => m.topTown).sort((a, b) => b.topPop - a.topPop)[0];
       if (t && t.topPop >= 8000 && !PROTECTED.some((x) => x.name === exo(t.topTown)) && !ANACHRONISTIC.has(t.topTown)) { name = exo(t.topTown); byTown = true; }
       else {
@@ -759,13 +823,14 @@ async function main() {
       regArea.set(rg, (regArea.get(rg) || 0) + m.area);
     }
     const region = [...regArea.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList, byTown };
+    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList, byTown, lockName };
   });
   {
     // confronto senza accenti e caratteri invisibili: "Málaga" e "Malaga" sono lo stesso nome
     const nn = (x) => String(x).replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     for (const g of gInfo) g.name = String(g.name).replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '').trim();
     const townNames = new Set(gInfo.filter((g) => !g.byNameList).map((g) => nn(g.name)));
+    for (const g of gInfo) if (g.lockName) townNames.add(nn(g.lockName));
     // le più estese scelgono per prime, così due province non prendono lo stesso nome amministrativo
     for (const g of gInfo.filter((x) => x.byNameList).sort((a, b) => b.area - a.area)) {
       const n = g.byNameList.map((x) => String(x).replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '').trim()).find((x) => !townNames.has(nn(x)));
@@ -1036,6 +1101,7 @@ async function main() {
       arcs: p.synthetic ? [] : fgeoms[p.k].arcs,
       n: fnbr[p.k],
       _town: !!p.info.byTown,
+      _lock: p.info.lockName,
       ...(tiny.has(p.k) ? { tiny: true } : {}),
       _region: p.info.region,
     })),
@@ -1048,6 +1114,8 @@ async function main() {
     if (owner && p.owner !== owner) continue;
     p.name = p.name.replace(new RegExp(`(^|[\\s(])${esc(from)}(?=$|[\\s)])`, 'u'), `$1${to}`);
   }
+  // le province bloccate tengono il nome della mappa approvata
+  for (const p of out.provinces) if (p._lock) p.name = p._lock;
   // nomi duplicati
   const seen = new Map();
   for (const p of out.provinces) { const n = seen.get(p.name) || 0; seen.set(p.name, n + 1); }
@@ -1058,8 +1126,10 @@ async function main() {
   for (const p of out.provinces) { if (seen.get(p.name) > 1) { if (!groupsByName.has(p.name)) groupsByName.set(p.name, []); groupsByName.get(p.name).push(p); } }
   for (const [name, list] of groupsByName) {
     // chi ha davvero la città nel suo territorio tiene il nome; le altre prendono la direzione rispetto a lei
-    const town = list.filter((p) => p._town);
-    if (town.length === 1 && new Set(list.map((p) => p.owner)).size === 1) {
+    // una provincia bloccata tiene il suo nome; altrimenti chi ha davvero la città
+    const locked = list.filter((p) => p._lock);
+    const town = locked.length ? locked : list.filter((p) => p._town);
+    if (town.length === 1 && (locked.length || new Set(list.map((p) => p.owner)).size === 1)) {
       const [cx, cy] = town[0].lonlat;
       for (const p of list) {
         if (p === town[0]) continue;
@@ -1082,7 +1152,7 @@ async function main() {
   for (const p of out.provinces) seen2.set(p.name, (seen2.get(p.name) || 0) + 1);
   for (const p of out.provinces) if (seen2.get(p.name) > 1) { const n = (cnt.get(p.name) || 0) + 1; cnt.set(p.name, n); p.name = `${p.name} ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n - 1] || n}`; }
 
-  for (const p of out.provinces) { delete p._region; delete p._town; }
+  for (const p of out.provinces) { delete p._region; delete p._town; delete p._lock; }
   log(`${tiny.size} province-simbolo (${[...tiny].map((k) => out.provinces[k].name).join(', ')})`);
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

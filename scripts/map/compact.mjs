@@ -17,7 +17,7 @@ import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 
-const SPLIT_BIG = new Set(['GBR', 'IRL', 'IMN', 'DEU', 'DNK', 'NLD', 'ESP', 'SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR']);
+const SPLIT_BIG = new Set(['GBR', 'IRL', 'IMN', 'DEU', 'DNK', 'NLD', 'ESP', 'PRT', 'SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR']);
 export const ZONE_BBOX = [-11.0, 34.5, 30.5, 61.0];
 const AUH_ZONE = new Set(['Gefürstete Grafschaft Tirol', 'Trentino', 'Land Vorarlberg', 'Herzogtum Kärnten', 'Herzogtum Steiermark', 'Herzogtum Krain',
   'Triest mit Gebiet', 'Gefürstete Grafschaft Görz und Gradisca', 'Markgrafschaft Istrien', 'Königreich Dalmatien', 'Herzogtum Salzburg',
@@ -33,7 +33,7 @@ export function inZone(p) {
   if (['GER', 'DEN', 'NED', 'LUX'].includes(p.owner)) return true; // terza fase: Germania, Danimarca, Paesi Bassi
   if (p.owner === 'GBR' && ['GBR', 'IRL', 'IMN', 'JEY', 'GGY', 'ALD'].includes(p.modern)) return true; // quarta fase: isole britanniche
   // quinta fase: Spagna e Balcani (con la Rumelia ottomana: Albania, Macedonia, Tracia, Kosovo, Tessaglia, Epiro, Creta)
-  if (['SPA', 'AND', 'SER', 'MNE', 'BUL', 'ROM', 'GRE'].includes(p.owner)) return true;
+  if (['SPA', 'AND', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'POR'].includes(p.owner)) return true;
   if (p.owner === 'TUR') {
     if (['GRC', 'ALB', 'MKD', 'KOS', 'BGR', 'SRB', 'MNE', 'BIH'].includes(p.modern)) return true;
     if (p.modern === 'TUR') { const [x, y] = turf.centroid(p.feat).geometry.coordinates; return x < 29.3 && y > 40.05; } // Tracia orientale
@@ -54,7 +54,7 @@ export function prepareBasins8({ ms, RAW, TMP }) {
 /**
  * Taglia le province della zona sui bacini di livello 8. pid degli atomi: `${pid}~a${k}`.
  */
-export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath }) {
+export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, riverPath, riverModern }) {
   const inBox = (f) => { const [x, y] = turf.centroid(f).geometry.coordinates; return x > ZONE_BBOX[0] && x < ZONE_BBOX[2] && y > ZONE_BBOX[1] && y < ZONE_BBOX[3]; };
   const zone = [], rest = [];
   for (const f of fc.features) (inBox(f) ? zone : rest).push(f);
@@ -97,6 +97,19 @@ export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath }) 
     if (!ok) atoms.push(a); else cut++;
   }
   if (cut) log(`${cut} atomi troppo grandi divisi in pezzi compatti`);
+  // fiumi maggiori come linee di taglio (Balcani, Portogallo): una fascia sottile lungo il fiume separa le due rive
+  if (riverPath) {
+    const sel = [], keep = [];
+    for (const a of atoms) (riverModern.has(a.properties.modern) && !String(a.properties.reg || '').startsWith('H:') ? sel : keep).push(a);
+    const sp = path.join(TMP, 'riv_src.geojson');
+    fs.writeFileSync(sp, JSON.stringify(turf.featureCollection(sel.map((f, i) => ({ ...f, properties: { ...f.properties, ri: i } })))));
+    const ro = path.join(TMP, 'riv_out.geojson');
+    ms('-i', sp, riverPath, 'combine-files', 'snap', '-union', 'target=riv_src,strips', '-filter', 'ri != null', 'remove-empty', '-explode', '-o', ro);
+    const parts = JSON.parse(fs.readFileSync(ro, 'utf8')).features.map((f) => { const { ri, riv, ...pr } = f.properties; return { type: 'Feature', geometry: f.geometry, properties: { ...sel[ri].properties, ...pr } }; });
+    atoms.length = 0;
+    atoms.push(...keep, ...parts);
+    log(`fiumi maggiori: ${sel.length} atomi tagliati in ${parts.length} pezzi`);
+  }
   const count = new Map();
   const out = [...rest];
   for (const a of atoms) {
@@ -156,30 +169,37 @@ export function eastOfVar([lon, lat]) {
 }
 
 /** Perimetri e confini condivisi (km) dei pezzi di una topologia. */
-export function topoMetrics(topo, geoms) {
+export function topoMetrics(topo, geoms, riverNear = null) {
   const tf = topo.transform;
-  const len = topo.arcs.map((arc) => {
-    let x = 0, y = 0, prev = null, L = 0;
+  const onRiver = topo.arcs.map(() => 0);
+  const len = topo.arcs.map((arc, ai) => {
+    let x = 0, y = 0, prev = null, L = 0, R = 0;
     for (const [dx, dy] of arc) {
       x += dx; y += dy;
       const pt = tf ? [x * tf.scale[0] + tf.translate[0], y * tf.scale[1] + tf.translate[1]] : [dx, dy];
-      if (prev) L += turf.distance(prev, pt);
+      if (prev) { const d = turf.distance(prev, pt); L += d; if (riverNear && riverNear((prev[0] + pt[0]) / 2, (prev[1] + pt[1]) / 2)) R += d; }
       prev = pt;
     }
+    onRiver[ai] = R;
     return L;
   });
   const use = topo.arcs.map(() => []);
   geoms.forEach((g, k) => { const rec = (a) => (typeof a === 'number' ? use[a < 0 ? ~a : a].push(k) : a.forEach(rec)); rec(g.arcs); });
   const perim = new Float64Array(geoms.length);
   const shared = geoms.map(() => new Map());
+  const sharedRiver = geoms.map(() => new Map());
   use.forEach((u, ai) => {
     for (const k of u) perim[k] += len[ai];
     if (u.length === 2 && u[0] !== u[1]) {
       shared[u[0]].set(u[1], (shared[u[0]].get(u[1]) || 0) + len[ai]);
       shared[u[1]].set(u[0], (shared[u[1]].get(u[0]) || 0) + len[ai]);
+      if (onRiver[ai]) {
+        sharedRiver[u[0]].set(u[1], (sharedRiver[u[0]].get(u[1]) || 0) + onRiver[ai]);
+        sharedRiver[u[1]].set(u[0], (sharedRiver[u[1]].get(u[0]) || 0) + onRiver[ai]);
+      }
     }
   });
-  return { perim, shared };
+  return { perim, shared, sharedRiver };
 }
 
 /**
@@ -188,15 +208,16 @@ export function topoMetrics(topo, geoms) {
  * @param P pezzi ({area, owner, …}); key(p) vincolo rigido; soft(p) regione (vincolo morbido)
  * @returns array di gruppi (array di indici di pezzi)
  */
-export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, log }) {
-  const { perim, shared } = metrics;
+export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, soft2 = () => '', softPenalty = () => 0.55, riverOwners = new Set(), log }) {
+  const { perim, shared, sharedRiver } = metrics;
   const inSet = new Set(atoms);
   const cl = new Map(); // id -> {ids:Set, A, Pm, nb: Map<clusterId, len>, key}
   const of = new Map();
   for (const i of atoms) {
-    const nb = new Map();
+    const nb = new Map(), nbR = new Map();
     for (const [j, l] of shared[i]) if (inSet.has(j)) nb.set(j, l);
-    cl.set(i, { ids: new Set([i]), A: P[i].area, Pm: perim[i], nb, key: key(P[i]), soft: new Map([[soft(P[i]), P[i].area]]), bb: turf.bbox(P[i].feat), f: sizeScale(P[i]) });
+    for (const [j, l] of sharedRiver?.[i] ?? []) if (inSet.has(j)) nbR.set(j, l);
+    cl.set(i, { ids: new Set([i]), A: P[i].area, Pm: perim[i], nb, nbR, key: key(P[i]), soft: new Map([[soft(P[i]), P[i].area]]), soft2: new Map([[soft2(P[i]), P[i].area]]), bb: turf.bbox(P[i].feat), f: sizeScale(P[i]) });
     of.set(i, i);
   }
   const pp = (A, Pm) => (Pm > 0 ? (4 * Math.PI * A) / (Pm * Pm) : 0);
@@ -204,6 +225,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
   const union = (a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
   const span = (bb) => turf.distance([bb[0], bb[1]], [bb[2], bb[3]]);
   const softOf = (c) => [...c.soft.entries()].sort((a, b) => b[1] - a[1])[0][0];
+  const soft2Of = (c) => [...c.soft2.entries()].sort((a, b) => b[1] - a[1])[0][0];
   const mergeInto = (a, b) => { // b dentro a
     const A = cl.get(a), B = cl.get(b);
     const bl = A.nb.get(b) || 0;
@@ -212,7 +234,16 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     A.bb = union(A.bb, B.bb);
     for (const i of B.ids) { A.ids.add(i); of.set(i, a); }
     for (const [s, v] of B.soft) A.soft.set(s, (A.soft.get(s) || 0) + v);
+    for (const [s, v] of B.soft2) A.soft2.set(s, (A.soft2.get(s) || 0) + v);
     A.nb.delete(b);
+    A.nbR.delete(b);
+    for (const [c, l] of B.nbR) {
+      if (c === a) continue;
+      A.nbR.set(c, (A.nbR.get(c) || 0) + l);
+      const C = cl.get(c);
+      C.nbR.set(a, (C.nbR.get(a) || 0) + l);
+      C.nbR.delete(b);
+    }
     for (const [c, l] of B.nb) {
       if (c === a) continue;
       A.nb.set(c, (A.nb.get(c) || 0) + l);
@@ -235,7 +266,11 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       if (O.key !== S.key || O.A + S.A > max * S.f || span(union(O.bb, S.bb)) > maxSpan * Math.sqrt(S.f)) continue;
       const A = O.A + S.A, Pm = O.Pm + S.Pm - 2 * l;
       let sc = pp(A, Pm);
-      if (softOf(O) !== softOf(S)) sc *= 0.55;
+      if (softOf(O) !== softOf(S)) sc *= softPenalty(P[small]);
+      // seconda linea morbida (paese moderno, nei Balcani) e fiumi maggiori come confini naturali
+      if (soft2Of(O) !== soft2Of(S)) sc *= 0.7;
+      const rl = riverOwners.has(P[small].owner) ? S.nbR.get(o) || 0 : 0;
+      if (rl) sc *= 1 - 0.75 * Math.min(1, rl / l);
       // dove non c'è già una mappa approvata, conta anche l'estensione: niente strisce lungo coste e valli
       if (stripOwners.has(P[small].owner)) { const bb = union(O.bb, S.bb); sc *= Math.min(1, A / Math.max(1, span(bb) ** 2) / 0.3); }
       // a parità di forma, meglio completare una provincia ancora piccola
