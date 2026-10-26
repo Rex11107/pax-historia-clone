@@ -1,0 +1,25 @@
+# Scarica dataset che bloccano le richieste automatiche da alcuni indirizzi (es. dataverse.nl)
+# e li rende disponibili come artifact. Avvio manuale: Actions → Fetch data → Run workflow.
+name: Fetch data
+
+on:
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: RISTAT 1897 (Kessler & Markevich, CC0)
+        run: |
+          mkdir -p data
+          for id in 578935 578936; do
+            curl -fsSL -A "Mozilla/5.0 regnum-historia data fetch" -o "data/ristat_$id" "https://dataverse.nl/api/access/datafile/$id?format=original"
+            file "data/ristat_$id"
+          done
+          curl -fsSL -o data/ristat_meta.json "https://dataverse.nl/api/datasets/:persistentId/?persistentId=doi:10.34894/NQOASN"
+          ls -la data
+      - uses: actions/upload-artifact@v4
+        with:
+          name: data
+          path: data
+          retention-days: 7
