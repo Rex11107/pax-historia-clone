@@ -27,6 +27,8 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-24.04
+    env:
+      VERSION_NAME: 0.1.${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -88,6 +90,14 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
           cp app/build/outputs/apk/release/app-release.apk ../regnum-historia.apk
+      # senza segreti: la chiave di debug resta la stessa fra una build e l'altra (cache di Actions),
+      # così il pulsante "Aggiorna" dell'app installa sopra la versione precedente
+      - name: Chiave di debug stabile
+        if: steps.sign.outputs.mode == 'debug'
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: regnum-debug-keystore-v1
       - name: Compila APK di debug
         if: steps.sign.outputs.mode == 'debug'
         working-directory: android
@@ -104,5 +114,5 @@ jobs:
           NOTE="Build automatica da ${GITHUB_SHA::7}: $MSG"
           if [ "${{ steps.sign.outputs.mode }}" = "debug" ]; then NOTE="$NOTE
 
-          APK di debug: per aggiornare disinstalla prima la versione precedente (esporta il salvataggio dalle Impostazioni)."; fi
+          APK di debug con chiave stabile: si aggiorna dalle Impostazioni dell'app senza disinstallare."; fi
           gh release create "$TAG" regnum-historia.apk --title "Regnum Historia $TAG" --notes "$NOTE" --latest

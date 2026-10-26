@@ -12,6 +12,7 @@ import type { MapData } from './engine/types';
 import { NATIONS } from './scenario/europe1881';
 import { listSaves, loadGame, loadSettings } from './storage/storage';
 import { App } from './ui/app';
+import { installUpdate, isNewer, latestRelease } from './update';
 import { $, h, show } from './ui/dom';
 
 async function boot() {
@@ -43,6 +44,10 @@ async function boot() {
       h('label', { class: 'field' }, 'Nazione da guidare', sel),
       h('button', { class: auto ? '' : 'primary', onclick: () => app.start(Game.create(mapData, sel.value, settings)) }, 'Nuova partita, 1° gennaio 1881'),
     );
+    // aggiornamento disponibile: pulsante direttamente nella schermata iniziale
+    latestRelease().then((r) => {
+      if (isNewer(r)) choices.append(h('button', { class: 'quiet', onclick: () => installUpdate() }, `Aggiorna alla versione ${r.version}`));
+    }).catch(() => { /* senza rete si gioca lo stesso */ });
   } catch (e) {
     status.textContent = `Impossibile avviare: ${(e as Error).message}`;
   }

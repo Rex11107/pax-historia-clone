@@ -1,3 +1,4 @@
+import { APP_VERSION, installUpdate, isNative, isNewer, latestRelease, type Release } from '../update';
 import { Game, type Phase, type TurnOutcome } from '../game';
 import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diplomacy';
 import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
@@ -498,6 +499,8 @@ export class App {
         h('button', { onclick: () => this.testKey() }, 'Prova la connessione'),
       ),
       h('p', { class: 'sub' }, `Uso in questa sessione: ${usage.calls} chiamate, ${fmtK(usage.promptTokens)} token in ingresso (${fmtK(usage.cachedTokens)} dalla cache), ${fmtK(usage.completionTokens)} in uscita.`),
+      h('h3', null, 'Aggiornamenti'),
+      this.updateBox(),
       h('h3', null, 'Partite'),
       saves,
       h('div', { class: 'buttons' },
@@ -507,6 +510,33 @@ export class App {
         h('button', { class: 'danger', onclick: () => this.dialog('Iniziare una nuova partita?', ['La partita attuale resta nel salvataggio automatico finché non giochi un turno della nuova.'], 'Nuova partita', () => location.reload()) }, 'Nuova partita'),
       ),
     );
+  }
+
+  private updateState: { checking: boolean; latest: Release | null; error: string } = { checking: false, latest: null, error: '' };
+
+  private updateBox(): Node {
+    const u = this.updateState;
+    const newer = u.latest && isNewer(u.latest);
+    const status = u.checking ? 'Controllo in corso…'
+      : u.error ? `Controllo non riuscito: ${u.error}`
+      : !u.latest ? ''
+      : newer ? `Disponibile la versione ${u.latest.version}.`
+      : APP_VERSION === 'dev' ? `Ultima versione pubblicata: ${u.latest.version}.` : 'Hai già l\'ultima versione.';
+    return h('div', null,
+      h('p', { class: 'sub' }, `Versione installata: ${APP_VERSION}.${status ? ` ${status}` : ''}`),
+      newer && isNative() ? h('p', { class: 'sub' }, 'Si apre il download del nuovo APK: al termine tocca la notifica e conferma l\'installazione. La partita resta salvata.') : null,
+      h('div', { class: 'buttons' },
+        h('button', { disabled: u.checking, onclick: () => this.checkUpdate() }, 'Controlla aggiornamenti'),
+        newer ? h('button', { class: 'primary', onclick: () => installUpdate() }, isNative() ? `Scarica e installa ${u.latest!.version}` : 'Ricarica') : null,
+      ),
+    );
+  }
+
+  private async checkUpdate() {
+    this.updateState = { checking: true, latest: null, error: '' };
+    this.render();
+    try { this.updateState = { checking: false, latest: await latestRelease(), error: '' }; } catch (e) { this.updateState = { checking: false, latest: null, error: (e as Error).message }; }
+    this.render();
   }
 
   private async testKey() {
