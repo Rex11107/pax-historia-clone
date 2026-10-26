@@ -28,6 +28,7 @@ import { prepareBasins, splitByBasins } from './basins.mjs';
 import { buildHistoricalBase } from './historical.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
+import { atomize, compactClusters, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RAW = path.join(ROOT, 'data-raw');
@@ -56,10 +57,16 @@ const RU_MIN = 7000;        // km2: soglia di accorpamento degli uezd russi
 const RU_MAX = 14000;       // km2: limite del loro accorpamento
 const IT_COMP = { 'IT-RI': 'Umbria', 'IT-AO': 'Piemonte', 'IT-UD': 'Veneto', 'IT-PN': 'Veneto' };
 const IT_REG = { Molise: 'Abruzzo', "Valle d'Aosta": 'Piemonte' };
+const ZONE_MIN = 2800;      // km2: province compatte della zona italiana
+const ZONE_TARGET = 4500;
+const ZONE_MAX = 7500;
 const STRAIT_KM = 45;       // distanza massima per uno stretto attraversabile
 
 const log = (...a) => console.log('[map]', ...a);
-const EXONYM = { Munich: 'Monaco di Baviera', Cologne: 'Colonia', Nuremberg: 'Norimberga', 'Nürnberg': 'Norimberga', Augsburg: 'Augusta', Hanover: 'Hannover', Brunswick: 'Brunswick',
+const EXONYM = { Rome: 'Roma', Naples: 'Napoli', Turin: 'Torino', Milan: 'Milano', Venice: 'Venezia', Florence: 'Firenze', Genoa: 'Genova', 'Reggio di Calabria': 'Reggio Calabria',
+  Rijeka: 'Fiume', Zadar: 'Zara', Split: 'Spalato', 'Šibenik': 'Sebenico', Dubrovnik: 'Ragusa di Dalmazia', Pula: 'Pola', Ljubljana: 'Lubiana', Zagreb: 'Zagabria', Maribor: 'Marburgo',
+  Nice: 'Nizza', Toulon: 'Tolone', 'Aix-en-Provence': 'Aix', Bern: 'Berna', Lausanne: 'Losanna', Luzern: 'Lucerna', 'Saint Gallen': 'San Gallo', Chur: 'Coira', Fribourg: 'Friburgo',
+  Valletta: 'La Valletta', Bastia: 'Bastia', Ajaccio: 'Aiaccio', Annecy: 'Annecy', Grenoble: 'Grenoble', 'Zürich': 'Zurigo', Munich: 'Monaco di Baviera', Cologne: 'Colonia', Nuremberg: 'Norimberga', 'Nürnberg': 'Norimberga', Augsburg: 'Augusta', Hanover: 'Hannover', Brunswick: 'Brunswick',
   Moscow: 'Mosca', 'St. Petersburg': 'San Pietroburgo', Warsaw: 'Varsavia', Prague: 'Praga', Archangel: 'Arcangelo', Vienna: 'Vienna', Belgrade: 'Belgrado', Bucharest: 'Bucarest',
   Kiev: 'Kiev', Kyiv: 'Kiev', Odessa: 'Odessa', Athens: 'Atene', Constantinople: 'Costantinopoli', Istanbul: 'Costantinopoli', Lisbon: 'Lisbona', Seville: 'Siviglia', Saragossa: 'Saragozza',
   Marseille: 'Marsiglia', Lyon: 'Lione', Geneva: 'Ginevra', Zurich: 'Zurigo', Basel: 'Basilea', Strasbourg: 'Strasburgo', Frankfurt: 'Francoforte', Dresden: 'Dresda', Leipzig: 'Lipsia',
@@ -429,6 +436,12 @@ async function main() {
   for (const f of prov.features) turf.rewind(f, { mutate: true });
   fs.writeFileSync(path.join(TMP, 'prov_split_raw.geojson'), JSON.stringify(prov));
   ms(path.join(TMP, 'prov_split_raw.geojson'), '-clean', '-o', path.join(TMP, 'prov_split.geojson'));
+  // zona italiana: atomi piccoli (unità amministrative x bacini di livello 8) da raggruppare in province compatte
+  const b8 = prepareBasins8({ ms, RAW, TMP });
+  if (b8) {
+    const atoms = atomize(readJSON(path.join(TMP, 'prov_split.geojson')), { ms, TMP, basinsPath: b8, log });
+    fs.writeFileSync(path.join(TMP, 'prov_split.geojson'), JSON.stringify(atoms));
+  }
 
   // 2. sovrapposizione con i confini 1880
   log('sovrapposizione con i confini 1880');
@@ -511,13 +524,15 @@ async function main() {
   const join = (a, b) => { a = find(a); b = find(b); if (a === b || P[a].prot !== P[b].prot) return; parent[b] = a; gArea[a] += gArea[b]; };
   const groupNbrs = (g) => { const s = new Set(); P.forEach((p) => { if (find(p.i) === g) nbr[p.i].forEach((j) => s.add(find(j))); }); s.delete(g); return [...s]; };
 
-  // stessi pid + stesso proprietario -> stesso gruppo (multi-parte)
+  // zona italiana: province ricostruite più avanti per compattezza
+  for (const p of P) p.zone = inZone(p);
+  // stessi pid + stesso proprietario -> stesso gruppo (multi-parte); fuori zona gli atomi tornano interi
   const byKey = new Map();
-  for (const p of P) { const k = `${p.pid}|${p.owner}`; if (byKey.has(k)) join(byKey.get(k), p.i); else byKey.set(k, p.i); }
+  for (const p of P) { if (p.zone) continue; const k = `${String(p.pid).replace(/~a\d+/, '')}|${p.owner}`; if (byKey.has(k)) join(byKey.get(k), p.i); else byKey.set(k, p.i); }
   // schegge
   for (const p of P) {
-    if (gArea[find(p.i)] >= SLIVER) continue;
-    const ns = nbr[p.i].map((j) => P[j]);
+    if (p.zone || gArea[find(p.i)] >= SLIVER) continue;
+    const ns = nbr[p.i].map((j) => P[j]).filter((q) => !q.zone);
     const same = ns.filter((q) => q.owner === p.owner).sort((a, b) => b.area - a.area);
     if (same.length) join(same[0].i, p.i);
     // frammenti di confine fra dataset diversi: vanno al vicino più esteso anche se di altro stato
@@ -538,13 +553,28 @@ async function main() {
       const roots = [...new Set(P.map((p) => find(p.i)))].sort((a, b) => gArea[a] - gArea[b]);
       for (const g of roots) {
         const limit = sameKey ? minOf(g, limit0) : limit0;
-        if (find(g) !== g || gArea[g] >= limit) continue;
+        if (find(g) !== g || gArea[g] >= limit || P[g].zone) continue;
         const owner = P[g].owner;
         const cap = gArea[g] < 1500 ? Infinity : limit > MIN_AREA ? RU_MAX : MAX_MERGE; // le province minuscole si uniscono comunque
-        const cands = groupNbrs(g).filter((h) => P[h].owner === owner && gArea[h] + gArea[g] <= cap && (sameKey ? mkey(P[h]) === mkey(P[g]) : P[h].modern === P[g].modern))
+        const cands = groupNbrs(g).filter((h) => !P[h].zone && P[h].owner === owner && gArea[h] + gArea[g] <= cap && (sameKey ? mkey(P[h]) === mkey(P[g]) : P[h].modern === P[g].modern))
           .sort((a, b) => gArea[a] - gArea[b]);
         if (cands.length) { join(cands[0], g); changed = true; }
       }
+    }
+  }
+
+  // zona italiana: province compatte dagli atomi
+  {
+    const zoneIdx = P.filter((p) => p.zone).map((p) => p.i);
+    if (zoneIdx.length) {
+      const metrics = topoMetrics(topo, geoms);
+      const lang = (p) => (p.modern === 'CHE' ? CH_LANG[p.iso] || 'de' : p.iso === 'IT-BZ' ? 'de' : '');
+      const groups = compactClusters(zoneIdx, P, metrics, {
+        key: (p) => `${p.owner}|${p.modern}|${lang(p)}|${p.prot || ''}`,
+        soft: (p) => regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
+        min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
+      });
+      for (const g of groups) for (const i of g.slice(1)) join(g[0], i);
     }
   }
 
@@ -577,7 +607,12 @@ async function main() {
     for (const p of P) {
       const bb = p.bb || (p.bb = turf.bbox(p.feat));
       if (x < bb[0] || x > bb[2] || y < bb[1] || y > bb[3]) continue;
-      if (turf.booleanPointInPolygon([x, y], p.feat)) { p.urban = (p.urban || 0) + (pl.properties.pop_max || 0); break; }
+      if (turf.booleanPointInPolygon([x, y], p.feat)) {
+        const pop = pl.properties.pop_max || 0;
+        p.urban = (p.urban || 0) + pop;
+        if (pop > (p.topPop || 0)) { p.topPop = pop; p.topTown = pl.properties.name; }
+        break;
+      }
     }
   }
   const roots = [...new Set(P.map((p) => find(p.i)))];
@@ -590,7 +625,15 @@ async function main() {
     const histArea = mem.reduce((t, m) => t + (m.hist ? m.area : 0), 0);
     const anyHist = histArea >= 0.5 * mem.reduce((t, m) => t + m.area, 0);
     for (const m of mem) if (!anyHist || m.hist) byName.set(m.name, (byName.get(m.name) || 0) + (MICRO.has(m.modern) ? 0 : (m.urban || 0) + m.area * 2));
-    const name = [...byName.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    let name = [...byName.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    // zona italiana: la provincia prende il nome della sua città principale; senza città, il nome
+    // amministrativo più esteso che non sia già il nome di un'altra provincia
+    let byNameList = null;
+    if (mem[0].zone && !P[r].prot) {
+      const t = mem.filter((m) => m.topTown).sort((a, b) => b.topPop - a.topPop)[0];
+      if (t && t.topPop >= 8000) name = exo(t.topTown);
+      else byNameList = [...byName.entries()].sort((a, b) => b[1] - a[1]).map((x) => x[0]);
+    }
     // regione storica: quella che copre la maggior parte dell'area del gruppo
     const prot = PROTECTED.find((x) => x.id === P[r].prot);
     const regArea = new Map();
@@ -603,8 +646,16 @@ async function main() {
       regArea.set(rg, (regArea.get(rg) || 0) + m.area);
     }
     const region = [...regArea.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null };
+    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList };
   });
+  {
+    const townNames = new Set(gInfo.filter((g) => !g.byNameList).map((g) => g.name));
+    // le più estese scelgono per prime, così due province non prendono lo stesso nome amministrativo
+    for (const g of gInfo.filter((x) => x.byNameList).sort((a, b) => b.area - a.area)) {
+      const n = g.byNameList.find((x) => !townNames.has(x));
+      if (n) { g.name = n; townNames.add(n); }
+    }
+  }
   // regioni ancora indecise: quella del vicino dello stesso stato con più confine in comune
   {
     const gNb = new Map();
