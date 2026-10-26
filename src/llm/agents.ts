@@ -5,7 +5,7 @@ import { applyProposal, checkProposal, describeProposal, type Proposal } from '.
 import type { ChatMessage, GameEvent, Tag } from '../engine/types';
 import { atWar, changeOpinion, nationName, opinion, type World } from '../engine/world';
 import { chatJSON, type ChatMsg, type LLMConfig } from './client';
-import { bilateralView, regionHoldings, resolveNation, resolveProvince, resolveRegion } from './context';
+import { bilateralView, resolveNation, resolveProvince } from './context';
 import { nationSystemPrompt } from './prompts';
 
 /** I numeri del profilo diventano regole di comportamento esplicite (più affidabili dei numeri). */
@@ -62,17 +62,8 @@ export function parseProposal(w: World, raw: unknown, tag: Tag): Proposal | null
   const p: Proposal = { type: o.type as Proposal['type'] };
   const giver = resolveNation(w, o.giver);
   if (giver && (giver === tag || giver === w.state.player)) p.giver = giver;
-  // territorio: regioni intere (solo le province di chi cede) e/o province singole
-  const giverTag = p.giver ?? (o.type === 'subsidy' ? w.state.player : tag);
   const ids = new Set<number>();
-  for (const x of Array.isArray(o.regions) ? o.regions : []) { const r = resolveRegion(w, x); if (r !== null) regionHoldings(w, r, giverTag).forEach((id) => ids.add(id)); }
-  for (const x of Array.isArray(o.provinces) ? o.provinces : []) {
-    const exactProv = typeof x === 'number' || w.map.provinces.some((q) => typeof x === 'string' && q.name.toLowerCase() === x.toLowerCase());
-    const r = exactProv ? null : resolveRegion(w, x);
-    if (r !== null) { regionHoldings(w, r, giverTag).forEach((id) => ids.add(id)); continue; }
-    const id = resolveProvince(w, x);
-    if (id !== null) ids.add(id);
-  }
+  for (const x of Array.isArray(o.provinces) ? o.provinces : []) { const id = resolveProvince(w, x); if (id !== null) ids.add(id); }
   if (ids.size) p.provinces = [...ids].slice(0, 30);
   if (o.amount != null && isFinite(Number(o.amount))) p.amount = Math.max(0, Math.round(Number(o.amount)));
   if (o.years != null && isFinite(Number(o.years))) p.years = Math.max(1, Math.min(30, Math.round(Number(o.years))));

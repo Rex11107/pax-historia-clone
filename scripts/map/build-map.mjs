@@ -1048,25 +1048,8 @@ async function main() {
   for (const p of out.provinces) seen2.set(p.name, (seen2.get(p.name) || 0) + 1);
   for (const p of out.provinces) if (seen2.get(p.name) > 1) { const n = (cnt.get(p.name) || 0) + 1; cnt.set(p.name, n); p.name = `${p.name} ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n - 1] || n}`; }
 
-  // regioni: indice per provincia + elenco; nomi uguali fra stati diversi distinti con l'aggettivo
-  const regKey = new Map();
-  const regCount = new Map();
-  for (const p of out.provinces) {
-    const name = p._region || p.name;
-    const key = `${p.owner}|${name}`;
-    regCount.set(key, (regCount.get(key) || 0) + 1);
-    p._rk = key;
-  }
-  const byRegName = new Map();
-  for (const key of regCount.keys()) { const n = key.split('|')[1]; if (!byRegName.has(n)) byRegName.set(n, []); byRegName.get(n).push(key); }
-  const regions = [];
-  for (const [n, keys] of byRegName) {
-    keys.sort((a, b) => regCount.get(b) - regCount.get(a));
-    keys.forEach((key, i) => { const owner = key.split('|')[0]; regKey.set(key, regions.length); regions.push({ name: i === 0 || !ADJ[owner] ? n : `${n} ${ADJ[owner]}` }); });
-  }
-  for (const p of out.provinces) { p.r = regKey.get(p._rk); delete p._rk; delete p._region; delete p._town; }
-  out.regions = regions;
-  log(`${regions.length} regioni storiche; ${tiny.size} province-simbolo (${[...tiny].map((k) => out.provinces[k].name).join(', ')})`);
+  for (const p of out.provinces) { delete p._region; delete p._town; }
+  log(`${tiny.size} province-simbolo (${[...tiny].map((k) => out.provinces[k].name).join(', ')})`);
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(out));

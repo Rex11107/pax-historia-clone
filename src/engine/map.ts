@@ -35,21 +35,6 @@ export class GameMap {
 
   get size() { return this.provinces.length; }
 
-  /** regioni storiche: nome e province che contengono */
-  get regions(): { name: string }[] { return this.data.regions ?? []; }
-  private regionIndex: number[][] | null = null;
-  regionProvinces(r: number): number[] {
-    if (!this.regionIndex) {
-      this.regionIndex = this.regions.map(() => []);
-      for (const p of this.provinces) if (p.r !== undefined && this.regionIndex[p.r]) this.regionIndex[p.r].push(p.id);
-    }
-    return this.regionIndex[r] ?? [];
-  }
-  regionName(id: number): string | null {
-    const r = this.provinces[id]?.r;
-    return r !== undefined ? this.regions[r]?.name ?? null : null;
-  }
-
   /** nome del fiume che separa due province adiacenti, se c'è */
   river(a: number, b: number): string | undefined { return this.riverEdges.get(`${a},${b}`); }
 

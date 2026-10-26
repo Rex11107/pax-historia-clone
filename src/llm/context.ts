@@ -31,36 +31,6 @@ export function resolveProvince(w: World, ref: unknown): number | null {
   return contains.length ? contains.sort((a, b) => score(a.id) - score(b.id))[0].id : null;
 }
 
-/** Risolve il nome di una regione storica ("Galizia", "la Boemia"); null se non è una regione. */
-export function resolveRegion(w: World, ref: unknown): number | null {
-  if (typeof ref !== 'string' || !ref.trim()) return null;
-  const q = normalize(ref).replace(/^(la|il|lo|l|le|i|gli) /, '').replace(/^regione (di |della |del |dell )?/, '');
-  const regs = w.map.regions;
-  let i = regs.findIndex((r) => normalize(r.name) === q);
-  if (i < 0) i = regs.findIndex((r) => normalize(r.name).split(' ')[0] === q && q.length >= 4);
-  return i >= 0 ? i : null;
-}
-
-/** Province di una regione possedute da una nazione (o tutte, se la nazione non è indicata). */
-export function regionHoldings(w: World, r: number, owner?: Tag): number[] {
-  return w.map.regionProvinces(r).filter((id) => !owner || w.state.owner[id] === owner);
-}
-
-/** Riassunto per regioni dei territori di una nazione: "Galizia 21 (3 occupate)". */
-export function regionSummary(w: World, tag: Tag, occupier?: Tag): string {
-  const s = w.state;
-  const count = new Map<number, { n: number; occ: number }>();
-  for (const p of w.map.provinces) {
-    if (s.owner[p.id] !== tag || p.r === undefined) continue;
-    const c = count.get(p.r) ?? { n: 0, occ: 0 };
-    c.n++;
-    if (occupier && s.controller[p.id] === occupier) c.occ++;
-    count.set(p.r, c);
-  }
-  return [...count.entries()].sort((a, b) => b[1].n - a[1].n)
-    .map(([r, c]) => `${w.map.regions[r].name} ${c.n}${c.occ ? ` (${c.occ} occupate)` : ''}`).join(', ');
-}
-
 export function resolveNation(w: World, ref: unknown): Tag | null {
   if (typeof ref !== 'string') return null;
   const t = ref.trim().toUpperCase();
@@ -167,8 +137,6 @@ export function bilateralView(w: World, tag: Tag): string {
     lines.push(`TUE PROVINCE OCCUPATE DA LORO: ${lost.map((p) => `${p.name} (${p.id})`).join(', ') || 'nessuna'}.`);
     lines.push(`LORO PROVINCE CHE OCCUPI: ${taken.map((p) => `${p.name} (${p.id})`).join(', ') || 'nessuna'}.`);
   }
-  lines.push(`TUE REGIONI (province per regione): ${regionSummary(w, tag, atWar(s, tag, me) ? me : undefined)}.`);
-  lines.push(`REGIONI ${nationName(w, me).toUpperCase()}: ${regionSummary(w, me, atWar(s, tag, me) ? tag : undefined)}.`);
   const border = w.map.provinces.filter((p) => s.owner[p.id] === tag && w.map.adj[p.id].some((e) => s.owner[e.to] === me));
   if (border.length) lines.push(`PROVINCE DI CONFINE CON LORO (tue): ${border.slice(0, 15).map((p) => `${p.name} (${p.id})`).join(', ')}.`);
   const recent = s.events.filter((e) => e.nations.includes(tag) && e.nations.includes(me)).slice(-8);

@@ -190,15 +190,12 @@ function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null 
     if (id === s.nations[giver].capital) return `${pv.name} è la capitale ${di(w, giver)}`;
   }
   // leva: senza occupazione militare o grande stanchezza di guerra nessuno cede territorio
-  // per una regione intera basta occuparne i tre quarti: le province rimaste seguono il resto
+  // per una cessione ampia basta occuparne i tre quarti: le province rimaste seguono il resto
   const occupied = list.filter((id) => s.controller[id] === receiver).length;
   const exhausted = s.nations[giver].warExhaustion >= 50 || s.nations[giver].stability < 20;
   const enough = occupied === list.length || (list.length >= 4 && occupied >= list.length * 0.75);
   if (atWar(s, from, to) && !enough && !exhausted) return `${The(w, giver)} non cede province che ${the(w, receiver)} non occupa (${occupied} su ${list.length}; stanchezza di guerra ${Math.round(s.nations[giver].warExhaustion)}/100)`;
-  if (!atWar(s, from, to)) {
-    const regs = new Set(list.map((id) => w.map.provinces[id].r));
-    if (regs.size > 1 || list.length > 4) return 'in tempo di pace si negozia al massimo una piccola regione (fino a 4 province) alla volta';
-  }
+  if (!atWar(s, from, to) && list.length > 3) return 'in tempo di pace si negoziano al massimo tre province alla volta';
   return null;
 }
 
@@ -260,22 +257,10 @@ export function expireTreaties(w: World, sink: GameEvent[]) {
   });
 }
 
-/**
- * Territorio in testo: le regioni cedute per intero si nominano come regione ("la Galizia (21 province)"),
- * il resto provincia per provincia.
- */
+/** Territorio in testo: elenco delle province (le prime dodici, poi il conteggio). */
 export function describeTerritory(w: World, ids: number[]): string {
-  const set = new Set(ids);
-  const parts: string[] = [];
-  const done = new Set<number>();
-  for (const id of ids) {
-    const r = w.map.provinces[id]?.r;
-    if (r === undefined || done.has(r)) continue;
-    const all = w.map.regionProvinces(r);
-    if (all.length > 1 && all.every((x) => set.has(x))) { parts.push(`${w.map.regions[r].name} (${all.length} province)`); all.forEach((x) => set.delete(x)); done.add(r); }
-  }
-  for (const id of ids) if (set.has(id)) parts.push(w.map.provinces[id]?.name ?? `#${id}`);
-  return parts.join(', ');
+  const names = ids.map((id) => w.map.provinces[id]?.name ?? `#${id}`);
+  return names.length > 12 ? `${names.slice(0, 12).join(', ')} e altre ${names.length - 12} province` : names.join(', ');
 }
 
 /** Proposta in testo leggibile (UI e prompt). */
