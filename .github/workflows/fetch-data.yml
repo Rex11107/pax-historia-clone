@@ -5,6 +5,9 @@ name: Fetch data
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   fetch:
     runs-on: ubuntu-24.04
@@ -18,8 +21,13 @@ jobs:
           done
           curl -fsSL -o data/ristat_meta.json "https://dataverse.nl/api/datasets/:persistentId/?persistentId=doi:10.34894/NQOASN"
           ls -la data
-      - uses: actions/upload-artifact@v4
-        with:
-          name: data
-          path: data
-          retention-days: 7
+      # dati CC0: pubblicati su un ramo separato "data", fuori dal codice dell'app
+      - name: Pubblica sul ramo data
+        run: |
+          cd data
+          git init -q -b data
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add -A
+          git commit -qm "RISTAT 1897 (Kessler & Markevich, ristat.org, CC0)"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" data
