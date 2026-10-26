@@ -17,8 +17,8 @@ import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 
-const SPLIT_BIG = new Set(['GBR', 'IRL', 'IMN', 'DEU', 'DNK', 'NLD']);
-export const ZONE_BBOX = [-11.0, 35.3, 27.0, 61.0];
+const SPLIT_BIG = new Set(['GBR', 'IRL', 'IMN', 'DEU', 'DNK', 'NLD', 'ESP', 'SRB', 'MNE', 'BGR', 'ROU', 'GRC', 'ALB', 'MKD', 'KOS', 'TUR']);
+export const ZONE_BBOX = [-11.0, 34.5, 30.5, 61.0];
 const AUH_ZONE = new Set(['Gefürstete Grafschaft Tirol', 'Trentino', 'Land Vorarlberg', 'Herzogtum Kärnten', 'Herzogtum Steiermark', 'Herzogtum Krain',
   'Triest mit Gebiet', 'Gefürstete Grafschaft Görz und Gradisca', 'Markgrafschaft Istrien', 'Königreich Dalmatien', 'Herzogtum Salzburg',
   'Croazia-Slavonia', 'Confine militare', 'Fiume']);
@@ -32,6 +32,12 @@ export function inZone(p) {
   if (p.owner === 'AUH') return true; // seconda fase: tutta l'Austria-Ungheria
   if (['GER', 'DEN', 'NED', 'LUX'].includes(p.owner)) return true; // terza fase: Germania, Danimarca, Paesi Bassi
   if (p.owner === 'GBR' && ['GBR', 'IRL', 'IMN', 'JEY', 'GGY', 'ALD'].includes(p.modern)) return true; // quarta fase: isole britanniche
+  // quinta fase: Spagna e Balcani (con la Rumelia ottomana: Albania, Macedonia, Tracia, Kosovo, Tessaglia, Epiro, Creta)
+  if (['SPA', 'AND', 'SER', 'MNE', 'BUL', 'ROM', 'GRE'].includes(p.owner)) return true;
+  if (p.owner === 'TUR') {
+    if (['GRC', 'ALB', 'MKD', 'KOS', 'BGR', 'SRB', 'MNE', 'BIH'].includes(p.modern)) return true;
+    if (p.modern === 'TUR') { const [x, y] = turf.centroid(p.feat).geometry.coordinates; return x < 29.3 && y > 40.05; } // Tracia orientale
+  }
   return false;
 }
 
@@ -182,7 +188,7 @@ export function topoMetrics(topo, geoms) {
  * @param P pezzi ({area, owner, …}); key(p) vincolo rigido; soft(p) regione (vincolo morbido)
  * @returns array di gruppi (array di indici di pezzi)
  */
-export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), log }) {
+export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, log }) {
   const { perim, shared } = metrics;
   const inSet = new Set(atoms);
   const cl = new Map(); // id -> {ids:Set, A, Pm, nb: Map<clusterId, len>, key}
@@ -190,7 +196,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
   for (const i of atoms) {
     const nb = new Map();
     for (const [j, l] of shared[i]) if (inSet.has(j)) nb.set(j, l);
-    cl.set(i, { ids: new Set([i]), A: P[i].area, Pm: perim[i], nb, key: key(P[i]), soft: new Map([[soft(P[i]), P[i].area]]), bb: turf.bbox(P[i].feat) });
+    cl.set(i, { ids: new Set([i]), A: P[i].area, Pm: perim[i], nb, key: key(P[i]), soft: new Map([[soft(P[i]), P[i].area]]), bb: turf.bbox(P[i].feat), f: sizeScale(P[i]) });
     of.set(i, i);
   }
   const pp = (A, Pm) => (Pm > 0 ? (4 * Math.PI * A) / (Pm * Pm) : 0);
@@ -220,20 +226,20 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
   // fase 1: accorpamento dal più piccolo, verso la forma più compatta
   for (let guard = 0; guard < 100000; guard++) {
     let small = null;
-    for (const [id, c] of cl) if (c.A < min && !c.stuck && (!small || c.A < cl.get(small).A)) small = id;
+    for (const [id, c] of cl) if (c.A < min * c.f && !c.stuck && (!small || c.A < cl.get(small).A)) small = id;
     if (small === null) break;
     const S = cl.get(small);
     let best = null, bs = -1;
     for (const [o, l] of S.nb) {
       const O = cl.get(o);
-      if (O.key !== S.key || O.A + S.A > max || span(union(O.bb, S.bb)) > maxSpan) continue;
+      if (O.key !== S.key || O.A + S.A > max * S.f || span(union(O.bb, S.bb)) > maxSpan * Math.sqrt(S.f)) continue;
       const A = O.A + S.A, Pm = O.Pm + S.Pm - 2 * l;
       let sc = pp(A, Pm);
       if (softOf(O) !== softOf(S)) sc *= 0.55;
       // dove non c'è già una mappa approvata, conta anche l'estensione: niente strisce lungo coste e valli
       if (stripOwners.has(P[small].owner)) { const bb = union(O.bb, S.bb); sc *= Math.min(1, A / Math.max(1, span(bb) ** 2) / 0.3); }
       // a parità di forma, meglio completare una provincia ancora piccola
-      sc *= 1 + 0.25 * Math.max(0, 1 - O.A / target);
+      sc *= 1 + 0.25 * Math.max(0, 1 - O.A / (target * S.f));
       if (sc > bs) { bs = sc; best = o; }
     }
     if (best === null) { S.stuck = true; continue; }
@@ -271,7 +277,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       let best = null, gain = 0.004;
       for (const y of cands) {
         const Y = cl.get(y);
-        if (Y.key !== X.key || Y.A + P[i].area > max || X.A - P[i].area < min * 0.8 || span(union(Y.bb, turf.bbox(P[i].feat))) > maxSpan) continue;
+        if (Y.key !== X.key || Y.A + P[i].area > max * Y.f || X.A - P[i].area < min * 0.8 * X.f || span(union(Y.bb, turf.bbox(P[i].feat))) > maxSpan * Math.sqrt(Y.f)) continue;
         const toY = borderLen(i, y);
         const PmX = X.Pm - perim[i] + 2 * toX, PmY = Y.Pm + perim[i] - 2 * toY;
         const before = pp(X.A, X.Pm) + pp(Y.A, Y.Pm);
@@ -324,7 +330,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       const g1 = sorted.slice(0, Math.max(1, k)), g2 = sorted.slice(Math.max(1, k));
       if (!g2.length || !connected(g1) || !connected(g2)) continue;
       const s1 = stats(g1), s2 = stats(g2);
-      if (s1.A < min * 0.8 || s2.A < min * 0.8) continue;
+      if (s1.A < min * 0.8 * c.f || s2.A < min * 0.8 * c.f) continue;
       const f1 = s1.A / Math.max(1, span(s1.bb) ** 2), f2 = s2.A / Math.max(1, span(s2.bb) ** 2);
       const before = Math.min(c.A / Math.max(1, span(c.bb) ** 2), O.A / Math.max(1, span(O.bb) ** 2));
       if (Math.min(f1, f2) <= before + 0.03) continue;
@@ -350,7 +356,7 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
       let best = null, bs = fill(c);
       for (const [o, l] of nbm) {
         const O = cl.get(o);
-        if (O.key !== c.key || O.A + c.A > max * 1.35) continue;
+        if (O.key !== c.key || O.A + c.A > max * 1.35 * O.f) continue;
         const f2 = (O.A + c.A) / Math.max(1, span(union(O.bb, c.bb)) ** 2);
         if (f2 > bs && f2 >= fill(O) * 0.7 && l > 5) { bs = f2; best = o; }
       }

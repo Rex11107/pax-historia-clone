@@ -269,6 +269,29 @@ export const RENAMES = [
   }).map(([a, b]) => [a, b, 'AUH']),
   // Italia: nomi del 1881 (Latina nasce come Littoria nel 1932; Olbia era Terranova Pausania; Crotone era Cotrone)
   ['Latina', 'Terracina', 'ITA'], ['Medio Campidano', 'Iglesias', 'ITA'], ['Olbia', 'Terranova Pausania', 'ITA'], ['Crotone', 'Cotrone', 'ITA'],
+  // Spagna: nomi castigliani dell'epoca (GeoNames usa spesso quelli bilingui di oggi)
+  ...Object.entries({ 'Vitoria-Gasteiz': 'Vitoria', 'Donostia / San Sebastián': 'San Sebastián', 'Donostia-San Sebastián': 'San Sebastián', 'A Coruña': 'La Coruña', Ourense: 'Orense',
+    Lleida: 'Lérida', Girona: 'Gerona', 'Castelló de la Plana': 'Castellón', 'Alacant': 'Alicante', 'Iruña': 'Pamplona', 'Pamplona / Iruña': 'Pamplona', Xixón: 'Gijón',
+    'Elx': 'Elche', 'Sanxenxo': 'Sanjenjo', 'Ribeira': 'Santa Eugenia de Ribeira', 'Getxo': 'Guecho', 'Barakaldo': 'Baracaldo', 'Errenteria': 'Rentería', 'Hondarribia': 'Fuenterrabía',
+  }).map(([a, b]) => [a, b, 'SPA']),
+  // Balcani: nomi in uso nel 1881 (ottomani nelle terre ottomane, italiani dove la tradizione li ha)
+  ...Object.entries({ 'Ioánnina': 'Giannina', Ioannina: 'Giannina', 'Lárisa': 'Larissa', 'Vólos': 'Volo', 'Kaválla': 'Cavalla', Kavala: 'Cavalla', 'Kozáni': 'Kozani', 'Véroia': 'Verria',
+    'Kastoriá': 'Castoria', 'Flórina': 'Florina', 'Sérres': 'Serres', 'Dráma': 'Drama', 'Komotiní': 'Gümülcine', 'Alexandroúpoli': 'Dedeağaç', 'Xánthi': 'İskeçe', 'Tríkala': 'Tricala',
+    'Kardítsa': 'Carditza', 'Árta': 'Arta', 'Préveza': 'Prevesa', 'Igoumenítsa': 'Margariti', 'Irákleion': 'Candia', Heraklion: 'Candia', 'Chaniá': 'Canea', Chania: 'Canea', 'Réthymno': 'Retimo',
+    'Mytilíni': 'Mitilene', 'Chíos': 'Scio', 'Rodos': 'Rodi', 'Ródos': 'Rodi', 'Shkodër': 'Scutari', 'Durrës': 'Durazzo', 'Vlorë': 'Valona', 'Elbasan': 'Elbasan', 'Korçë': 'Coriza',
+    'Berat': 'Berat', 'Gjirokastër': 'Argirocastro', Skopje: 'Uskub', Bitola: 'Monastir', Ohrid: 'Ocrida', Prilep: 'Prilep', Tetovo: 'Kalkandelen', 'Kumanovo': 'Kumanovo', 'Štip': 'İştip',
+    Prizren: 'Prizren', 'Pristina': 'Priştine', 'Prishtinë': 'Priştine', 'Pejë': 'İpek', 'Peć': 'İpek', 'Mitrovicë': 'Mitroviça', Gjakovë: 'Yakova', 'Novi Pazar': 'Yeni Pazar',
+    'Plovdiv': 'Filippopoli', 'Stara Zagora': 'Eski Zağra', 'Haskovo': 'Hasköy', 'Kardzhali': 'Kırcaali', 'Smolyan': 'Paşmaklı', 'Blagoevgrad': 'Cuma-i Bala', 'Burgas': 'Burgaz',
+    Alexandroupoli: 'Dedeağaç', Ioanina: 'Giannina', Kilkis: 'Kukuş', Khaskovo: 'Hasköy', Shtip: 'İştip', Mitilini: 'Mitilene', Hios: 'Scio', Kerkira: 'Corfù', 'Kérkyra': 'Corfù',
+    'Argostólion': 'Argostoli', Ermoupoli: 'Siro', 'Ermoúpoli': 'Siro', Chalkida: 'Calcide', 'Chalkída': 'Calcide', Patra: 'Patrasso', 'Pátra': 'Patrasso', Tripoli: 'Tripolizza',
+    'Trípoli': 'Tripolizza', Nafplio: 'Nauplia', Kalamata: 'Calamata', Lamia: 'Lamia', Komotini: 'Gümülcine', Xanthi: 'İskeçe', Turnovo: 'Tirnovo', Khaskovo2: 'Hasköy',
+    Sliven: 'İslimye', Yambol: 'Yanbolu', Pazardzhik: 'Tatar Pazarcık', 'Edirne': 'Adrianopoli', 'Tekirdağ': 'Rodosto', 'Kırklareli': 'Kırkkilise', 'Çorlu': 'Çorlu',
+  }).flatMap(([a, b]) => [[a, b, 'TUR'], [a, b, 'GRE']]),
+  ...Object.entries({ Ruse: 'Rustchuk', Shumen: 'Sciumla', Pleven: 'Plevna', 'Veliko Tarnovo': 'Tirnovo', Dobrich: 'Bazargic', Vidin: 'Vidin', Varna: 'Varna', Silistra: 'Silistra',
+    Dimitrovgrad: 'Caribrod' }).map(([a, b]) => [a, b, 'BUL']),
+  ...Object.entries({ 'Niš': 'Nisch', Smederevo: 'Semendria', Kragujevac: 'Kragujevac', 'Šabac': 'Šabac', 'Užice': 'Užice', Dimitrovgrad: 'Caribrod' }).map(([a, b]) => [a, b, 'SER']),
+  ...Object.entries({ Cetinje: 'Cettigne', Bar: 'Antivari', Ulcinj: 'Dulcigno', 'Nikšić': 'Nikšić' }).map(([a, b]) => [a, b, 'MNE']),
+  ...Object.entries({ 'Iași': 'Iassi', 'Constanța': 'Costanza', 'Galați': 'Galatz', 'Brăila': 'Braila', 'Ploiești': 'Ploiești', 'Drobeta-Turnu Severin': 'Turnu Severin' }).map(([a, b]) => [a, b, 'ROM']),
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
 ];
 
@@ -300,4 +323,5 @@ export const POLISH_AREAS = [
 
 // Città nate o cresciute dopo il 1881: non danno il nome a una provincia
 export const ANACHRONISTIC = new Set(['Wolfsburg', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój',
-  'Milton Keynes', 'Telford', 'Craigavon', 'Livingston', 'Cumbernauld', 'East Kilbride', 'Glenrothes', 'Stevenage', 'Harlow', 'Basildon', 'Peterlee', 'Bracknell', 'Skelmersdale', 'Irvine New Town', 'Shannon', 'Tallaght', 'Guidonia Montecelio', 'Latina', 'Sabaudia', 'Aprilia', 'Pomezia', 'Carbonia', 'Arborea', 'Fertilia']);
+  'Milton Keynes', 'Telford', 'Craigavon', 'Livingston', 'Cumbernauld', 'East Kilbride', 'Glenrothes', 'Stevenage', 'Harlow', 'Basildon', 'Peterlee', 'Bracknell', 'Skelmersdale', 'Irvine New Town', 'Shannon', 'Tallaght', 'Guidonia Montecelio', 'Latina', 'Sabaudia', 'Aprilia', 'Pomezia', 'Carbonia', 'Arborea', 'Fertilia',
+  'Velingrad', 'Gotse Delchev', 'Tres Cantos', 'Rivas-Vaciamadrid', 'Ptolemaḯda', 'Ptolemaida', 'Igoumenitsa', 'Victoria', 'Onești', 'Motru', 'Rovinari', 'Dimitrovgrad']);

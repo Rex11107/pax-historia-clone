@@ -58,6 +58,9 @@ const RU_MAX = 14000;       // km2: limite del loro accorpamento
 const IT_COMP = { 'IT-RI': 'Umbria', 'IT-AO': 'Piemonte', 'IT-UD': 'Veneto', 'IT-PN': 'Veneto' };
 const IT_REG = { Molise: 'Abruzzo', "Valle d'Aosta": 'Piemonte' };
 // nazioni costitutive del Regno Unito (regioni di Natural Earth)
+// densità 1881 (ab/km²): Italia ~100, Spagna ~33, Romania ~40, Serbia ~36, Bulgaria ~30, Grecia ~30, Rumelia ottomana ~25
+const SIZE_SCALE = { SPA: 1.7, ROM: 1.5, SER: 1.5, BUL: 1.6, GRE: 1.6, TUR: 1.6 };
+const ES_NATION = { 'Cataluña': 'ca', 'País Vasco': 'eu', 'Foral de Navarra': 'eu', Galicia: 'gl' };
 const GB_NATION = { 'Highlands and Islands': 'sco', 'North Eastern': 'sco', Eastern: 'sco', 'South Western': 'sco', 'West Wales and the Valleys': 'cym', 'East Wales': 'cym', 'Northern Ireland': 'ni' };
 const ZONE_MIN = 2800;      // km2: province compatte della zona italiana
 const ZONE_TARGET = 4500;
@@ -67,7 +70,8 @@ const EXTRA_PLACES = [['Gorizia', 13.62, 45.94, 21000], ['Knin', 16.2, 44.04, 80
 const STRAIT_KM = 45;       // distanza massima per uno stretto attraversabile
 
 const log = (...a) => console.log('[map]', ...a);
-const EXONYM = { London: 'Londra', Edinburgh: 'Edimburgo', Dublin: 'Dublino', Berlin: 'Berlino', 'København': 'Copenaghen', Stuttgart: 'Stoccarda', Mainz: 'Magonza', Regensburg: 'Ratisbona', 'Lübeck': 'Lubecca', Bremen: 'Brema', Magdeburg: 'Magdeburgo',
+const EXONYM = { Barcelona: 'Barcellona', Sevilla: 'Siviglia', Zaragoza: 'Saragozza', 'Cádiz': 'Cadice', 'Córdoba': 'Cordova', Valencia: 'Valenza',
+  'Palma': 'Palma di Maiorca', Bucharest: 'Bucarest', Sofia: 'Sofia', Athens: 'Atene', Belgrade: 'Belgrado', Thessaloniki: 'Salonicco', London: 'Londra', Edinburgh: 'Edimburgo', Dublin: 'Dublino', Berlin: 'Berlino', 'København': 'Copenaghen', Stuttgart: 'Stoccarda', Mainz: 'Magonza', Regensburg: 'Ratisbona', 'Lübeck': 'Lubecca', Bremen: 'Brema', Magdeburg: 'Magdeburgo',
   'The Hague': "L'Aia", Aachen: 'Aquisgrana', Trier: 'Treviri', Koblenz: 'Coblenza', Freiburg: 'Friburgo in Brisgovia', Mulhouse: 'Mülhausen', Metz: 'Metz', Colmar: 'Colmar',
   Rome: 'Roma', Naples: 'Napoli', Turin: 'Torino', Milan: 'Milano', Venice: 'Venezia', Florence: 'Firenze', Genoa: 'Genova', 'Reggio di Calabria': 'Reggio Calabria',
   Rijeka: 'Fiume', Zadar: 'Zara', Split: 'Spalato', 'Šibenik': 'Sebenico', Dubrovnik: 'Ragusa di Dalmazia', Pula: 'Pola', Ljubljana: 'Lubiana', Zagreb: 'Zagabria', Maribor: 'Marburgo',
@@ -599,6 +603,7 @@ async function main() {
         : p.modern === 'SVK' && southOf(cent[p.i], SK_HU) ? 'hu' // fascia magiara della Slovacchia meridionale
         : ['RO-HR', 'RO-CV'].includes(p.iso) ? 'hu' // terra dei Siculi
         : p.modern === 'GBR' ? GB_NATION[p.reg] || '' // Scozia, Galles, Irlanda del Nord: nazioni distinte
+        : p.owner === 'SPA' && p.modern === 'ESP' ? ES_NATION[p.reg] || '' // Catalogna, Paesi Baschi e Navarra, Galizia
         : p.owner === 'GER' && POLISH_AREAS.some((ring) => turf.booleanPointInPolygon(cent[p.i], turf.polygon([ring]))) ? 'pl' // Polonia prussiana
         : p.modern === 'HUN' && p.owner === 'AUH' ? 'hu'
         : '';
@@ -608,7 +613,9 @@ async function main() {
       const claim = (p) => {
         const reg = String(p.reg || '');
         if (reg === 'H:Triest mit Gebiet') return 'trieste';
-        if (p.prot === 'FIU') return 'fiume'; // il poligono del corpus separatum di HistoGIS ha parti spurie in Slavonia
+        if (p.prot === 'FIU') return 'fiume';
+        // Rumelia ottomana: le province seguono i vilayet e le aree contese (Tessaglia, Epiro, Macedonia, Kosovo, Rumelia orientale…)
+        if (p.owner === 'TUR') return `ott:${regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern}`; // il poligono del corpus separatum di HistoGIS ha parti spurie in Slavonia
         if (p.owner === 'FRA' && p.iso === 'FR-06') return eastOfVar(cent[p.i]) ? 'nizza' : '';
         if (reg === 'H:Königreich Dalmatien') return coastKm(cent[p.i]) < 14 ? 'costa' : 'interno';
         return '';
@@ -625,7 +632,9 @@ async function main() {
         min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
         keepSmall: (p) => !!p.prot || ['trieste', 'fiume'].includes(claim(p)),
         // controllo delle strisce più severo dove non c'è già una mappa approvata
-        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED']),
+        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR']),
+        // terre poco popolate, province più grandi (radice del rapporto di densità con l'Italia del 1881)
+        sizeScale: (p) => SIZE_SCALE[p.owner] ?? 1,
       });
       for (const g of groups) for (const i of g.slice(1)) join(g[0], i);
     }
@@ -753,11 +762,14 @@ async function main() {
     return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList, byTown };
   });
   {
-    const townNames = new Set(gInfo.filter((g) => !g.byNameList).map((g) => g.name));
+    // confronto senza accenti e caratteri invisibili: "Málaga" e "Malaga" sono lo stesso nome
+    const nn = (x) => String(x).replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    for (const g of gInfo) g.name = String(g.name).replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '').trim();
+    const townNames = new Set(gInfo.filter((g) => !g.byNameList).map((g) => nn(g.name)));
     // le più estese scelgono per prime, così due province non prendono lo stesso nome amministrativo
     for (const g of gInfo.filter((x) => x.byNameList).sort((a, b) => b.area - a.area)) {
-      const n = g.byNameList.find((x) => !townNames.has(x));
-      if (n) { g.name = n; townNames.add(n); }
+      const n = g.byNameList.map((x) => String(x).replace(/[\u200B-\u200F\u202A-\u202E\u2060\uFEFF]/g, '').trim()).find((x) => !townNames.has(nn(x)));
+      if (n) { g.name = n; townNames.add(nn(n)); }
     }
   }
   // regioni ancora indecise: quella del vicino dello stesso stato con più confine in comune
