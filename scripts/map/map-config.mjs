@@ -203,5 +203,9 @@ export const RENAMES = [
   ['Dnipropetrovs\'k', 'Ekaterinoslav'], ['Dnipro', 'Ekaterinoslav'], ['Zaporižžja', 'Aleksandrovsk'], ['Zaporizhzhia', 'Aleksandrovsk'], ["Donec'k", 'Juzovka'], ['Donetsk', 'Juzovka'],
   ['Kirovohrad', 'Elisavetgrad'], ["Chmel'nyc'kyj", 'Proskurov'], ["Ivano-Frankivs'k", 'Stanislau'], ["Ternopil'", 'Tarnopol'], ['Černivci', 'Czernowitz'],
   ['Murmansk', 'Kola'], ['Monchegorsk', 'Kola (sud)'], ['Severodvinsk', 'Onega'], ['Tbilisi', 'Tiflis'], ['Gyumri', 'Aleksandropol'], ['Ganja', 'Elisavetpol'], ['Gəncə', 'Elisavetpol'],
+  // stati tedeschi minori (ciò che resta delle regioni moderne fuori dalla Prussia, dalla Baviera e dal Baden)
+  ['Baden-Württemberg', 'Württemberg', 'GER'], ['Meclemburgo-Pomerania Anteriore', 'Meclemburgo', 'GER'], ['Sassonia-Anhalt', 'Anhalt', 'GER'],
+  ['Renania Settentrionale-Vestfalia', 'Lippe', 'GER'], ['Schleswig-Holstein', 'Lubecca ed Eutin', 'GER'], ['Assia', 'Waldeck', 'GER'], ['Jena', 'Turingia', 'GER'],
+  ['Braunschweig', 'Brunswick', 'GER'], ['Gießen', 'Alta Assia', 'GER'], ['Mainz', 'Assia-Darmstadt', 'GER'], ['Stralsund (nord)', 'Rügen', 'GER'], ['Renania-Palatinato', 'Birkenfeld', 'GER'],
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
 ];

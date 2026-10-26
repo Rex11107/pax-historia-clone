@@ -123,7 +123,7 @@ export function splitByBasins(fc, { ms, TMP, basinsPath, places, splitArea, targ
       }
       const c = turf.centroid(f).geometry.coordinates;
       const dir = Math.abs(c[1] - pc[1]) > Math.abs(c[0] - pc[0]) * Math.cos((pc[1] * Math.PI) / 180) ? (c[1] > pc[1] ? 'nord' : 'sud') : c[0] > pc[0] ? 'est' : 'ovest';
-      f.properties = { ...base, pid: `${base.pid}~${++k}`, pname: town && tp > 15000 ? exo(town) : `${base.pname} (${dir})` };
+      f.properties = { ...base, pid: `${base.pid}~${++k}`, pname: town && tp > 15000 && !base.own ? exo(town) : `${base.pname} (${dir})` };
       out.push(f);
       made++;
     }

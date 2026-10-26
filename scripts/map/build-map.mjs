@@ -7,6 +7,8 @@
 //  - Natural Earth 10m populated places (dominio pubblico) -> peso demografico
 //  - aourednik/historical-basemaps world_1880 (GPL-3.0) -> confini politici 1880
 //  - HydroBASINS v1c (HydroSHEDS, Lehner & Grill 2013; uso libero con attribuzione) -> spartiacque
+//  - HistoGIS (ACDH-CH, CC BY 4.0) -> distretti prussiani, bavaresi, badensi, cisleitani; Kronländer (scripts/map/historical.mjs)
+//  - RISTAT, Kessler & Markevich (CC0) -> uezd e governatorati russi del 1897
 //
 // Pipeline:
 //  1. ritaglio sull'area di gioco, suddivisione delle province troppo grandi
@@ -23,6 +25,7 @@ import { fileURLToPath } from 'node:url';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 import { prepareBasins, splitByBasins } from './basins.mjs';
+import { buildHistoricalBase } from './historical.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES } from './map-config.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -48,6 +51,10 @@ const SPLIT_AREA = 22000;   // km2: sopra questa soglia una provincia viene divi
 const SLIVER = 350;         // km2: pezzi più piccoli vengono assorbiti
 const MIN_AREA = 2600;      // km2: province più piccole vengono accorpate
 const MAX_MERGE = 11000;    // km2: limite dell'accorpamento
+const RU_MIN = 7000;        // km2: soglia di accorpamento degli uezd russi
+const RU_MAX = 14000;       // km2: limite del loro accorpamento
+const IT_COMP = { 'IT-RI': 'Umbria', 'IT-AO': 'Piemonte', 'IT-UD': 'Veneto', 'IT-PN': 'Veneto' };
+const IT_REG = { Molise: 'Abruzzo', "Valle d'Aosta": 'Piemonte' };
 const STRAIT_KM = 45;       // distanza massima per uno stretto attraversabile
 
 const log = (...a) => console.log('[map]', ...a);
@@ -412,9 +419,11 @@ async function main() {
   const placesAll0 = readJSON(path.join(RAW, 'ne_places.geojson')).features;
   // province grandi: spartiacque di HydroBASINS se disponibile, altrimenti fiumi di Natural Earth
   const hydroOk = fs.existsSync(path.join(RAW, 'hydro', 'hybas_eu_lev07_v1c.shp'));
+  // unità amministrative d'epoca (HistoGIS, RISTAT) al posto di quelle moderne dove disponibili
+  const basePath = buildHistoricalBase({ ms, RAW, TMP, BBOX, provPath: path.join(TMP, 'prov.geojson'), places: placesAll0, exo, log }) || path.join(TMP, 'prov.geojson');
   const prov = hydroOk
-    ? splitByBasins(readJSON(path.join(TMP, 'prov.geojson')), { ms, TMP, basinsPath: prepareBasins({ ms, RAW, TMP, BBOX }), places: placesAll0, splitArea: SPLIT_AREA, target: FACE_TARGET, minPiece: FACE_MIN, exo, log })
-    : splitByRivers(readJSON(path.join(TMP, 'prov.geojson')), placesAll0);
+    ? splitByBasins(readJSON(basePath), { ms, TMP, basinsPath: prepareBasins({ ms, RAW, TMP, BBOX }), places: placesAll0, splitArea: SPLIT_AREA, target: FACE_TARGET, minPiece: FACE_MIN, exo, log })
+    : splitByRivers(readJSON(basePath), placesAll0);
   // orientamento degli anelli coerente (i pezzi nati da unioni/differenze di turf possono averlo invertito)
   for (const f of prov.features) turf.rewind(f, { mutate: true });
   fs.writeFileSync(path.join(TMP, 'prov_split_raw.geojson'), JSON.stringify(prov));
@@ -440,7 +449,8 @@ async function main() {
     let owner = pr.hist ? HIST_TO_TAG[pr.hist] : null;
     if (pr.hist && owner === undefined) throw new Error(`stato storico senza tag: ${pr.hist}`);
     if (pr.fix && owner) owner = pr.fix;
-    return { i, fix: pr.fix, pid: pr.pid, iso: pr.iso, reg: pr.reg, name: cleanName(pr.pname), modern: pr.modern, owner, area: km2(f), feat: f };
+    if (!pr.fix && pr.own) owner = pr.own; // unità d'epoca: il proprietario è certo
+    return { i, fix: pr.fix || pr.own || null, hist: !!pr.own, pid: pr.pid, iso: pr.iso, reg: pr.reg, name: cleanName(pr.pname), modern: pr.modern, owner, area: km2(f), feat: f };
   });
   const applyOverrides = (p) => {
     if (p.fix) { p.owner = p.fix; return; }
@@ -505,26 +515,53 @@ async function main() {
     const ns = nbr[p.i].map((j) => P[j]);
     const same = ns.filter((q) => q.owner === p.owner).sort((a, b) => b.area - a.area);
     if (same.length) join(same[0].i, p.i);
-    else if (ns.length && gArea[find(p.i)] < 120) { const q = ns.sort((a, b) => b.area - a.area)[0]; join(q.i, p.i); }
+    // frammenti di confine fra dataset diversi: vanno al vicino più esteso anche se di altro stato
+    else if (ns.length && (gArea[find(p.i)] < 120 || (!p.hist && String(p.pid).includes('~h')))) { const q = ns.sort((a, b) => b.area - a.area)[0]; join(q.i, p.i); }
   }
   // accorpamento delle province piccole: solo con vicini dello stesso stato storico E della stessa
   // regione culturale (regione amministrativa moderna; in Svizzera la lingua), così una futura cessione
   // segue linee credibili (il Ticino resta italiano di lingua, la Romandia francese).
-  const mkey = (p) => (p.modern === 'CHE' ? `CHE|${CH_LANG[p.iso] || 'de'}` : `${p.modern}|${p.reg || ''}`);
-  for (const [limit, sameKey] of [[MIN_AREA, true], [900, false]]) {
+  // Italia: compartimenti statistici del 1881 (Rieti in Umbria, Molise con gli Abruzzi, Aosta col Piemonte)
+  const itComp = (p) => IT_COMP[p.iso] || IT_REG[p.reg] || p.reg;
+  const mkey = (p) => (p.modern === 'CHE' ? `CHE|${CH_LANG[p.iso] || 'de'}` : p.modern === 'ITA' && !String(p.reg || '').startsWith('H:') ? `ITA|${itComp(p)}` : `${p.modern}|${p.reg || ''}`);
+  // gli uezd russi sono piccoli: si accorpano dentro il governatorato fino a dimensioni da provincia di gioco
+  const minOf = (g, base) => (P[g].owner === 'RUS' && String(P[g].reg || '').startsWith('H:') ? Math.max(base, RU_MIN) : base);
+  for (const [limit0, sameKey] of [[MIN_AREA, true], [900, false]]) {
     let changed = true;
     while (changed) {
       changed = false;
       const roots = [...new Set(P.map((p) => find(p.i)))].sort((a, b) => gArea[a] - gArea[b]);
       for (const g of roots) {
+        const limit = sameKey ? minOf(g, limit0) : limit0;
         if (find(g) !== g || gArea[g] >= limit) continue;
         const owner = P[g].owner;
-        const cap = gArea[g] < 1500 ? Infinity : MAX_MERGE; // le province minuscole si uniscono comunque
+        const cap = gArea[g] < 1500 ? Infinity : limit > MIN_AREA ? RU_MAX : MAX_MERGE; // le province minuscole si uniscono comunque
         const cands = groupNbrs(g).filter((h) => P[h].owner === owner && gArea[h] + gArea[g] <= cap && (sameKey ? mkey(P[h]) === mkey(P[g]) : P[h].modern === P[g].modern))
           .sort((a, b) => gArea[a] - gArea[b]);
         if (cands.length) { join(cands[0], g); changed = true; }
       }
     }
+  }
+
+  // isole piccole senza vicini: si uniscono alla provincia più vicina dello stesso stato (entro 60 km),
+  // altrimenti sparirebbero nella semplificazione
+  {
+    const ar = new Map();
+    for (const p of P) { const r = find(p.i); ar.set(r, gArea[r]); }
+    const smallRoots = [...ar.keys()].filter((r) => gArea[r] < 600).sort((a, b) => gArea[a] - gArea[b]);
+    let isl = 0;
+    for (const r0 of smallRoots) {
+      const r = find(r0);
+      if (gArea[r] >= 600) continue;
+      const mine = P.filter((p) => find(p.i) === r);
+      let best = null, bd = 60;
+      for (const q of P) {
+        if (q.owner !== P[r].owner || find(q.i) === r || gArea[find(q.i)] < gArea[r]) continue;
+        for (const m of mine) { const d = turf.distance(cent[m.i], cent[q.i]); if (d < bd) { bd = d; best = q; } }
+      }
+      if (best) { join(best.i, r); isl++; }
+    }
+    log(`${isl} isole o frammenti uniti alla provincia vicina`);
   }
 
   // peso urbano di ogni pezzo: il nome della provincia accorpata è quello del pezzo più popoloso
@@ -544,7 +581,10 @@ async function main() {
   const gInfo = roots.map((r) => {
     const mem = P.filter((p) => find(p.i) === r).sort((a, b) => b.area - a.area);
     const byName = new Map();
-    for (const m of mem) byName.set(m.name, (byName.get(m.name) || 0) + (MICRO.has(m.modern) ? 0 : (m.urban || 0) + m.area * 2));
+    // nomi d'epoca preferiti, ma solo se le unità d'epoca sono la parte maggiore della provincia
+    const histArea = mem.reduce((t, m) => t + (m.hist ? m.area : 0), 0);
+    const anyHist = histArea >= 0.5 * mem.reduce((t, m) => t + m.area, 0);
+    for (const m of mem) if (!anyHist || m.hist) byName.set(m.name, (byName.get(m.name) || 0) + (MICRO.has(m.modern) ? 0 : (m.urban || 0) + m.area * 2));
     const name = [...byName.entries()].sort((a, b) => b[1] - a[1])[0][0];
     return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r] };
   });
@@ -737,7 +777,8 @@ async function main() {
     version: 1,
     scenario: 'europe1881',
     projection: 'LAEA 52N 10E, km, archi delta-codificati in decimi di km',
-    sources: ['Natural Earth (public domain)', 'aourednik/historical-basemaps world_1880 (GPL-3.0)'],
+    sources: ['Natural Earth (public domain)', 'aourednik/historical-basemaps world_1880 (GPL-3.0)', 'HydroBASINS (Lehner & Grill 2013)',
+      'HistoGIS, ACDH-CH, Austrian Academy of Sciences (CC BY 4.0)', 'Kessler & Markevich, RISTAT Russian Empire 1897 maps (CC0)'],
     arcs: outArcs,
     arcSides,
     provinces: provinces.map((p) => ({
