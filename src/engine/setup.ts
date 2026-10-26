@@ -39,7 +39,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
       rail: pr.rail,
       opinion: {},
       policies: { tax: 'normal', mobilization: 'peace', infrastructure: 'normal', press: 'guided' },
-      capital: map.nearest(pr.capital[0], pr.capital[1], tag),
+      capital: map.locate(pr.capital[0], pr.capital[1], tag) ?? map.nearest(pr.capital[0], pr.capital[1], tag),
       alive: true,
       turnLosses: 0,
     };

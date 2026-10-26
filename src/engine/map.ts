@@ -61,6 +61,26 @@ export class GameMap {
 
   isAdjacent(a: number, b: number) { return !!this.edge(a, b); }
 
+  /** Provincia che contiene il punto lon/lat (stessa proiezione della mappa), se c'è. */
+  locate(lon: number, lat: number, owner?: string): number | null {
+    const [px, py] = laea(lon, lat);
+    const y = -py;
+    const arcs = (this.decoded ??= decodeArcs(this.data));
+    for (const p of this.provinces) {
+      if (owner && p.owner !== owner) continue;
+      let inside = false;
+      for (const ring of provinceRings(p, arcs)) {
+        for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+          const xi = ring[i], yi = ring[i + 1], xj = ring[j], yj = ring[j + 1];
+          if ((yi > y) !== (yj > y) && px < ((xj - xi) * (y - yi)) / (yj - yi) + xi) inside = !inside;
+        }
+      }
+      if (inside) return p.id;
+    }
+    return null;
+  }
+  private decoded: Float32Array[] | null = null;
+
   /** Provincia il cui centro è più vicino a lon/lat (con preferenza per un proprietario). */
   nearest(lon: number, lat: number, owner?: string): number {
     let best = -1, bd = Infinity;
@@ -175,6 +195,14 @@ class MinHeap {
 }
 
 /** Decodifica gli archi delta-codificati in coordinate km (y verso il basso per il disegno). */
+/** Proiezione azimutale equivalente di Lambert (centro 52N 10E), km: la stessa di scripts/map. */
+export function laea(lon: number, lat: number): [number, number] {
+  const LAT0 = (52 * Math.PI) / 180, LON0 = (10 * Math.PI) / 180, R = 6371;
+  const l = (lon * Math.PI) / 180, p = (lat * Math.PI) / 180;
+  const k = Math.sqrt(2 / (1 + Math.sin(LAT0) * Math.sin(p) + Math.cos(LAT0) * Math.cos(p) * Math.cos(l - LON0)));
+  return [R * k * Math.cos(p) * Math.sin(l - LON0), R * k * (Math.cos(LAT0) * Math.sin(p) - Math.sin(LAT0) * Math.cos(p) * Math.cos(l - LON0))];
+}
+
 export function decodeArcs(data: MapData): Float32Array[] {
   return data.arcs.map((flat) => {
     const out = new Float32Array(flat.length);

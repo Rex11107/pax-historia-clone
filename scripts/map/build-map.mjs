@@ -28,7 +28,7 @@ import { prepareBasins, splitByBasins } from './basins.mjs';
 import { buildHistoricalBase } from './historical.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
-import { atomize, compactClusters, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
+import { atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RAW = path.join(ROOT, 'data-raw');
@@ -60,6 +60,8 @@ const IT_REG = { Molise: 'Abruzzo', "Valle d'Aosta": 'Piemonte' };
 const ZONE_MIN = 2800;      // km2: province compatte della zona italiana
 const ZONE_TARGET = 4500;
 const ZONE_MAX = 7500;
+// città importanti nel 1881 assenti da Natural Earth (servono a dare il nome alle province)
+const EXTRA_PLACES = [['Gorizia', 13.62, 45.94, 21000], ['Knin', 16.2, 44.04, 8000]];
 const STRAIT_KM = 45;       // distanza massima per uno stretto attraversabile
 
 const log = (...a) => console.log('[map]', ...a);
@@ -439,7 +441,7 @@ async function main() {
   // zona italiana: atomi piccoli (unità amministrative x bacini di livello 8) da raggruppare in province compatte
   const b8 = prepareBasins8({ ms, RAW, TMP });
   if (b8) {
-    const atoms = atomize(readJSON(path.join(TMP, 'prov_split.geojson')), { ms, TMP, basinsPath: b8, log });
+    const atoms = atomize(readJSON(path.join(TMP, 'prov_split.geojson')), { ms, TMP, basinsPath: b8, log, modernLayer: readJSON(path.join(TMP, 'prov.geojson')).features });
     fs.writeFileSync(path.join(TMP, 'prov_split.geojson'), JSON.stringify(atoms));
   }
 
@@ -569,10 +571,23 @@ async function main() {
     if (zoneIdx.length) {
       const metrics = topoMetrics(topo, geoms);
       const lang = (p) => (p.modern === 'CHE' ? CH_LANG[p.iso] || 'de' : p.iso === 'IT-BZ' ? 'de' : '');
+      const coastKm = coastDistance(topo, geoms);
+      // linee che contano per le rivendicazioni dell'epoca, anche se producono province piccole:
+      // la città di Trieste, la contea di Nizza, la costa dalmata (minoranze italiane) separata dall'interno croato
+      const claim = (p) => {
+        const reg = String(p.reg || '');
+        if (reg === 'H:Triest mit Gebiet') return 'trieste';
+        if (p.owner === 'FRA' && p.iso === 'FR-06') return eastOfVar(cent[p.i]) ? 'nizza' : '';
+        if (reg === 'H:Königreich Dalmatien') return coastKm(cent[p.i]) < 14 ? 'costa' : 'interno';
+        return '';
+      };
       const groups = compactClusters(zoneIdx, P, metrics, {
-        key: (p) => `${p.owner}|${p.modern}|${lang(p)}|${p.prot || ''}`,
+        // la contea di Gorizia resta unita anche a cavallo del confine italo-sloveno di oggi
+        key: (p) => `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : p.modern}|${lang(p)}|${p.prot || ''}|${claim(p)}`,
+        looseKey: (p) => `${p.owner}|${lang(p)}|${p.prot || ''}|${['costa', 'interno'].includes(claim(p)) ? 'dalmazia' : claim(p)}`,
         soft: (p) => regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
         min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
+        keepSmall: (p) => !!p.prot || claim(p) === 'trieste',
       });
       for (const g of groups) for (const i of g.slice(1)) join(g[0], i);
     }
@@ -588,6 +603,8 @@ async function main() {
     for (const r0 of smallRoots) {
       const r = find(r0);
       if (gArea[r] >= 600 || P[r].prot) continue;
+      // zona italiana: solo le isole vere (senza confini di terra) si uniscono a distanza
+      if (P[r].zone && P.some((p) => find(p.i) === r && nbr[p.i].some((j) => find(j) !== r))) continue;
       const mine = P.filter((p) => find(p.i) === r);
       let best = null, bd = 60;
       for (const q of P) {
@@ -600,7 +617,7 @@ async function main() {
   }
 
   // peso urbano di ogni pezzo: il nome della provincia accorpata è quello del pezzo più popoloso
-  const placesAll = readJSON(path.join(RAW, 'ne_places.geojson')).features;
+  const placesAll = [...readJSON(path.join(RAW, 'ne_places.geojson')).features, ...EXTRA_PLACES.map(([name, lon, lat, pop]) => turf.point([lon, lat], { name, pop_max: pop }))];
   for (const pl of placesAll) {
     const [x, y] = pl.geometry.coordinates;
     if (x < BBOX[0] || x > BBOX[2] || y < BBOX[1] || y > BBOX[3]) continue;
@@ -628,10 +645,10 @@ async function main() {
     let name = [...byName.entries()].sort((a, b) => b[1] - a[1])[0][0];
     // zona italiana: la provincia prende il nome della sua città principale; senza città, il nome
     // amministrativo più esteso che non sia già il nome di un'altra provincia
-    let byNameList = null;
+    let byNameList = null, byTown = false;
     if (mem[0].zone && !P[r].prot) {
       const t = mem.filter((m) => m.topTown).sort((a, b) => b.topPop - a.topPop)[0];
-      if (t && t.topPop >= 8000) name = exo(t.topTown);
+      if (t && t.topPop >= 8000) { name = exo(t.topTown); byTown = true; }
       else byNameList = [...byName.entries()].sort((a, b) => b[1] - a[1]).map((x) => x[0]);
     }
     // regione storica: quella che copre la maggior parte dell'area del gruppo
@@ -646,7 +663,7 @@ async function main() {
       regArea.set(rg, (regArea.get(rg) || 0) + m.area);
     }
     const region = [...regArea.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList };
+    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList, byTown };
   });
   {
     const townNames = new Set(gInfo.filter((g) => !g.byNameList).map((g) => g.name));
@@ -895,6 +912,8 @@ async function main() {
     tiny.add(k);
   }
   for (const pr of PROTECTED) { const p = provinces.find((q) => q.info.prot?.id === pr.id); if (p) { p.pop = pr.pop; p.terrain = pr.terrain; p.coast = pr.coast; } }
+  // anche le altre province minuscole (Trieste) hanno il sigillo, per poterle toccare
+  for (const p of provinces) if (!p.synthetic && p.info.area < 150) tiny.add(p.k);
 
   const out = {
     version: 1,
@@ -917,6 +936,7 @@ async function main() {
       c: laea(p.pt).map((v) => Math.round(v)),
       arcs: p.synthetic ? [] : fgeoms[p.k].arcs,
       n: fnbr[p.k],
+      _town: !!p.info.byTown,
       ...(tiny.has(p.k) ? { tiny: true } : {}),
       _region: p.info.region,
     })),
@@ -938,6 +958,17 @@ async function main() {
   const groupsByName = new Map();
   for (const p of out.provinces) { if (seen.get(p.name) > 1) { if (!groupsByName.has(p.name)) groupsByName.set(p.name, []); groupsByName.get(p.name).push(p); } }
   for (const [name, list] of groupsByName) {
+    // chi ha davvero la città nel suo territorio tiene il nome; le altre prendono la direzione rispetto a lei
+    const town = list.filter((p) => p._town);
+    if (town.length === 1 && new Set(list.map((p) => p.owner)).size === 1) {
+      const [cx, cy] = town[0].lonlat;
+      for (const p of list) {
+        if (p === town[0]) continue;
+        const dx = (p.lonlat[0] - cx) * Math.cos((cy * Math.PI) / 180), dy = p.lonlat[1] - cy;
+        p.name = `${name} (${Math.abs(dy) > Math.abs(dx) ? (dy > 0 ? 'nord' : 'sud') : dx > 0 ? 'est' : 'ovest'})`;
+      }
+      continue;
+    }
     const owners = new Set(list.map((p) => p.owner));
     if (owners.size === list.length) { for (const p of list) if (ADJ[p.owner]) p.name = `${name} ${ADJ[p.owner]}`; continue; }
     const cx = list.reduce((s2, p) => s2 + p.lonlat[0], 0) / list.length, cy = list.reduce((s2, p) => s2 + p.lonlat[1], 0) / list.length;
@@ -968,7 +999,7 @@ async function main() {
     keys.sort((a, b) => regCount.get(b) - regCount.get(a));
     keys.forEach((key, i) => { const owner = key.split('|')[0]; regKey.set(key, regions.length); regions.push({ name: i === 0 || !ADJ[owner] ? n : `${n} ${ADJ[owner]}` }); });
   }
-  for (const p of out.provinces) { p.r = regKey.get(p._rk); delete p._rk; delete p._region; }
+  for (const p of out.provinces) { p.r = regKey.get(p._rk); delete p._rk; delete p._region; delete p._town; }
   out.regions = regions;
   log(`${regions.length} regioni storiche; ${tiny.size} province-simbolo (${[...tiny].map((k) => out.provinces[k].name).join(', ')})`);
 

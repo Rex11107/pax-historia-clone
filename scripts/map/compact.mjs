@@ -45,7 +45,7 @@ export function prepareBasins8({ ms, RAW, TMP }) {
 /**
  * Taglia le province della zona sui bacini di livello 8. pid degli atomi: `${pid}~a${k}`.
  */
-export function atomize(fc, { ms, TMP, basinsPath, log }) {
+export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer }) {
   const inBox = (f) => { const [x, y] = turf.centroid(f).geometry.coordinates; return x > ZONE_BBOX[0] && x < ZONE_BBOX[2] && y > ZONE_BBOX[1] && y < ZONE_BBOX[3]; };
   const zone = [], rest = [];
   for (const f of fc.features) (inBox(f) ? zone : rest).push(f);
@@ -61,10 +61,54 @@ export function atomize(fc, { ms, TMP, basinsPath, log }) {
     const k = (count.get(base.pid) || 0) + 1;
     count.set(base.pid, k);
     const { zi, b8, ...props } = a.properties;
-    out.push({ type: 'Feature', geometry: a.geometry, properties: { ...base, ...props, pid: `${base.pid}~a${k}` } });
+    const np = { ...base, ...props, pid: `${base.pid}~a${k}` };
+    // unità d'epoca: paese moderno e codice dell'atomo, non del capoluogo del distretto (Cattaro non è Bosnia)
+    if (np.own && modernLayer) {
+      let pt; try { pt = turf.pointOnFeature(a).geometry.coordinates; } catch { pt = null; }
+      const m = pt && modernLayer.find((f) => { const bb = f.bb || (f.bb = turf.bbox(f)); return pt[0] >= bb[0] && pt[0] <= bb[2] && pt[1] >= bb[1] && pt[1] <= bb[3] && turf.booleanPointInPolygon(pt, f); });
+      if (m) { np.modern = m.properties.modern; np.iso = m.properties.iso; np.nreg = m.properties.reg ?? null; }
+    }
+    out.push({ type: 'Feature', geometry: a.geometry, properties: np });
   }
   log(`${zone.length} province della zona italiana tagliate in ${atoms.length} atomi (bacini HydroBASINS liv. 8)`);
   return turf.featureCollection(out);
+}
+
+/** Distanza (km) dalla costa più vicina: archi della topologia usati da un solo pezzo. */
+export function coastDistance(topo, geoms, bbox = ZONE_BBOX) {
+  const tf = topo.transform;
+  const use = new Uint16Array(topo.arcs.length);
+  geoms.forEach((g) => { const rec = (a) => (typeof a === 'number' ? use[a < 0 ? ~a : a]++ : a.forEach(rec)); rec(g.arcs); });
+  const CELL = 0.25, grid = new Map();
+  topo.arcs.forEach((arc, ai) => {
+    if (use[ai] !== 1) return;
+    let x = 0, y = 0;
+    for (const [dx, dy] of arc) {
+      x += dx; y += dy;
+      const pt = tf ? [x * tf.scale[0] + tf.translate[0], y * tf.scale[1] + tf.translate[1]] : [dx, dy];
+      if (pt[0] < bbox[0] || pt[0] > bbox[2] || pt[1] < bbox[1] || pt[1] > bbox[3]) continue;
+      if (Math.abs(pt[0] - bbox[0]) < 0.01 || Math.abs(pt[0] - bbox[2]) < 0.01 || Math.abs(pt[1] - bbox[1]) < 0.01 || Math.abs(pt[1] - bbox[3]) < 0.01) continue;
+      const key = `${Math.floor(pt[0] / CELL)},${Math.floor(pt[1] / CELL)}`;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key).push(pt);
+    }
+  });
+  return ([lon, lat]) => {
+    const gx = Math.floor(lon / CELL), gy = Math.floor(lat / CELL);
+    let best = Infinity;
+    for (let dx = -2; dx <= 2; dx++) for (let dy = -2; dy <= 2; dy++) for (const pt of grid.get(`${gx + dx},${gy + dy}`) || []) best = Math.min(best, turf.distance([lon, lat], pt));
+    return best;
+  };
+}
+
+/** Contea di Nizza (ceduta nel 1860): a est del Var. */
+const VAR = [[43.66, 7.195], [43.75, 7.19], [43.85, 7.17], [43.9, 7.05], [43.93, 6.95], [43.96, 6.86], [44.05, 6.83], [44.2, 6.9], [44.5, 6.9]];
+export function eastOfVar([lon, lat]) {
+  for (let i = 1; i < VAR.length; i++) {
+    const [la0, lo0] = VAR[i - 1], [la1, lo1] = VAR[i];
+    if (lat <= la1 || i === VAR.length - 1) return lon > lo0 + ((Math.min(Math.max(lat, la0), la1) - la0) / (la1 - la0)) * (lo1 - lo0);
+  }
+  return false;
 }
 
 /** Perimetri e confini condivisi (km) dei pezzi di una topologia. */
@@ -100,7 +144,7 @@ export function topoMetrics(topo, geoms) {
  * @param P pezzi ({area, owner, …}); key(p) vincolo rigido; soft(p) regione (vincolo morbido)
  * @returns array di gruppi (array di indici di pezzi)
  */
-export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, log }) {
+export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, log }) {
   const { perim, shared } = metrics;
   const inSet = new Set(atoms);
   const cl = new Map(); // id -> {ids:Set, A, Pm, nb: Map<clusterId, len>, key}
@@ -154,6 +198,15 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     }
     if (best === null) { S.stuck = true; continue; }
     mergeInto(best, small);
+  }
+
+  // frammenti rimasti minuscoli (schegge lungo confini moderni): al vicino dello stesso stato,
+  // salvo i territori che devono restare a sé (Trieste, microstati)
+  for (const [id, c] of [...cl]) {
+    if (!cl.has(id) || c.A >= tiny || keepSmall(P[id])) continue;
+    const lk = looseKey(P[id]);
+    const best = [...c.nb.entries()].filter(([o]) => { const q = P[[...cl.get(o).ids][0]]; return looseKey(q) === lk && !keepSmall(q); }).sort((a, b) => b[1] - a[1])[0];
+    if (best) mergeInto(best[0], id);
   }
 
   // fase 2: atomi di bordo spostati verso la provincia vicina se le forme migliorano
