@@ -27,7 +27,7 @@ describe('mappa', () => {
     expect(w.map.provinces[find(w, 'Trento')].owner).toBe('AUH');
     expect(w.map.provinces[find(w, 'Trieste')].owner).toBe('AUH');
     expect(w.map.provinces[find(w, 'Nizza')].owner).toBe('FRA');
-    expect(w.map.provinces[find(w, 'Basso Reno')].owner).toBe('GER');
+    expect(w.map.provinces[find(w, 'Strasburgo')].owner).toBe('GER');
   });
   it('Sicilia e Sardegna sono raggiungibili via stretto', () => {
     const w = newGame(MAP);

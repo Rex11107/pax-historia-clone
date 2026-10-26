@@ -41,6 +41,7 @@ export const OVERRIDES = [
   { modern: 'CYN', to: 'GBR' }, { modern: 'ESB', to: 'GBR' }, { modern: 'WSB', to: 'GBR' }, // basi di Dhekelia e Akrotiri: Cipro
   { modern: 'TUN', to: 'TUN' }, // Beilicato di Tunisi (protettorato francese solo da maggio 1881)
   { modern: 'ISL', to: 'DEN' }, { modern: 'FRO', to: 'DEN' },
+  { modern: 'DNK', when: ([x, y]) => x > 9.72 && y > 55.12, to: 'DEN' }, // Fionia e isole: mai prussiane
   { modern: 'DZA', from: 'MOR', when: ([, lat]) => lat > 31, to: 'FRA' }, // Oranese francese
   { modern: 'JEY', to: 'GBR' }, { modern: 'GGY', to: 'GBR' }, { modern: 'IMN', to: 'GBR' },
   // Il dataset usa la Bulgaria di Santo Stefano: nel 1881 Macedonia, Rumelia orientale e Creta sono ottomane
@@ -90,7 +91,7 @@ export const OVERRIDES = [
 // Poligoni di correzione (lon/lat) per confini che non seguono le province moderne
 export const CORRECTION_POLYGONS = [
   // Schleswig settentrionale: prussiano dal 1864 fino al confine del fiume Kongeå
-  { to: 'GER', ring: [[8.0, 54.78], [10.2, 54.78], [10.2, 55.46], [8.0, 55.46], [8.0, 54.78]] },
+  { to: 'GER', ring: [[8.0, 54.78], [10.08, 54.78], [10.08, 55.06], [9.78, 55.18], [9.68, 55.46], [8.0, 55.46], [8.0, 54.78]] }, // ad ovest del Piccolo Belt, Als compresa
 ];
 
 // Popolazione 1881 per nazione; le sotto-voci (paese moderno) hanno un totale proprio,
@@ -188,12 +189,13 @@ export const CHECKS = [
   ['Königsberg', 20.51, 54.71, 'GER'], ['Riga', 24.11, 56.95, 'RUS'], ['Odessa', 30.73, 46.48, 'RUS'], ['Budapest', 19.04, 47.50, 'AUH'],
   ['Praga', 14.42, 50.08, 'AUH'], ['Bolzano', 11.35, 46.50, 'AUH'], ['Gorizia', 13.62, 45.94, 'AUH'], ['Pola', 13.85, 44.87, 'AUH'],
   ['Zara', 15.40, 44.10, 'AUH'], ['Castelnuovo', 18.54, 42.46, 'AUH'], ['Scutari', 19.51, 42.07, 'TUR'], ['Smirne', 27.14, 38.42, 'TUR'],
-  ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'GBR'], ['San Marino', 12.45, 43.94, 'SMR'], ['Monaco', 7.42, 43.74, 'MCO'], ['Vaduz', 9.52, 47.14, 'LIE'], ['Andorra', 1.52, 42.51, 'AND'], ['Ceuta', -5.32, 35.89, 'SPA'], ['Melilla', -2.94, 35.29, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
+  ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'GBR'], ['Assens (Fionia)', 9.9, 55.27, 'DEN'], ['San Marino', 12.45, 43.94, 'SMR'], ['Monaco', 7.42, 43.74, 'MCO'], ['Vaduz', 9.52, 47.14, 'LIE'], ['Andorra', 1.52, 42.51, 'AND'], ['Ceuta', -5.32, 35.89, 'SPA'], ['Melilla', -2.94, 35.29, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
 ];
 
 // Nomi moderni anacronistici nel 1881 -> nomi d'epoca (si applicano a parole intere del nome).
 // owner: solo se la provincia appartiene a quella nazione.
 export const RENAMES = [
+  ['Odense', 'Odense'], ['Assens', 'Assens'],
   ['Kaliningrad', 'Königsberg'], ['Klaipėda', 'Memel', 'GER'], ['Sovetsk', 'Tilsit'], ['Chernyakhovsk', 'Insterburg'],
   ['Olsztyn', 'Allenstein'], ['Ełk', 'Lyck'], ['Elbląg', 'Elbing'], ['Gdańsk', 'Danzica'], ['Szczecin', 'Stettino'], ['Koszalin', 'Köslin'],
   ['Poznań', 'Posen', 'GER'], ['Bydgoszcz', 'Bromberg'], ['Opole', 'Oppeln'], ['Wrocław', 'Breslavia'], ['Legnica', 'Liegnitz'], ['Wałbrzych', 'Waldenburg'],
@@ -216,6 +218,58 @@ export const RENAMES = [
     ['Novi Sad', 'Újvidék'], ['Oradea', 'Nagyvárad'], ['Cluj-Napoca', 'Kolozsvár'], ['Cluj', 'Kolozs'], ['Alba Lulia', 'Gyulafehérvár'], ['Sibiu', 'Nagyszeben'],
     ['Brașov', 'Brassó'], ['Miercurea Cuic', 'Csíkszereda'], ['Sfintu-Gheorghe', 'Sepsiszentgyörgy'], ['Covasna', 'Háromszék'], ['Mureș', 'Maros'], ['Bihor', 'Bihar'],
     ['Caraș-Severin', 'Krassó-Szörény'], ['Transcarpazia', 'Máramaros'], ['Kimpolung', 'Kimpolung'], ['Deva', 'Déva'], ['Arad', 'Arad']].map(([a, b]) => [a, b, 'AUH']),
+  // Prussia orientale: nomi tedeschi dell'epoca
+  ...[['Toruń', 'Thorn'], ['Grudziądz', 'Graudenz'], ['Katowice', 'Kattowitz'], ['Gliwice', 'Gleiwitz'], ['Bytom', 'Beuthen'], ['Jelenia Góra', 'Hirschberg'], ['Słupsk', 'Stolp'],
+    ['Piła', 'Schneidemühl'], ['Inowrocław', 'Inowrazlaw'], ['Gniezno', 'Gnesen'], ['Leszno', 'Lissa'], ['Ostrów Wielkopolski', 'Ostrowo'], ['Racibórz', 'Ratibor'], ['Nysa', 'Neisse'],
+    ['Głogów', 'Glogau'], ['Świnoujście', 'Swinemünde'], ['Kołobrzeg', 'Kolberg'], ['Zabrze', 'Zabrze'], ['Rybnik', 'Rybnik'], ['Częstochowa', 'Częstochowa'], ['Kwidzyn', 'Marienwerder'],
+    ['Chojnice', 'Konitz'], ['Malbork', 'Marienburg'], ['Gorzów Wielkopolski', 'Landsberg an der Warthe'], ['Kędzierzyn-Koźle', 'Cosel'], ['Wałbrzych', 'Waldenburg'], ['Legnica', 'Liegnitz']].map(([a, b]) => [a, b, 'GER']),
+  // nomi tedeschi dell'epoca per le città oggi polacche, russe e lituane (fonte dei nomi moderni: GeoNames)
+  ...Object.entries({
+    Szczecinek: 'Neustettin', Stargard: 'Stargard', Wałcz: 'Deutsch Krone', Kalisz: 'Kalisch', Elbląg: 'Elbing', Olsztyn: 'Allenstein', 'Ełk': 'Lyck', 'Giżycko': 'Lötzen',
+    'Kętrzyn': 'Rastenburg', 'Mrągowo': 'Sensburg', 'Ostróda': 'Osterode', 'Iława': 'Deutsch Eylau', Brodnica: 'Strasburg in Westpreußen', 'Chełmno': 'Culm', Tczew: 'Dirschau',
+    'Starogard Gdański': 'Preußisch Stargard', 'Kościerzyna': 'Berent', Kartuzy: 'Karthaus', Wejherowo: 'Neustadt in Westpreußen', 'Lębork': 'Lauenburg', 'Bytów': 'Bütow',
+    'Człuchów': 'Schlochau', 'Złotów': 'Flatow', 'Wągrowiec': 'Wongrowitz', 'Września': 'Wreschen', 'Śrem': 'Schrimm', 'Kościan': 'Kosten', Rawicz: 'Rawitsch',
+    'Krotoszyn': 'Krotoschin', 'Międzychód': 'Birnbaum', 'Nowy Tomyśl': 'Neutomischel', 'Żary': 'Sorau', 'Żagań': 'Sagan', 'Bolesławiec': 'Bunzlau', Lubin: 'Lüben',
+    'Świdnica': 'Schweidnitz', 'Kłodzko': 'Glatz', Brzeg: 'Brieg', 'Oleśnica': 'Oels', 'Głubczyce': 'Leobschütz', Kluczbork: 'Kreuzburg', Lubliniec: 'Lublinitz',
+    'Tarnowskie Góry': 'Tarnowitz', Pszczyna: 'Pless', 'Strzelce Opolskie': 'Groß Strehlitz', Prudnik: 'Neustadt in Oberschlesien', Gusev: 'Gumbinnen', Baltiysk: 'Pillau',
+    'Šilutė': 'Heydekrug', 'Dzierżoniów': 'Reichenbach', 'Ząbkowice Śląskie': 'Frankenstein', 'Nowa Sól': 'Neusalz', Kostrzyn: 'Küstrin', 'Myślibórz': 'Soldin',
+    Choszczno: 'Arnswalde', Pyrzyce: 'Pyritz', 'Goleniów': 'Gollnow', Gryfice: 'Greifenberg', 'Białogard': 'Belgard', Drawsko: 'Dramburg', 'Świdwin': 'Schivelbein',
+    'Łobez': 'Labes', Nowogard: 'Naugard', 'Kamień Pomorski': 'Cammin', 'Darłowo': 'Rügenwalde', Miastko: 'Rummelsburg', Ustka: 'Stolpmünde', Prabuty: 'Riesenburg',
+    Sztum: 'Stuhm', Braniewo: 'Braunsberg', 'Lidzbark Warmiński': 'Heilsberg', Bartoszyce: 'Bartenstein', 'Gołdap': 'Goldap', Olecko: 'Marggrabowa', Pisz: 'Johannisburg',
+    Szczytno: 'Ortelsburg', Nidzica: 'Neidenburg', 'Działdowo': 'Soldau', 'Morąg': 'Mohrungen', 'Pasłęk': 'Preußisch Holland', 'Węgorzewo': 'Angerburg', 'Chorzów': 'Königshütte',
+    'Mysłowice': 'Myslowitz', 'Żory': 'Sohrau', 'Wodzisław Śląski': 'Loslau', 'Zgorzelec': 'Görlitz', 'Gubin': 'Guben', 'Słubice': 'Frankfurt (Oder)', 'Sulechów': 'Züllichau',
+    'Świebodzin': 'Schwiebus', 'Międzyrzecz': 'Meseritz', 'Sulęcin': 'Zielenzig', 'Trzcianka': 'Schönlanke', 'Chodzież': 'Kolmar in Posen', 'Oborniki': 'Obornik',
+    'Szamotuły': 'Samter', 'Grodzisk Wielkopolski': 'Grätz', 'Wolsztyn': 'Wollstein', 'Gostyń': 'Gostyn', 'Jarocin': 'Jarotschin', 'Pleszew': 'Pleschen', 'Ostrzeszów': 'Schildberg',
+    'Kępno': 'Kempen', 'Mogilno': 'Mogilno', 'Żnin': 'Znin', 'Szubin': 'Schubin', 'Nakło nad Notecią': 'Nakel', 'Wąbrzeźno': 'Briesen', 'Golub-Dobrzyń': 'Gollub', 'Lubawa': 'Löbau',
+    'Nowe Miasto Lubawskie': 'Neumark', 'Świecie': 'Schwetz', 'Tuchola': 'Tuchel', 'Puck': 'Putzig', 'Sopot': 'Zoppot', 'Malbork': 'Marienburg', 'Sovetsk': 'Tilsit',
+    Chernyakhovsk: 'Insterburg', Neman: 'Ragnit', Zelenogradsk: 'Cranz', Gvardeysk: 'Tapiau', Bagrationovsk: 'Preußisch Eylau', Pravdinsk: 'Friedland', Ozyorsk: 'Darkehmen',
+    Krasnoznamensk: 'Lasdehnen', Nesterov: 'Stallupönen', Slavsk: 'Heinrichswalde', Polessk: 'Labiau', Gurievsk: 'Neuhausen', Svetlogorsk: 'Rauschen', Svetly: 'Zimmerbude',
+  }).map(([a, b]) => [a, b, 'GER']),
+  // Boemia e Moravia: nomi tedeschi ufficiali dell'epoca
+  ...Object.entries({
+    'Ústí nad Labem': 'Aussig', 'Karlovy Vary': 'Karlsbad', Teplice: 'Teplitz', Most: 'Brüx', Chomutov: 'Komotau', 'Děčín': 'Tetschen', 'Česká Lípa': 'Böhmisch Leipa',
+    'Jablonec nad Nisou': 'Gablonz', Trutnov: 'Trautenau', 'Hradec Králové': 'Königgrätz', 'Kolín': 'Kolin', 'Kutná Hora': 'Kuttenberg', Jihlava: 'Iglau', Znojmo: 'Znaim',
+    Opava: 'Troppau', 'Frýdek-Místek': 'Friedek', 'Karviná': 'Karwin', 'Přerov': 'Prerau', 'Prostějov': 'Proßnitz', 'Kroměříž': 'Kremsier', 'Třebíč': 'Trebitsch',
+    Cheb: 'Eger', Sokolov: 'Falkenau', Klatovy: 'Klattau', 'Domažlice': 'Taus', 'Mladá Boleslav': 'Jungbunzlau', 'Příbram': 'Pribram', 'Šumperk': 'Mährisch Schönberg',
+    Svitavy: 'Zwittau', 'Jičín': 'Gitschin', 'Žatec': 'Saaz', Louny: 'Laun', 'Litoměřice': 'Leitmeritz', 'Mělník': 'Melnik', Kladno: 'Kladno', 'Beroun': 'Beraun',
+    'Rakovník': 'Rakonitz', 'Strakonice': 'Strakonitz', 'Písek': 'Pisek', 'Jindřichův Hradec': 'Neuhaus', 'Český Krumlov': 'Krumau', 'Havlíčkův Brod': 'Deutschbrod',
+    'Chrudim': 'Chrudim', 'Ústí nad Orlicí': 'Wildenschwert', 'Vsetín': 'Wsetin', 'Uherské Hradiště': 'Ungarisch Hradisch', 'Hodonín': 'Göding', 'Břeclav': 'Lundenburg',
+    'Vyškov': 'Wischau', 'Blansko': 'Blansko', 'Bruntál': 'Freudenthal', 'Krnov': 'Jägerndorf', 'Jeseník': 'Freiwaldau', 'Nový Jičín': 'Neutitschein', 'Třinec': 'Trzynietz',
+    'Český Těšín': 'Teschen', 'Bohumín': 'Oderberg', 'Rumburk': 'Rumburg', 'Varnsdorf': 'Warnsdorf', 'Náchod': 'Nachod', 'Semily': 'Semil', 'Turnov': 'Turnau',
+    // Alta Ungheria, Transilvania, Banato, Galizia orientale, Bucovina
+    'Komárno': 'Komárom', 'Nové Zámky': 'Érsekújvár', Levice: 'Léva', 'Lučenec': 'Losonc', 'Rimavská Sobota': 'Rimaszombat', 'Rožňava': 'Rozsnyó', Michalovce: 'Nagymihály',
+    'Humenné': 'Homonna', Bardejov: 'Bártfa', Poprad: 'Poprád', 'Spišská Nová Ves': 'Igló', Martin: 'Turócszentmárton', 'Ružomberok': 'Rózsahegy',
+    'Liptovský Mikuláš': 'Liptószentmiklós', Zvolen: 'Zólyom', Prievidza: 'Privigye', 'Topoľčany': 'Nagytapolcsány', 'Piešťany': 'Pöstyén', 'Dunajská Streda': 'Dunaszerdahely',
+    Galanta: 'Galánta', 'Sighetu Marmației': 'Máramarossziget', 'Zalău': 'Zilah', Turda: 'Torda', 'Mediaș': 'Medgyes', 'Sighișoara': 'Segesvár', 'Făgăraș': 'Fogaras',
+    'Odorheiu Secuiesc': 'Székelyudvarhely', Gheorgheni: 'Gyergyószentmiklós', Lugoj: 'Lugos', 'Caransebeș': 'Karánsebes', 'Orăștie': 'Szászváros', 'Petroșani': 'Petrozsény',
+    Dej: 'Dés', Carei: 'Nagykároly', Salonta: 'Nagyszalonta', Sombor: 'Zombor', Kikinda: 'Nagykikinda', 'Pančevo': 'Pancsova', 'Vršac': 'Versec',
+    Mukacheve: 'Munkács', Berehove: 'Beregszász', Khust: 'Huszt', Kolomyia: 'Kołomyja', Stryi: 'Stryj', Sambir: 'Sambor', Chortkiv: 'Czortków', Berezhany: 'Brzeżany',
+    Zolochiv: 'Złoczów', Zhovkva: 'Żółkiew', Yavoriv: 'Jaworów', Horodok: 'Gródek', Kalush: 'Kałusz', Nadvirna: 'Nadwórna', Kosiv: 'Kosów', Buchach: 'Buczacz',
+    'Caransebeş': 'Karánsebes', 'Mediaş': 'Medgyes', 'Târgu Secuiesc': 'Kézdivásárhely', Vynohradiv: 'Nagyszőlős', 'Sárospatak': 'Sárospatak', Trebinje: 'Trebigne',
+    Storozhynets: 'Storożyniec', Vyzhnytsia: 'Wiznitz', 'Rădăuți': 'Radautz', 'Câmpulung Moldovenesc': 'Kimpolung', 'Gura Humorului': 'Gura Humora',
+  }).map(([a, b]) => [a, b, 'AUH']),
+  // Italia: nomi del 1881 (Latina nasce come Littoria nel 1932; Olbia era Terranova Pausania; Crotone era Cotrone)
+  ['Latina', 'Terracina', 'ITA'], ['Medio Campidano', 'Iglesias', 'ITA'], ['Olbia', 'Terranova Pausania', 'ITA'], ['Crotone', 'Cotrone', 'ITA'],
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
 ];
 
@@ -235,3 +289,15 @@ export const PROTECTED = [
   // Helgoland non è in Natural Earth: un punto, collegato via mare alla costa tedesca più vicina
   { id: 'HEL', name: 'Helgoland', owner: 'GBR', point: [7.886, 54.182], pop: 2000, terrain: 'plain', coast: true },
 ];
+
+// Aree a maggioranza polacca della Prussia (approssimate sul confine del 1920-22, che le seguiva da vicino):
+// Pomerelia con Culm e Soldau, Posnania tranne la fascia occidentale tedesca, Alta Slesia orientale.
+export const POLISH_AREAS = [
+  [[17.95, 54.84], [18.55, 54.62], [18.45, 54.4], [18.68, 54.18], [18.8, 54.08], [18.9, 53.88], [19.3, 53.62], [19.8, 53.4], [20.2, 53.25], [20.45, 53.15],
+    [19.6, 53.0], [18.9, 52.95], [18.7, 52.65], [18.4, 52.45], [18.05, 52.1], [17.95, 51.75], [18.2, 51.3], [17.6, 51.4], [16.95, 51.6], [16.45, 51.75],
+    [16.15, 51.95], [15.9, 52.25], [16.0, 52.55], [16.4, 52.85], [16.85, 53.05], [17.1, 53.2], [17.35, 53.45], [17.45, 53.8], [17.7, 54.15], [17.85, 54.45], [17.95, 54.84]],
+  [[18.4, 49.95], [18.3, 50.25], [18.55, 50.55], [18.6, 50.78], [18.85, 50.86], [19.25, 50.75], [19.15, 50.4], [19.2, 50.12], [18.95, 49.88], [18.4, 49.95]],
+];
+
+// Città nate o cresciute dopo il 1881: non danno il nome a una provincia
+export const ANACHRONISTIC = new Set(['Wolfsburg', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój']);

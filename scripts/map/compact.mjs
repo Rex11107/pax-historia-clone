@@ -17,7 +17,7 @@ import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 
-export const ZONE_BBOX = [4.5, 35.3, 27.0, 51.2];
+export const ZONE_BBOX = [3.0, 35.3, 27.0, 58.0];
 const AUH_ZONE = new Set(['Gefürstete Grafschaft Tirol', 'Trentino', 'Land Vorarlberg', 'Herzogtum Kärnten', 'Herzogtum Steiermark', 'Herzogtum Krain',
   'Triest mit Gebiet', 'Gefürstete Grafschaft Görz und Gradisca', 'Markgrafschaft Istrien', 'Königreich Dalmatien', 'Herzogtum Salzburg',
   'Croazia-Slavonia', 'Confine militare', 'Fiume']);
@@ -29,6 +29,7 @@ export function inZone(p) {
   if (p.owner === 'GBR' && p.modern === 'MLT') return true;
   if (p.owner === 'FRA') return FRA_ZONE.has(p.nreg) || p.modern === 'MCO';
   if (p.owner === 'AUH') return true; // seconda fase: tutta l'Austria-Ungheria
+  if (['GER', 'DEN', 'NED', 'LUX'].includes(p.owner)) return true; // terza fase: Germania, Danimarca, Paesi Bassi
   return false;
 }
 

@@ -26,7 +26,7 @@ import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 import { prepareBasins, splitByBasins } from './basins.mjs';
 import { buildHistoricalBase } from './historical.mjs';
-import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED } from './map-config.mjs';
+import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED, POLISH_AREAS, ANACHRONISTIC } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
 import { atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
@@ -65,7 +65,9 @@ const EXTRA_PLACES = [['Gorizia', 13.62, 45.94, 21000], ['Knin', 16.2, 44.04, 80
 const STRAIT_KM = 45;       // distanza massima per uno stretto attraversabile
 
 const log = (...a) => console.log('[map]', ...a);
-const EXONYM = { Rome: 'Roma', Naples: 'Napoli', Turin: 'Torino', Milan: 'Milano', Venice: 'Venezia', Florence: 'Firenze', Genoa: 'Genova', 'Reggio di Calabria': 'Reggio Calabria',
+const EXONYM = { Berlin: 'Berlino', 'København': 'Copenaghen', Stuttgart: 'Stoccarda', Mainz: 'Magonza', Regensburg: 'Ratisbona', 'Lübeck': 'Lubecca', Bremen: 'Brema', Magdeburg: 'Magdeburgo',
+  'The Hague': "L'Aia", Aachen: 'Aquisgrana', Trier: 'Treviri', Koblenz: 'Coblenza', Freiburg: 'Friburgo in Brisgovia', Mulhouse: 'Mülhausen', Metz: 'Metz', Colmar: 'Colmar',
+  Rome: 'Roma', Naples: 'Napoli', Turin: 'Torino', Milan: 'Milano', Venice: 'Venezia', Florence: 'Firenze', Genoa: 'Genova', 'Reggio di Calabria': 'Reggio Calabria',
   Rijeka: 'Fiume', Zadar: 'Zara', Split: 'Spalato', 'Šibenik': 'Sebenico', Dubrovnik: 'Ragusa di Dalmazia', Pula: 'Pola', Ljubljana: 'Lubiana', Zagreb: 'Zagabria', Maribor: 'Marburgo',
   Nice: 'Nizza', Toulon: 'Tolone', 'Aix-en-Provence': 'Aix', Bern: 'Berna', Lausanne: 'Losanna', Luzern: 'Lucerna', 'Saint Gallen': 'San Gallo', Chur: 'Coira', Fribourg: 'Friburgo',
   Valletta: 'La Valletta', Bastia: 'Bastia', Ajaccio: 'Aiaccio', Annecy: 'Annecy', Grenoble: 'Grenoble', 'Zürich': 'Zurigo', Munich: 'Monaco di Baviera', Cologne: 'Colonia', Nuremberg: 'Norimberga', 'Nürnberg': 'Norimberga', Augsburg: 'Augusta', Hanover: 'Hannover', Brunswick: 'Brunswick',
@@ -413,7 +415,8 @@ async function main() {
   // 1. ritaglio + campi minimi
   log('ritaglio province');
   ms(path.join(RAW, 'ne_admin1.geojson'), '-clip', `bbox=${BBOX}`, '-each', 'pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=adm0_a3, reg=region',
-    '-filter-fields', 'pid,iso,pname,modern,reg', '-simplify', 'interval=800', 'keep-shapes', '-o', path.join(TMP, 'prov.geojson'));
+    // il Flevoland è terra strappata al mare dopo il 1940: nel 1881 era Zuiderzee
+    '-filter', "iso !== 'NL-FL'", '-filter-fields', 'pid,iso,pname,modern,reg', '-simplify', 'interval=800', 'keep-shapes', '-o', path.join(TMP, 'prov.geojson'));
   ms(path.join(RAW, 'world_1880.geojson'), '-clip', `bbox=${BBOX}`, '-each', 'hist=NAME', '-filter-fields', 'hist', '-o', path.join(TMP, 'hist.geojson'));
 
   // fiumi: grandi fiumi di Natural Earth + rete europea dettagliata
@@ -467,6 +470,8 @@ async function main() {
     if (pr.hist && owner === undefined) throw new Error(`stato storico senza tag: ${pr.hist}`);
     if (pr.fix && owner) owner = pr.fix;
     if (!pr.fix && pr.own) owner = pr.own; // unità d'epoca: il proprietario è certo
+    // il poligono dello Schleswig di HistoGIS sconfina su Fionia: Fionia e le isole a est del Piccolo Belt sono danesi
+    if (owner === 'GER' && pr.modern === 'DNK') { const [x, y] = turf.centroid(f).geometry.coordinates; if (x > 9.72 && y > 55.12) { owner = 'DEN'; pr.own = 'DEN'; } }
     // microstati e possedimenti minuscoli: proprietario fisso, gruppo proprio
     const base = String(pr.pid).split('~')[0];
     const prot = PROTECTED.find((x) => x.match && ((x.match.modern && x.match.modern === pr.modern) || (x.match.pid && x.match.pid === base) || (x.match.reg && x.match.reg === pr.reg && (!x.match.bbox || inBB(turf.centroid(f).geometry.coordinates, x.match.bbox)))));
@@ -579,6 +584,7 @@ async function main() {
         : p.lang ? p.lang
         : p.modern === 'SVK' && southOf(cent[p.i], SK_HU) ? 'hu' // fascia magiara della Slovacchia meridionale
         : ['RO-HR', 'RO-CV'].includes(p.iso) ? 'hu' // terra dei Siculi
+        : p.owner === 'GER' && POLISH_AREAS.some((ring) => turf.booleanPointInPolygon(cent[p.i], turf.polygon([ring]))) ? 'pl' // Polonia prussiana
         : p.modern === 'HUN' && p.owner === 'AUH' ? 'hu'
         : '';
       const coastKm = coastDistance(topo, geoms);
@@ -626,6 +632,10 @@ async function main() {
           const ok = (g) => P[g].owner === P[r].owner && !P[g].prot && (!P[r].claim || P[g].claim === P[r].claim) && (!P[r].langKey || P[g].langKey === P[r].langKey);
           const t = [...touch.entries()].filter(([g]) => ok(g)).sort((a, b) => b[1] - a[1] || gArea[b[0]] - gArea[a[0]])[0];
           if (t) { join(t[0], r); isl++; continue; }
+          // isola linguistica senza vicini della stessa lingua (Kuhländchen in Moravia): va al vicino
+          // di terra dello stesso stato, mai un'exclave lontana
+          const t2 = [...touch.entries()].filter(([g]) => P[g].owner === P[r].owner && !P[g].prot && gArea[g] >= gArea[r]).sort((a, b) => b[1] - a[1])[0];
+          if (t2) { join(t2[0], r); isl++; continue; }
           // tocca solo schegge: si comporta come un'isola
         }
       }
@@ -658,6 +668,28 @@ async function main() {
       }
     }
   }
+  // città minori (GeoNames, CC BY 4.0) per dare un nome alle province della zona compatta senza grandi città
+  const geoPath = path.join(RAW, 'geonames', 'cities500.json');
+  if (fs.existsSync(geoPath)) {
+    const zoneP = P.filter((p) => p.zone);
+    const CELL = 0.5, grid = new Map();
+    for (const p of zoneP) {
+      const bb = p.bb || (p.bb = turf.bbox(p.feat));
+      for (let x = Math.floor(bb[0] / CELL); x <= Math.floor(bb[2] / CELL); x++) for (let y = Math.floor(bb[1] / CELL); y <= Math.floor(bb[3] / CELL); y++) {
+        const k = `${x},${y}`; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(p);
+      }
+    }
+    for (const c of readJSON(geoPath)) {
+      const pop = Number(c.pop), lon = Number(c.lon), lat = Number(c.lat);
+      if (pop < 3000 || ANACHRONISTIC.has(c.name)) continue;
+      for (const p of grid.get(`${Math.floor(lon / CELL)},${Math.floor(lat / CELL)}`) || []) {
+        const bb = p.bb;
+        if (lon < bb[0] || lon > bb[2] || lat < bb[1] || lat > bb[3] || !turf.booleanPointInPolygon([lon, lat], p.feat)) continue;
+        (p.geo ??= []).push([c.name, pop]);
+        break;
+      }
+    }
+  }
   const roots = [...new Set(P.map((p) => find(p.i)))];
   const gid = new Map(roots.map((r, k) => [r, k]));
   // nome del gruppo = pezzo più esteso; nomi duplicati numerati
@@ -674,8 +706,15 @@ async function main() {
     let byNameList = null, byTown = false;
     if (mem[0].zone && !P[r].prot) {
       const t = mem.filter((m) => m.topTown).sort((a, b) => b.topPop - a.topPop)[0];
-      if (t && t.topPop >= 8000 && !PROTECTED.some((x) => x.name === exo(t.topTown))) { name = exo(t.topTown); byTown = true; }
-      else byNameList = [...byName.entries()].sort((a, b) => b[1] - a[1]).map((x) => x[0]);
+      if (t && t.topPop >= 8000 && !PROTECTED.some((x) => x.name === exo(t.topTown)) && !ANACHRONISTIC.has(t.topTown)) { name = exo(t.topTown); byTown = true; }
+      else {
+        // prima i nomi d'epoca (distretti, Regierungsbezirke), poi le città minori, infine i nomi amministrativi moderni
+        const w = (list) => { const m = new Map(); for (const x of list) m.set(x.name, (m.get(x.name) || 0) + (x.urban || 0) + x.area * 2); return [...m.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]); };
+        const towns = mem.flatMap((m) => m.geo || []).sort((a, b) => b[1] - a[1]).map((x) => exo(x[0]));
+        // dove le suddivisioni moderne sono fini (province italiane, dipartimenti francesi) il loro nome viene prima delle città minori
+        const fine = ['ITA', 'FRA', 'ESP', 'PRT', 'GBR', 'IRL'].includes(mem[0].modern);
+        byNameList = fine ? [...w(mem.filter((m) => m.hist)), ...w(mem.filter((m) => !m.hist)), ...towns] : [...w(mem.filter((m) => m.hist)), ...towns, ...w(mem.filter((m) => !m.hist))];
+      }
     }
     // regione storica: quella che copre la maggior parte dell'area del gruppo
     const prot = PROTECTED.find((x) => x.id === P[r].prot);
