@@ -89,10 +89,9 @@ export const OVERRIDES = [
 ];
 
 // Poligoni di correzione (lon/lat) per confini che non seguono le province moderne
-export const CORRECTION_POLYGONS = [
-  // Schleswig settentrionale: prussiano dal 1864 fino al confine del fiume Kongeå
-  { to: 'GER', ring: [[8.0, 54.78], [10.08, 54.78], [10.08, 55.06], [9.78, 55.18], [9.68, 55.46], [8.0, 55.46], [8.0, 54.78]] }, // ad ovest del Piccolo Belt, Als compresa
-];
+// Poligoni di correzione dei proprietari (vuoto: lo Schleswig ora viene dal Regierungsbezirk di HistoGIS, col confine
+// vero lungo il Kongeå e l'enclave danese di Ribe; il vecchio riquadro tracciava una linea dritta)
+export const CORRECTION_POLYGONS = [];
 
 // Popolazione 1881 per nazione; le sotto-voci (paese moderno) hanno un totale proprio,
 // il resto della nazione si divide la parte rimanente.
@@ -189,7 +188,7 @@ export const CHECKS = [
   ['Königsberg', 20.51, 54.71, 'GER'], ['Riga', 24.11, 56.95, 'RUS'], ['Odessa', 30.73, 46.48, 'RUS'], ['Budapest', 19.04, 47.50, 'AUH'],
   ['Praga', 14.42, 50.08, 'AUH'], ['Bolzano', 11.35, 46.50, 'AUH'], ['Gorizia', 13.62, 45.94, 'AUH'], ['Pola', 13.85, 44.87, 'AUH'],
   ['Zara', 15.40, 44.10, 'AUH'], ['Castelnuovo', 18.54, 42.46, 'AUH'], ['Scutari', 19.51, 42.07, 'TUR'], ['Smirne', 27.14, 38.42, 'TUR'],
-  ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'GBR'], ['Assens (Fionia)', 9.9, 55.27, 'DEN'], ['San Marino', 12.45, 43.94, 'SMR'], ['Monaco', 7.42, 43.74, 'MCO'], ['Vaduz', 9.52, 47.14, 'LIE'], ['Andorra', 1.52, 42.51, 'AND'], ['Ceuta', -5.32, 35.89, 'SPA'], ['Melilla', -2.94, 35.29, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
+  ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'GBR'], ['Hadersleben', 9.49, 55.25, 'GER'], ['Tondern', 8.87, 54.93, 'GER'], ['Kolding', 9.47, 55.5, 'DEN'], ['Ribe', 8.76, 55.33, 'DEN'], ['Assens (Fionia)', 9.9, 55.27, 'DEN'], ['San Marino', 12.45, 43.94, 'SMR'], ['Monaco', 7.42, 43.74, 'MCO'], ['Vaduz', 9.52, 47.14, 'LIE'], ['Andorra', 1.52, 42.51, 'AND'], ['Ceuta', -5.32, 35.89, 'SPA'], ['Melilla', -2.94, 35.29, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
 ];
 
 // Nomi moderni anacronistici nel 1881 -> nomi d'epoca (si applicano a parole intere del nome).
@@ -300,4 +299,5 @@ export const POLISH_AREAS = [
 ];
 
 // Città nate o cresciute dopo il 1881: non danno il nome a una provincia
-export const ANACHRONISTIC = new Set(['Wolfsburg', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój']);
+export const ANACHRONISTIC = new Set(['Wolfsburg', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój',
+  'Milton Keynes', 'Telford', 'Craigavon', 'Livingston', 'Cumbernauld', 'East Kilbride', 'Glenrothes', 'Stevenage', 'Harlow', 'Basildon', 'Peterlee', 'Bracknell', 'Skelmersdale', 'Irvine New Town', 'Shannon', 'Tallaght', 'Guidonia Montecelio', 'Latina', 'Sabaudia', 'Aprilia', 'Pomezia', 'Carbonia', 'Arborea', 'Fertilia']);
