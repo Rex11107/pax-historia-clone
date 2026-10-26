@@ -14,6 +14,8 @@ export interface MapData {
   straits: [number, number, number][];
   /** confini che corrono lungo un fiume: [a, b, nome] */
   rivers?: [number, number, string][];
+  /** regioni storiche (contenitori di province): Galizia, Boemia, governatorati russi, vilayet… */
+  regions?: { name: string }[];
 }
 
 export interface ProvinceData {
@@ -30,6 +32,10 @@ export interface ProvinceData {
   c: [number, number];
   arcs: number[][] | number[][][];
   n: number[];
+  /** indice in MapData.regions */
+  r?: number;
+  /** troppo piccola per la geometria: disegnata come simbolo (microstati, Gibilterra…) */
+  tiny?: boolean;
 }
 
 /** Profilo statico di una nazione (dati di scenario, non ricalcolati). Scala 0-100. */
@@ -58,6 +64,8 @@ export interface NationProfile {
   redLines: string[];
   rivals: Tag[];
   friends: Tag[];
+  /** microstato: non giocabile, senza esercito */
+  micro?: boolean;
 }
 
 export type UnitType = 'infantry' | 'cavalry' | 'artillery';

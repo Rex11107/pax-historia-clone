@@ -29,6 +29,8 @@ export class MapView {
   private coast = new Path2D();
   private national = new Path2D();
   private internal = new Path2D();
+  /** confini fra regioni storiche dello stesso stato */
+  private regional = new Path2D();
   private hatches = new Map<string, CanvasPattern>();
   private hit: CanvasRenderingContext2D;
   private dirty = true;
@@ -44,6 +46,10 @@ export class MapView {
   override: Record<string, [number, number]> | null = null;
   highlight: Set<number> | null = null;
   private labels: { text: string; x: number; y: number; size: number }[] = [];
+  /** etichette delle regioni storiche (fisse: le regioni sono geografia) */
+  private regionLabels: { text: string; x: number; y: number; area: number }[] = [];
+  /** province troppo piccole per la geometria: disegnate come simbolo */
+  private tiny: number[] = [];
   private dpr = 1;
 
   constructor(canvas: HTMLCanvasElement, world: World, private cb: MapCallbacks) {
@@ -73,6 +79,8 @@ export class MapView {
       return p;
     });
     world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) this.coast.addPath(this.arcPaths[i]); });
+    this.tiny = world.map.provinces.filter((p) => p.tiny).map((p) => p.id);
+    this.buildRegionLabels();
     this.refreshPolitical();
     this.bindInput();
     new ResizeObserver(() => this.resize()).observe(canvas);
@@ -84,6 +92,25 @@ export class MapView {
   }
 
   setWorld(w: World) { this.world = w; this.refreshPolitical(); }
+
+  private buildRegionLabels() {
+    const map = this.world.map;
+    this.regionLabels = [];
+    map.regions.forEach((reg, r) => {
+      const ids = map.regionProvinces(r);
+      const area = ids.reduce((x, id) => x + map.provinces[id].area, 0);
+      if (ids.length < 2 && area < 8000) return; // una provincia sola: basta il suo nome
+      let x = 0, y = 0, ws = 0;
+      for (const id of ids) { const p = map.provinces[id]; x += p.c[0] * p.area; y += -p.c[1] * p.area; ws += p.area; }
+      if (!ws) return;
+      // ancora: il centro della provincia più vicina al baricentro (le regioni a mezzaluna non finiscono in mare)
+      let best = ids[0], bd = Infinity;
+      for (const id of ids) { const c = map.provinces[id].c; const d = (c[0] - x / ws) ** 2 + (-c[1] - y / ws) ** 2; if (d < bd) { bd = d; best = id; } }
+      const c = map.provinces[best].c;
+      this.regionLabels.push({ text: reg.name, x: c[0], y: -c[1], area });
+    });
+    this.regionLabels.sort((a, b) => b.area - a.area);
+  }
 
   /** Carica rilievi, fiumi e laghi (file separato, facoltativo). */
   async loadPhysical(url: string) {
@@ -127,9 +154,12 @@ export class MapView {
     const s = this.world.state;
     this.national = new Path2D();
     this.internal = new Path2D();
+    this.regional = new Path2D();
+    const pv = this.world.map.provinces;
     this.world.map.data.arcSides.forEach(([a, b], i) => {
       if (b < 0) return;
       if (s.owner[a] !== s.owner[b]) this.national.addPath(this.arcPaths[i]);
+      else if (pv[a].r !== pv[b].r) this.regional.addPath(this.arcPaths[i]);
       else this.internal.addPath(this.arcPaths[i]);
     });
     // etichette: nel blocco di territorio contiguo più popoloso di ogni nazione (la Francia in Francia, non in Algeria)
@@ -295,6 +325,11 @@ export class MapView {
       ctx.lineWidth = 0.7 / k;
       ctx.stroke(this.internal);
     }
+    if (k > 0.25) {
+      ctx.strokeStyle = 'rgba(31,42,51,0.42)';
+      ctx.lineWidth = 1.3 / k;
+      ctx.stroke(this.regional);
+    }
     ctx.strokeStyle = 'rgba(31,42,51,0.55)';
     ctx.lineWidth = 0.9 / k;
     ctx.stroke(this.coast);
@@ -342,7 +377,7 @@ export class MapView {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    if (k < 0.75) {
+    if (k < 0.5) {
       for (const l of this.labels) {
         const size = l.size * k * 2.2;
         if (size < 9) continue;
@@ -353,14 +388,43 @@ export class MapView {
         ctx.fillText(l.text, x, y);
       }
       (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px';
+    } else if (k < 0.95) {
+      // zoom intermedio: regioni storiche, senza sovrapposizioni
+      const taken: number[][] = [];
+      ctx.fillStyle = 'rgba(31,42,51,0.6)';
+      for (const l of this.regionLabels) {
+        const [x, y] = this.worldToScreen(l.x, l.y);
+        if (x < -100 || y < -20 || x > W + 100 || y > H + 20) continue;
+        const size = Math.max(10, Math.min(17, Math.sqrt(l.area) * k * 0.09));
+        ctx.font = `italic 600 ${size}px Alegreya, Georgia, serif`;
+        const tw = ctx.measureText(l.text).width;
+        const box = [x - tw / 2 - 4, y - size / 2 - 2, x + tw / 2 + 4, y + size / 2 + 2];
+        if (taken.some((b) => !(box[2] < b[0] || box[0] > b[2] || box[3] < b[1] || box[1] > b[3]))) continue;
+        taken.push(box);
+        ctx.fillText(l.text, x, y);
+      }
     } else {
       ctx.font = '500 11px "Alegreya Sans", sans-serif';
       ctx.fillStyle = 'rgba(31,42,51,0.75)';
       for (const p of this.world.map.provinces) {
-        if (!visible(p.id) || (k < 1.1 && p.area < 4000)) continue;
+        if (!visible(p.id) || (k < 1.3 && p.area < 4000)) continue;
         const [x, y] = this.worldToScreen(p.c[0], -p.c[1]);
         ctx.fillText(p.name, x, y + 16);
       }
+    }
+
+    // province-simbolo (microstati, Gibilterra…): un sigillo col colore del proprietario
+    for (const id of this.tiny) {
+      const p = this.world.map.provinces[id];
+      const [x, y] = this.worldToScreen(p.c[0], -p.c[1]);
+      if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
+      const r = k < 0.3 ? 3.5 : 5.5;
+      ctx.fillStyle = prof[s.owner[id]]?.color ?? '#aaa';
+      ctx.strokeStyle = this.selectedProvince === id ? BRASS : INK;
+      ctx.lineWidth = this.selectedProvince === id ? 3 : 1.4;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      if (s.controller[id] !== s.owner[id]) { ctx.fillStyle = prof[s.controller[id]]?.color ?? '#000'; ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill(); }
+      if (k >= 0.5) { ctx.font = '500 10px "Alegreya Sans", sans-serif'; ctx.fillStyle = 'rgba(31,42,51,0.8)'; ctx.fillText(p.name, x, y + r + 8); }
     }
 
     // pedine
@@ -464,6 +528,12 @@ export class MapView {
       if (d < bd || (d === bd && u.nation === s.player)) { bd = d; best = u; }
     }
     if (best && !this.previewPick) { this.cb.onUnit(best); return; }
+    // province-simbolo: bersaglio di 14 px attorno al sigillo
+    for (const id of this.tiny) {
+      const c = this.world.map.provinces[id].c;
+      const [x, y] = this.worldToScreen(c[0], -c[1]);
+      if (Math.hypot(x - sx, y - sy) < 14) { this.cb.onProvince(id); return; }
+    }
     const [wx, wy] = this.screenToWorld(sx, sy);
     for (let i = 0; i < this.paths.length; i++) {
       if (wx < this.bboxes[i * 4] || wx > this.bboxes[i * 4 + 2] || wy < this.bboxes[i * 4 + 1] || wy > this.bboxes[i * 4 + 3]) continue;

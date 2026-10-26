@@ -310,6 +310,7 @@ export class App {
     return h('div', null,
       h('p', { class: 'sub' }, `${nationName(w, owner)}${ctrl !== owner ? ` — occupata da ${nationName(w, ctrl)}` : ''}`),
       h('dl', { class: 'facts' },
+        ...(p.r !== undefined ? [h('dt', null, 'Regione'), h('dd', null, `${w.map.regions[p.r].name} (${w.map.regionProvinces(p.r).length} ${w.map.regionProvinces(p.r).length === 1 ? 'provincia' : 'province'})`)] : []),
         h('dt', null, 'Popolazione'), h('dd', null, p.pop.toLocaleString('it-IT')),
         h('dt', null, 'Superficie'), h('dd', null, `${p.area.toLocaleString('it-IT')} km²`),
         h('dt', null, 'Terreno'), h('dd', null, `${TERRAIN_NAME[p.terrain]}${p.coast ? ', costa' : ''}`),
@@ -404,7 +405,14 @@ export class App {
   private offerPicker(tag: Tag): Node {
     const w = this.game.world, s = w.state, me = s.player;
     const war = atWar(s, me, tag);
-    const opts: [string, string][] = war ? [['', 'nessuna proposta formale'], ['peace_white', 'pace bianca'], ['peace_take', 'pace: ci cedono ciò che occupiamo'], ['peace_give', 'pace: cediamo ciò che occupano']]
+    // regioni nemiche occupate per almeno tre quarti: si possono chiedere per intero
+    const regionOpts: [string, string][] = [];
+    if (war) {
+      const tally = new Map<number, { n: number; occ: number }>();
+      for (const p of w.map.provinces) if (s.owner[p.id] === tag && p.r !== undefined) { const t = tally.get(p.r) ?? { n: 0, occ: 0 }; t.n++; if (s.controller[p.id] === me) t.occ++; tally.set(p.r, t); }
+      for (const [r, t] of tally) if (t.occ && t.occ >= t.n * 0.75 && t.n <= 30) regionOpts.push([`peace_region_${r}`, `pace: ci cedono ${w.map.regions[r].name} (${t.occ}/${t.n} occupate)`]);
+    }
+    const opts: [string, string][] = war ? [['', 'nessuna proposta formale'], ['peace_white', 'pace bianca'], ['peace_take', 'pace: ci cedono ciò che occupiamo'], ...regionOpts, ['peace_give', 'pace: cediamo ciò che occupano']]
       : [['', 'nessuna proposta formale'], ['alliance', 'alleanza difensiva'], ['non_aggression', 'non aggressione (10 anni)'], ['trade', 'accordo commerciale (5 anni)'], ['military_access', 'accesso militare (2 anni)'], ['guarantee', 'garanzia della loro indipendenza'], ['subsidy_give', 'sussidio da parte nostra (50 M)'], ...[...enemiesOf(s, me)].filter((e) => e !== tag).map((e) => [`join_${e}`, `entrare in guerra contro ${nationName(w, e)}`] as [string, string])];
     const sel = h('select', { onchange: (e: Event) => { this.draftOffer = this.buildOffer(tag, (e.target as HTMLSelectElement).value); } }, ...opts.map(([v, l]) => h('option', { value: v }, l))) as HTMLSelectElement;
     this.draftOffer = null;
@@ -415,8 +423,9 @@ export class App {
     const s = this.game.state, me = s.player;
     if (!v) return null;
     if (v === 'peace_white') return { type: 'peace' };
-    if (v === 'peace_take') return { type: 'peace', giver: tag, provinces: this.game.world.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === me).map((p) => p.id).slice(0, 8) };
-    if (v === 'peace_give') return { type: 'peace', giver: me, provinces: this.game.world.map.provinces.filter((p) => s.owner[p.id] === me && s.controller[p.id] === tag).map((p) => p.id).slice(0, 8) };
+    if (v === 'peace_take') return { type: 'peace', giver: tag, provinces: this.game.world.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === me).map((p) => p.id).slice(0, 30) };
+    if (v === 'peace_give') return { type: 'peace', giver: me, provinces: this.game.world.map.provinces.filter((p) => s.owner[p.id] === me && s.controller[p.id] === tag).map((p) => p.id).slice(0, 30) };
+    if (v.startsWith('peace_region_')) { const r = Number(v.slice(13)); return { type: 'peace', giver: tag, provinces: this.game.world.map.regionProvinces(r).filter((id) => s.owner[id] === tag) }; }
     if (v === 'subsidy_give') return { type: 'subsidy', giver: me, amount: 50 };
     if (v.startsWith('join_')) return { type: 'join_war', against: v.slice(5) };
     return { type: v as Proposal['type'], years: v === 'non_aggression' ? 10 : v === 'trade' ? 5 : v === 'military_access' ? 2 : undefined };

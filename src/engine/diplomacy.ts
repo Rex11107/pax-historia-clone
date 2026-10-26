@@ -87,7 +87,7 @@ export function makePeace(w: World, a: Tag, b: Tag, terms: { cedeTo?: Tag; provi
   }
   relocateStranded(w);
   for (const t of [a, b]) if (t !== s.player && !warsOf(s, t).length) s.nations[t].policies.mobilization = 'peace';
-  const cededTxt = ceded.size ? ` ${The(w, terms.cedeTo!)} ottiene: ${[...ceded].map((p) => w.map.provinces[p].name).join(', ')}.` : '';
+  const cededTxt = ceded.size ? ` ${The(w, terms.cedeTo!)} ottiene: ${describeTerritory(w, [...ceded])}.` : '';
   const indTxt = terms.indemnity ? ` Indennità di ${terms.indemnity} milioni.` : '';
   emit(w, { type: 'peace', nations: [a, b], text: `Pace fra ${the(w, a)} e ${the(w, b)}.${cededTxt}${indTxt}` }, sink);
   checkAlive(w, sink);
@@ -182,7 +182,7 @@ function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null 
   if (!list.length) return null;
   const giver = p.giver ?? to;
   const receiver = giver === from ? to : from;
-  if (list.length > 8) return 'troppe province in un solo trattato (massimo 8)';
+  if (list.length > 30) return 'troppe province in un solo trattato (massimo 30)';
   for (const id of list) {
     const pv = w.map.provinces[id];
     if (!pv) return `provincia inesistente: ${id}`;
@@ -190,10 +190,15 @@ function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null 
     if (id === s.nations[giver].capital) return `${pv.name} è la capitale ${di(w, giver)}`;
   }
   // leva: senza occupazione militare o grande stanchezza di guerra nessuno cede territorio
+  // per una regione intera basta occuparne i tre quarti: le province rimaste seguono il resto
   const occupied = list.filter((id) => s.controller[id] === receiver).length;
   const exhausted = s.nations[giver].warExhaustion >= 50 || s.nations[giver].stability < 20;
-  if (atWar(s, from, to) && occupied < list.length && !exhausted) return `${The(w, giver)} non cede province che ${the(w, receiver)} non occupa (stanchezza di guerra ${Math.round(s.nations[giver].warExhaustion)}/100)`;
-  if (!atWar(s, from, to) && list.length > 1) return 'in tempo di pace si può negoziare al massimo una provincia alla volta';
+  const enough = occupied === list.length || (list.length >= 4 && occupied >= list.length * 0.75);
+  if (atWar(s, from, to) && !enough && !exhausted) return `${The(w, giver)} non cede province che ${the(w, receiver)} non occupa (${occupied} su ${list.length}; stanchezza di guerra ${Math.round(s.nations[giver].warExhaustion)}/100)`;
+  if (!atWar(s, from, to)) {
+    const regs = new Set(list.map((id) => w.map.provinces[id].r));
+    if (regs.size > 1 || list.length > 4) return 'in tempo di pace si negozia al massimo una piccola regione (fino a 4 province) alla volta';
+  }
   return null;
 }
 
@@ -217,7 +222,7 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
       const receiver = giver === from ? to : from;
       for (const id of p.provinces ?? []) { s.owner[id] = receiver; s.controller[id] = receiver; }
       relocateStranded(w);
-      emit(w, { type: 'cession', nations: [giver, receiver], text: `${The(w, giver)} cede ${al(w, receiver)}: ${(p.provinces ?? []).map((id) => w.map.provinces[id].name).join(', ')}.` }, sink);
+      emit(w, { type: 'cession', nations: [giver, receiver], text: `${The(w, giver)} cede ${al(w, receiver)}: ${describeTerritory(w, p.provinces ?? [])}.` }, sink);
       break;
     }
     case 'subsidy': {
@@ -255,9 +260,27 @@ export function expireTreaties(w: World, sink: GameEvent[]) {
   });
 }
 
+/**
+ * Territorio in testo: le regioni cedute per intero si nominano come regione ("la Galizia (21 province)"),
+ * il resto provincia per provincia.
+ */
+export function describeTerritory(w: World, ids: number[]): string {
+  const set = new Set(ids);
+  const parts: string[] = [];
+  const done = new Set<number>();
+  for (const id of ids) {
+    const r = w.map.provinces[id]?.r;
+    if (r === undefined || done.has(r)) continue;
+    const all = w.map.regionProvinces(r);
+    if (all.length > 1 && all.every((x) => set.has(x))) { parts.push(`${w.map.regions[r].name} (${all.length} province)`); all.forEach((x) => set.delete(x)); done.add(r); }
+  }
+  for (const id of ids) if (set.has(id)) parts.push(w.map.provinces[id]?.name ?? `#${id}`);
+  return parts.join(', ');
+}
+
 /** Proposta in testo leggibile (UI e prompt). */
 export function describeProposal(w: World, from: Tag, to: Tag, p: Proposal): string {
-  const pv = (ids?: number[]) => (ids ?? []).map((id) => w.map.provinces[id]?.name ?? `#${id}`).join(', ');
+  const pv = (ids?: number[]) => describeTerritory(w, ids ?? []);
   switch (p.type) {
     case 'peace': return `pace${p.provinces?.length ? ` con cessione di ${pv(p.provinces)} da parte ${di(w, p.giver ?? to)}` : ' bianca'}${p.amount ? ` e indennità di ${p.amount} M` : ''}`;
     case 'cede_provinces': return `cessione di ${pv(p.provinces)} da parte ${di(w, p.giver ?? to)}`;

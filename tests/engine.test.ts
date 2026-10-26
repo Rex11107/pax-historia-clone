@@ -135,3 +135,34 @@ describe('motore', () => {
     expect(after).not.toBe(before);
   });
 });
+
+describe('regioni e microstati', () => {
+  it('ogni provincia ha una regione storica e le regioni hanno nomi d\'epoca', () => {
+    const w = newGame(MAP, 'ITA', 'reg');
+    expect(w.map.provinces.every((p) => p.r !== undefined)).toBe(true);
+    const names = w.map.regions.map((r) => r.name);
+    for (const n of ['Galizia', 'Boemia', 'Bessarabia', 'Alsazia-Lorena', 'Trentino', 'Rumelia orientale', 'Lombardia']) expect(names).toContain(n);
+  });
+  it('microstati e possedimenti esistono come province proprie', () => {
+    const w = newGame(MAP, 'ITA', 'micro');
+    const byName = (n: string) => w.map.provinces.find((p) => p.name === n)!;
+    expect(byName('Gibilterra').owner).toBe('GBR');
+    expect(byName('Helgoland').owner).toBe('GBR');
+    expect(byName('San Marino').owner).toBe('SMR');
+    expect(byName('Monaco').owner).toBe('MCO');
+    expect(byName('Gibilterra').tiny).toBe(true);
+    expect(w.map.adj[byName('Gibilterra').id].length).toBeGreaterThan(0);
+    expect(w.map.adj[byName('Helgoland').id].some((e) => e.strait)).toBe(true);
+    expect(w.state.units.some((u) => ['SMR', 'MCO', 'LIE', 'AND'].includes(u.nation))).toBe(false);
+  });
+  it('in pace si negozia al massimo una piccola regione; in guerra una regione occupata per tre quarti', () => {
+    const w = newGame(MAP, 'ITA', 'cess');
+    const s = w.state;
+    const gal = w.map.regions.findIndex((r) => r.name === 'Galizia');
+    const ids = w.map.regionProvinces(gal).filter((id) => s.owner[id] === 'AUH');
+    expect(checkProposal(w, 'RUS', 'AUH', { type: 'cede_provinces', giver: 'AUH', provinces: ids })).toMatch(/piccola regione/);
+    declareWar(w, 'RUS', 'AUH', 'prova');
+    ids.slice(0, Math.ceil(ids.length * 0.75)).forEach((id) => { s.controller[id] = 'RUS'; });
+    expect(checkProposal(w, 'RUS', 'AUH', { type: 'peace', giver: 'AUH', provinces: ids })).toBeNull();
+  });
+});

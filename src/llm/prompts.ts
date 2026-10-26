@@ -86,10 +86,11 @@ FORMATO DI RISPOSTA (solo JSON):
 {
   "reply": "<la tua risposta in carattere, 1-5 frasi, italiano>",
   "intent": "none" | "accept" | "reject" | "counter" | "propose",
-  "proposal": null | { "type": "alliance|non_aggression|trade|military_access|guarantee|peace|subsidy|cede_provinces|join_war", "giver": "<TAG di chi cede o paga>", "provinces": [<id>], "amount": <milioni>, "years": <anni>, "against": "<TAG>" },
+  "proposal": null | { "type": "alliance|non_aggression|trade|military_access|guarantee|peace|subsidy|cede_provinces|join_war", "giver": "<TAG di chi cede o paga>", "regions": ["<nome regione>"], "provinces": [<id>], "amount": <milioni>, "years": <anni>, "against": "<TAG>" },
   "opinion_delta": <intero da -10 a 10: quanto questo scambio cambia il tuo giudizio sul giocatore>
 }
 - "accept": accetti la proposta che il giocatore ha messo sul tavolo (riportala in "proposal").
 - "counter" o "propose": metti TU sul tavolo un accordo concreto in "proposal"; il giocatore potrà accettarlo.
-- "reject" o "none": nessun accordo, "proposal" null.`;
+- "reject" o "none": nessun accordo, "proposal" null.
+- Territorio: i trattati dell'epoca cedono regioni storiche (la Galizia, la Bessarabia, l'Alsazia-Lorena). Usa "regions" con i nomi delle regioni elencate nel contesto; "provinces" solo per rettifiche di confine. Chi cede, cede le province che possiede in quella regione.`;
 }

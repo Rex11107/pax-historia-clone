@@ -38,7 +38,7 @@ export const HIST_TO_TAG = {
 // Ogni regola: paese moderno (adm0_a3), stato di partenza opzionale, condizione sul centro del pezzo.
 export const OVERRIDES = [
   { modern: 'CYP', to: 'GBR' }, // Cipro amministrata dal Regno Unito dal 1878
-  { modern: 'CYN', to: 'GBR' },
+  { modern: 'CYN', to: 'GBR' }, { modern: 'ESB', to: 'GBR' }, { modern: 'WSB', to: 'GBR' }, // basi di Dhekelia e Akrotiri: Cipro
   { modern: 'TUN', to: 'TUN' }, // Beilicato di Tunisi (protettorato francese solo da maggio 1881)
   { modern: 'ISL', to: 'DEN' }, { modern: 'FRO', to: 'DEN' },
   { modern: 'DZA', from: 'MOR', when: ([, lat]) => lat > 31, to: 'FRA' }, // Oranese francese
@@ -73,8 +73,8 @@ export const OVERRIDES = [
   { modern: 'DEU', to: 'GER' }, { modern: 'NLD', to: 'NED' }, // tutta la Germania attuale era tedesca nel 1881
   { modern: 'AUT', to: 'AUH' }, { modern: 'HUN', to: 'AUH' }, { modern: 'CZE', to: 'AUH' }, { modern: 'SVK', to: 'AUH' }, { modern: 'SVN', to: 'AUH' },
   { modern: 'DEU', from: 'AUH', to: 'GER' }, { modern: 'DEU', from: 'SWI', to: 'GER' }, { modern: 'DEU', from: 'DEN', to: 'GER' },
-  { modern: 'CHE', to: 'SWI' }, { modern: 'LIE', to: 'AUH' }, { modern: 'ESP', to: 'SPA' }, { modern: 'AND', to: 'SPA' }, { modern: 'PRT', to: 'POR' },
-  { modern: 'BEL', to: 'BEL' }, { modern: 'NLD', to: 'NED' }, { modern: 'LUX', to: 'LUX' }, { modern: 'MCO', to: 'FRA' },
+  { modern: 'CHE', to: 'SWI' }, { modern: 'ESP', to: 'SPA' }, { modern: 'PRT', to: 'POR' },
+  { modern: 'BEL', to: 'BEL' }, { modern: 'NLD', to: 'NED' }, { modern: 'LUX', to: 'LUX' },
   { modern: 'ITA', from: 'SWI', to: 'ITA' }, { modern: 'ITA', from: 'FRA', to: 'ITA' }, { modern: 'FRA', from: 'SPA', to: 'FRA' }, { modern: 'FRA', from: 'SWI', to: 'FRA' },
   // Trentino e Alto Adige austriaci
   { iso: ['IT-TN', 'IT-BZ'], to: 'AUH' },
@@ -188,7 +188,7 @@ export const CHECKS = [
   ['Königsberg', 20.51, 54.71, 'GER'], ['Riga', 24.11, 56.95, 'RUS'], ['Odessa', 30.73, 46.48, 'RUS'], ['Budapest', 19.04, 47.50, 'AUH'],
   ['Praga', 14.42, 50.08, 'AUH'], ['Bolzano', 11.35, 46.50, 'AUH'], ['Gorizia', 13.62, 45.94, 'AUH'], ['Pola', 13.85, 44.87, 'AUH'],
   ['Zara', 15.40, 44.10, 'AUH'], ['Castelnuovo', 18.54, 42.46, 'AUH'], ['Scutari', 19.51, 42.07, 'TUR'], ['Smirne', 27.14, 38.42, 'TUR'],
-  ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
+  ['Damasco', 36.29, 33.51, 'TUR'], ['Il Cairo', 31.24, 30.04, 'EGY'], ['Gibilterra', -5.35, 36.14, 'GBR'], ['San Marino', 12.45, 43.94, 'SMR'], ['Monaco', 7.42, 43.74, 'MCO'], ['Vaduz', 9.52, 47.14, 'LIE'], ['Andorra', 1.52, 42.51, 'AND'], ['Ceuta', -5.32, 35.89, 'SPA'], ['Melilla', -2.94, 35.29, 'SPA'], ['Edimburgo', -3.19, 55.95, 'GBR'],
 ];
 
 // Nomi moderni anacronistici nel 1881 -> nomi d'epoca (si applicano a parole intere del nome).
@@ -208,4 +208,18 @@ export const RENAMES = [
   ['Renania Settentrionale-Vestfalia', 'Lippe', 'GER'], ['Schleswig-Holstein', 'Lubecca ed Eutin', 'GER'], ['Assia', 'Waldeck', 'GER'], ['Jena', 'Turingia', 'GER'],
   ['Braunschweig', 'Brunswick', 'GER'], ['Gießen', 'Alta Assia', 'GER'], ['Mainz', 'Assia-Darmstadt', 'GER'], ['Stralsund (nord)', 'Rügen', 'GER'], ['Renania-Palatinato', 'Birkenfeld', 'GER'],
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
+];
+
+// Territori minuscoli che non devono mai essere assorbiti dai vicini: microstati e possedimenti.
+// Se la semplificazione li cancella restano come provincia-simbolo (tiny) con i vicini calcolati prima.
+export const PROTECTED = [
+  { id: 'GIB', name: 'Gibilterra', owner: 'GBR', match: { modern: 'GIB' }, pop: 18000, terrain: 'hills', coast: true },
+  { id: 'SMR', name: 'San Marino', owner: 'SMR', match: { modern: 'SMR' }, pop: 8000, terrain: 'hills', coast: false },
+  { id: 'MCO', name: 'Monaco', owner: 'MCO', match: { modern: 'MCO' }, pop: 10000, terrain: 'hills', coast: true },
+  { id: 'LIE', name: 'Liechtenstein', owner: 'LIE', match: { modern: 'LIE' }, pop: 9000, terrain: 'mountain', coast: false },
+  { id: 'AND', name: 'Andorra', owner: 'AND', match: { modern: 'AND' }, pop: 6000, terrain: 'mountain', coast: false },
+  { id: 'CEU', name: 'Ceuta', owner: 'SPA', match: { pid: 'ESP-5815' }, pop: 10000, terrain: 'hills', coast: true, region: 'Andalusia' },
+  { id: 'MEL', name: 'Melilla', owner: 'SPA', match: { pid: 'ESP-5835' }, pop: 5000, terrain: 'plain', coast: true, region: 'Andalusia' },
+  // Helgoland non è in Natural Earth: un punto, collegato via mare alla costa tedesca più vicina
+  { id: 'HEL', name: 'Helgoland', owner: 'GBR', point: [7.886, 54.182], pop: 2000, terrain: 'plain', coast: true },
 ];

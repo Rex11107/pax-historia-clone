@@ -105,6 +105,11 @@ export const NATIONS: Record<string, P> = {
   TUN: base({ name: 'Beilicato di Tunisi', short: ['', 'Tunisi'], adjective: 'tunisino', color: '#b2805c', capital: [10.17, 36.8], government: 'beilicato (vassallo ottomano)', leader: 'Bey Muhammad III as-Sadiq', industry: 5, finance: 5, cohesion: 35, armyPeace: 8000, debt: 150, temperament: 'indebitato, conteso fra Francia e Italia', goals: ['sopravvivere fra Francia e Italia'] }),
   PER: base({ name: 'Persia', short: ['la ', 'Persia'], adjective: 'persiano', color: '#7e9f8c', capital: [51.39, 35.69], government: 'scià', leader: 'Scià Naser al-Din', industry: 5, finance: 15, cohesion: 40, armyPeace: 30000, debt: 10 }),
   ARA: base({ name: 'Emirati d\'Arabia', short: ["l'", 'Arabia'], adjective: 'arabo', color: '#c4b483', capital: [43.0, 26.0], government: 'emirati tribali', leader: 'Emiro di Ha\'il', industry: 2, finance: 5, cohesion: 30, armyPeace: 10000, debt: 0 }),
+  // microstati: non giocabili, senza esercito, protetti dai vicini
+  SMR: base({ name: 'Repubblica di San Marino', short: ['', 'San Marino'], adjective: 'sammarinese', color: '#7fb3c9', capital: [12.45, 43.94], government: 'repubblica', leader: 'Capitani reggenti', micro: true, industry: 5, finance: 30, cohesion: 80, armyPeace: 0, debt: 0, temperament: 'neutrale, legato all\'Italia dal trattato di amicizia del 1862', goals: ['indipendenza'], friends: ['ITA'] }),
+  MCO: base({ name: 'Principato di Monaco', short: ['', 'Monaco'], adjective: 'monegasco', color: '#d06a6a', capital: [7.42, 43.74], government: 'principato', leader: 'Principe Carlo III', micro: true, industry: 10, finance: 70, cohesion: 70, armyPeace: 0, debt: 0, temperament: 'neutrale, sotto la protezione francese', goals: ['indipendenza', 'prosperità del casinò'], friends: ['FRA'] }),
+  LIE: base({ name: 'Principato del Liechtenstein', short: ['il ', 'Liechtenstein'], adjective: 'liechtensteinese', color: '#4f6fa8', capital: [9.52, 47.14], government: 'principato', leader: 'Principe Giovanni II', micro: true, industry: 5, finance: 40, cohesion: 80, armyPeace: 0, debt: 0, temperament: 'neutrale, in unione doganale con l\'Austria', goals: ['indipendenza'], friends: ['AUH'] }),
+  AND: base({ name: 'Valli di Andorra', short: ['', 'Andorra'], adjective: 'andorrano', color: '#5e8f6e', capital: [1.52, 42.51], government: 'coprincipato', leader: 'Coprincipi: il vescovo di Urgell e il capo dello Stato francese', micro: true, industry: 2, finance: 10, cohesion: 80, armyPeace: 0, debt: 0, temperament: 'neutrale, sotto i due coprincipi', goals: ['indipendenza'], friends: ['FRA', 'SPA'] }),
   NUL: base({ name: 'Territori tribali', short: ['le ', 'tribù'], adjective: 'tribale', color: '#b8b2a6', capital: [5, 28], government: 'nessuno', industry: 0, finance: 0, cohesion: 20, armyPeace: 0, debt: 0 }),
 };
 
@@ -115,6 +120,10 @@ export const INITIAL_TREATIES: { type: 'alliance' | 'non_aggression' | 'guarante
   { type: 'guarantee', a: 'FRA', b: 'BEL' },
   { type: 'guarantee', a: 'GER', b: 'BEL' },
   { type: 'non_aggression', a: 'GER', b: 'RUS' },
+  { type: 'guarantee', a: 'FRA', b: 'MCO' }, // trattato franco-monegasco, 1861
+  { type: 'guarantee', a: 'ITA', b: 'SMR' }, // convenzione di amicizia, 1862
+  { type: 'guarantee', a: 'AUH', b: 'LIE' }, // unione doganale, 1852
+  { type: 'guarantee', a: 'FRA', b: 'AND' }, { type: 'guarantee', a: 'SPA', b: 'AND' }, // i coprincipi
 ];
 
 /** Opinioni iniziali (A verso B), asimmetriche. Valori non elencati: 0. */

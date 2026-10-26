@@ -26,7 +26,8 @@ import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
 import { prepareBasins, splitByBasins } from './basins.mjs';
 import { buildHistoricalBase } from './historical.mjs';
-import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES } from './map-config.mjs';
+import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED } from './map-config.mjs';
+import { regionOf } from './regions.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const RAW = path.join(ROOT, 'data-raw');
@@ -450,7 +451,11 @@ async function main() {
     if (pr.hist && owner === undefined) throw new Error(`stato storico senza tag: ${pr.hist}`);
     if (pr.fix && owner) owner = pr.fix;
     if (!pr.fix && pr.own) owner = pr.own; // unità d'epoca: il proprietario è certo
-    return { i, fix: pr.fix || pr.own || null, hist: !!pr.own, pid: pr.pid, iso: pr.iso, reg: pr.reg, name: cleanName(pr.pname), modern: pr.modern, owner, area: km2(f), feat: f };
+    // microstati e possedimenti minuscoli: proprietario fisso, gruppo proprio
+    const base = String(pr.pid).split('~')[0];
+    const prot = PROTECTED.find((x) => x.match && ((x.match.modern && x.match.modern === pr.modern) || (x.match.pid && x.match.pid === base)));
+    if (prot) owner = prot.owner;
+    return { i, fix: prot?.owner || pr.fix || pr.own || null, prot: prot?.id ?? null, hist: !!pr.own, pid: pr.pid, iso: pr.iso, reg: pr.reg, nreg: pr.nreg ?? pr.reg, name: prot ? prot.name : cleanName(pr.pname), modern: pr.modern, owner, area: km2(f), feat: f };
   });
   const applyOverrides = (p) => {
     if (p.fix) { p.owner = p.fix; return; }
@@ -503,7 +508,7 @@ async function main() {
   const parent = P.map((_, i) => i);
   const find = (x) => (parent[x] === x ? x : (parent[x] = find(parent[x])));
   const gArea = P.map((p) => p.area);
-  const join = (a, b) => { a = find(a); b = find(b); if (a === b) return; parent[b] = a; gArea[a] += gArea[b]; };
+  const join = (a, b) => { a = find(a); b = find(b); if (a === b || P[a].prot !== P[b].prot) return; parent[b] = a; gArea[a] += gArea[b]; };
   const groupNbrs = (g) => { const s = new Set(); P.forEach((p) => { if (find(p.i) === g) nbr[p.i].forEach((j) => s.add(find(j))); }); s.delete(g); return [...s]; };
 
   // stessi pid + stesso proprietario -> stesso gruppo (multi-parte)
@@ -552,7 +557,7 @@ async function main() {
     let isl = 0;
     for (const r0 of smallRoots) {
       const r = find(r0);
-      if (gArea[r] >= 600) continue;
+      if (gArea[r] >= 600 || P[r].prot) continue;
       const mine = P.filter((p) => find(p.i) === r);
       let best = null, bd = 60;
       for (const q of P) {
@@ -586,8 +591,46 @@ async function main() {
     const anyHist = histArea >= 0.5 * mem.reduce((t, m) => t + m.area, 0);
     for (const m of mem) if (!anyHist || m.hist) byName.set(m.name, (byName.get(m.name) || 0) + (MICRO.has(m.modern) ? 0 : (m.urban || 0) + m.area * 2));
     const name = [...byName.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r] };
+    // regione storica: quella che copre la maggior parte dell'area del gruppo
+    const prot = PROTECTED.find((x) => x.id === P[r].prot);
+    const regArea = new Map();
+    for (const m of mem) {
+      let rg = prot ? prot.region || prot.name
+        : m.modern === 'CHE' ? { fr: 'Romandia', it: 'Ticino' }[CH_LANG[m.iso]] || 'Svizzera tedesca'
+        : m.modern === 'DEU' && !m.hist ? '@self'
+        : regionOf({ modern: m.modern, iso: m.iso, reg: m.reg, regModern: m.nreg, name: m.name, owner: m.owner }, cent[m.i]);
+      rg = rg ?? '@nb';
+      regArea.set(rg, (regArea.get(rg) || 0) + m.area);
+    }
+    const region = [...regArea.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null };
   });
+  // regioni ancora indecise: quella del vicino dello stesso stato con più confine in comune
+  {
+    const gNb = new Map();
+    for (const p of P) for (const j of nbr[p.i]) {
+      const a = gid.get(find(p.i)), b = gid.get(find(j));
+      if (a === b) continue;
+      if (!gNb.has(a)) gNb.set(a, new Map());
+      gNb.get(a).set(b, (gNb.get(a).get(b) || 0) + 1);
+    }
+    for (let pass = 0; pass < 5; pass++) for (const [k, gi] of gInfo.entries()) {
+      if (gi.region !== '@nb') continue;
+      const c = [...(gNb.get(k) || new Map()).entries()].filter(([b]) => gInfo[b].owner === gi.owner && !gInfo[b].region.startsWith('@')).sort((x, y) => y[1] - x[1])[0];
+      if (c) gi.region = gInfo[c[0]].region;
+    }
+    // isole e frammenti senza vicini utili: regione della provincia più vicina dello stesso stato (fuori dalla Germania)
+    const gCent = new Map();
+    for (const p of P) { const g = gid.get(find(p.i)); if (!gCent.has(g)) gCent.set(g, cent[p.i]); }
+    for (const [k, gi] of gInfo.entries()) {
+      if (gi.region !== '@nb') continue;
+      let best = null, bd = 400;
+      for (const [b, gb] of gInfo.entries()) if (b !== k && gb.owner === gi.owner && !gb.region.startsWith('@')) { const d = turf.distance(gCent.get(k), gCent.get(b)); if (d < bd) { bd = d; best = gb; } }
+      if (best) gi.region = best.region;
+    }
+    for (const gi of gInfo) if (gi.region.startsWith('@')) gi.region = null; // = nome della provincia, deciso dopo i RENAMES
+    gInfo.gNb = gNb;
+  }
   // verifica dei confini storici su località note
   let bad = 0;
   for (const [label, lon, lat, want] of CHECKS) {
@@ -773,6 +816,35 @@ async function main() {
   const outArcs = parr.map((arc) => { const flat = []; let px = 0, py = 0; for (const [x, y] of arc) { const ix = Math.round(x * 10), iy = Math.round(y * 10); flat.push(ix - px, iy - py); px = ix; py = iy; } return flat; });
   const arcSides = arcUse.map((u) => (u.length === 2 ? [u[0], u[1]] : [u[0] ?? -1, -1]));
 
+  // territori protetti: quelli cancellati dalla semplificazione diventano province-simbolo
+  const gToK = new Map(fgeoms.map((g, k) => [g.properties.g, k]));
+  const tiny = new Set();
+  for (const pr of PROTECTED) {
+    const gi = gInfo.findIndex((x) => x.prot?.id === pr.id);
+    let k = gi >= 0 ? gToK.get(gi) : undefined;
+    if (k !== undefined) { if (gInfo[gi].area < 300) tiny.add(k); continue; }
+    k = provinces.length;
+    let pt = pr.point, nb = [];
+    if (gi >= 0) {
+      const mem = P.filter((q) => gid.get(find(q.i)) === gi);
+      pt = turf.centroid(turf.featureCollection(mem.map((q) => q.feat))).geometry.coordinates;
+      nb = [...(gInfo.gNb.get(gi) || new Map()).keys()].map((b) => gToK.get(b)).filter((x) => x !== undefined);
+    }
+    if (!pt) continue;
+    const info = gi >= 0 ? gInfo[gi] : { name: pr.name, owner: pr.owner, modern: pr.id, area: 1, region: pr.region || pr.name, prot: pr };
+    provinces.push({ k, info, pt, coast: pr.coast, terrain: pr.terrain, pop: pr.pop, synthetic: true });
+    fnbr[k] = nb;
+    for (const j of nb) if (!fnbr[j].includes(k)) fnbr[j].push(k);
+    if (!nb.length) {
+      // isola: stretto verso la provincia costiera più vicina di un altro territorio
+      let best = null, bd = Infinity;
+      for (const q of provinces) if (q.k !== k && q.coast && !q.synthetic) { const d = turf.distance(pt, q.pt); if (d < bd) { bd = d; best = q; } }
+      if (best) strList.push([k, best.k, Math.round(bd)]);
+    }
+    tiny.add(k);
+  }
+  for (const pr of PROTECTED) { const p = provinces.find((q) => q.info.prot?.id === pr.id); if (p) { p.pop = pr.pop; p.terrain = pr.terrain; p.coast = pr.coast; } }
+
   const out = {
     version: 1,
     scenario: 'europe1881',
@@ -792,8 +864,10 @@ async function main() {
       coast: p.coast,
       lonlat: p.pt.map((v) => Math.round(v * 1000) / 1000),
       c: laea(p.pt).map((v) => Math.round(v)),
-      arcs: fgeoms[p.k].arcs,
+      arcs: p.synthetic ? [] : fgeoms[p.k].arcs,
       n: fnbr[p.k],
+      ...(tiny.has(p.k) ? { tiny: true } : {}),
+      _region: p.info.region,
     })),
     straits: strList,
     rivers: riverEdges,
@@ -826,6 +900,26 @@ async function main() {
   const seen2 = new Map();
   for (const p of out.provinces) seen2.set(p.name, (seen2.get(p.name) || 0) + 1);
   for (const p of out.provinces) if (seen2.get(p.name) > 1) { const n = (cnt.get(p.name) || 0) + 1; cnt.set(p.name, n); p.name = `${p.name} ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n - 1] || n}`; }
+
+  // regioni: indice per provincia + elenco; nomi uguali fra stati diversi distinti con l'aggettivo
+  const regKey = new Map();
+  const regCount = new Map();
+  for (const p of out.provinces) {
+    const name = p._region || p.name;
+    const key = `${p.owner}|${name}`;
+    regCount.set(key, (regCount.get(key) || 0) + 1);
+    p._rk = key;
+  }
+  const byRegName = new Map();
+  for (const key of regCount.keys()) { const n = key.split('|')[1]; if (!byRegName.has(n)) byRegName.set(n, []); byRegName.get(n).push(key); }
+  const regions = [];
+  for (const [n, keys] of byRegName) {
+    keys.sort((a, b) => regCount.get(b) - regCount.get(a));
+    keys.forEach((key, i) => { const owner = key.split('|')[0]; regKey.set(key, regions.length); regions.push({ name: i === 0 || !ADJ[owner] ? n : `${n} ${ADJ[owner]}` }); });
+  }
+  for (const p of out.provinces) { p.r = regKey.get(p._rk); delete p._rk; delete p._region; }
+  out.regions = regions;
+  log(`${regions.length} regioni storiche; ${tiny.size} province-simbolo (${[...tiny].map((k) => out.provinces[k].name).join(', ')})`);
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(out));

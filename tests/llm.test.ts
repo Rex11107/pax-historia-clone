@@ -135,3 +135,13 @@ describe('agenti-nazione', () => {
     expect(treatyBetween(w.state, 'ITA', 'FRA', 'alliance')).toBeFalsy();
   });
 });
+
+describe('regioni nella diplomazia', () => {
+  it('una proposta per regione diventa le province di chi cede', async () => {
+    const { parseProposal } = await import('../src/llm/agents');
+    const w = newGame(MAP, 'ITA', 'regp');
+    const p = parseProposal(w, { type: 'cede_provinces', giver: 'AUH', regions: ['il Trentino'] }, 'AUH')!;
+    expect(p.provinces!.length).toBeGreaterThan(0);
+    expect(p.provinces!.every((id) => w.state.owner[id] === 'AUH' && w.map.regionName(id) === 'Trentino')).toBe(true);
+  });
+});

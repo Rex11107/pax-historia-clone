@@ -35,6 +35,21 @@ export class GameMap {
 
   get size() { return this.provinces.length; }
 
+  /** regioni storiche: nome e province che contengono */
+  get regions(): { name: string }[] { return this.data.regions ?? []; }
+  private regionIndex: number[][] | null = null;
+  regionProvinces(r: number): number[] {
+    if (!this.regionIndex) {
+      this.regionIndex = this.regions.map(() => []);
+      for (const p of this.provinces) if (p.r !== undefined && this.regionIndex[p.r]) this.regionIndex[p.r].push(p.id);
+    }
+    return this.regionIndex[r] ?? [];
+  }
+  regionName(id: number): string | null {
+    const r = this.provinces[id]?.r;
+    return r !== undefined ? this.regions[r]?.name ?? null : null;
+  }
+
   /** nome del fiume che separa due province adiacenti, se c'è */
   river(a: number, b: number): string | undefined { return this.riverEdges.get(`${a},${b}`); }
 
@@ -174,6 +189,7 @@ export function decodeArcs(data: MapData): Float32Array[] {
 
 /** Anelli di una provincia come liste di punti [x0,y0,x1,y1,...]. */
 export function provinceRings(p: ProvinceData, arcs: Float32Array[]): number[][] {
+  if (!p.arcs.length) return [];
   const polys = (typeof (p.arcs as number[][])[0][0] === 'number' ? [p.arcs] : p.arcs) as number[][][];
   const rings: number[][] = [];
   for (const poly of polys) {

@@ -153,7 +153,7 @@ export function buildHistoricalBase({ ms, RAW, TMP, BBOX, provPath, places, exo,
         name = DE_IT[n] || exo(n);
       }
       const m = modernOf(pt) || {};
-      feats.push({ type: 'Feature', geometry: f.geometry, properties: { pid: id, iso: m.iso || '', pname: name, modern: m.modern || '', reg: `H:${parent}`, own: L.own } });
+      feats.push({ type: 'Feature', geometry: f.geometry, properties: { pid: id, iso: m.iso || '', pname: name, modern: m.modern || '', reg: `H:${parent}`, nreg: m.reg || null, own: L.own } });
     }
     const raw = path.join(TMP, `h_${L.src}_raw.geojson`);
     fs.writeFileSync(raw, JSON.stringify({ type: 'FeatureCollection', features: feats }));
@@ -215,7 +215,7 @@ export function buildHistoricalBase({ ms, RAW, TMP, BBOX, provPath, places, exo,
       // exclavi delle unità d'epoca: prendono il nome della loro città principale (Schmalkalden, Rinteln…)
       let pname = p.pname;
       if (p.own && pid !== p.pid) { const t = townIn(f, 3000); if (t) pname = exo(t); }
-      features.push({ type: 'Feature', geometry: f.geometry, properties: { pid, iso: p.iso || '', pname, modern: p.modern, reg: reg ?? null, own: p.own || null } });
+      features.push({ type: 'Feature', geometry: f.geometry, properties: { pid, iso: p.iso || '', pname, modern: p.modern, reg: reg ?? null, nreg: p.nreg ?? (p.own ? null : p.reg ?? null), own: p.own || null } });
     }
   }
   const out = path.join(TMP, 'prov_hist.geojson');
