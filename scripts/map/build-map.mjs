@@ -859,6 +859,11 @@ async function main() {
         else { p.desert = desertRegion(p); p.acls = `D:${p.desert}`; p.owner = ''; }
       }
       { const h = {}; for (const i of freeIdx) { const p = P[i]; if (!p.acls) continue; const k = p.acls.startsWith('oasi') ? 'oasi' : p.acls; h[k] = (h[k] || 0) + Math.round(p.area); } log('classi Nord Africa (km²)', JSON.stringify(h)); }
+      // Baltico: linee rigide storico-culturali. Lituania per regioni (Samogizia, Aukštaitija, Kovno, Suvalkija, Vilna,
+      // dalle contee di oggi); Lettonia ed Estonia per governatorato (Curlandia, Livonia, Estonia; Latgalia col Vitebsk)
+      const LT_REG = { 'LT-TE': 'samogizia', 'LT-SA': 'samogizia', 'LT-TA': 'samogizia', 'LT-KL': 'samogizia', 'LT-PN': 'aukstaitija', 'LT-UT': 'aukstaitija',
+        'LT-KU': 'kovno', 'LT-MR': 'suvalkija', 'LT-AL': 'suvalkija', 'LT-VL': 'vilna' };
+      const balt = (p) => (p.modern === 'LTU' ? LT_REG[p.iso] || '' : ['LVA', 'EST'].includes(p.modern) ? String(p.reg || '') : '');
       // Impero russo: province grandi dove la terra è vuota (taiga, tundra, steppa dei Kirghisi), più piccole nelle
       // terre fitte (Polonia, Ucraina, Russia centrale); classi dalla densità di località
       const rusScale = (p) => {
@@ -884,10 +889,11 @@ async function main() {
         // la contea di Gorizia resta unita anche a cavallo del confine italo-sloveno di oggi
         // Balcani e Portogallo: niente linee rigide (né confini moderni né vilayet), solo preferenze
         // Grecia moderna e Kosovo: linee rigide anche dentro l'Impero ottomano (aree di rivendicazione greca e serba/albanese)
-        key: (p) => AFRICA_MODERN.has(p.modern) ? `${p.owner}|${p.owner && !FREE_OWNERS.has(p.owner) ? p.modern : ''}|${p.prot || ''}|${akey(p)}` : `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : FREE_OWNERS.has(p.owner) ? (p.owner === 'TUR' && ['GRC', 'KOS', 'ALB'].includes(p.modern) ? p.modern : '') : p.modern}|${lang(p)}|${p.prot || ''}|${FREE_OWNERS.has(p.owner) ? '' : claim(p)}|${p.rhine}|${isle(p)}|${p.modern === 'EGY' && p.feat.properties.nile ? 'nilo' : ''}`,
+        key: (p) => (p.owner === 'RUS' ? `|${balt(p)}` : '') + (AFRICA_MODERN.has(p.modern) ? `${p.owner}|${p.owner && !FREE_OWNERS.has(p.owner) ? p.modern : ''}|${p.prot || ''}|${akey(p)}` : `${p.owner}|${p.reg === 'H:Gefürstete Grafschaft Görz und Gradisca' ? 'GOR' : FREE_OWNERS.has(p.owner) ? (p.owner === 'TUR' && ['GRC', 'KOS', 'ALB'].includes(p.modern) ? p.modern : '') : p.modern}|${lang(p)}|${p.prot || ''}|${FREE_OWNERS.has(p.owner) ? '' : claim(p)}|${p.rhine}|${isle(p)}|${p.modern === 'EGY' && p.feat.properties.nile ? 'nilo' : ''}`),
         soft2: (p) => (AFRICA_MODERN.has(p.modern) ? p.acls : FREE_OWNERS.has(p.owner) ? p.modern : ''),
         riverOwners: FREE_OWNERS,
-        aspectStrip: (p) => !!p.desert,
+        // deserto e Baltico: le strisce si misurano sul lato più lungo (niente province a serpente come Kovno)
+        aspectStrip: (p) => !!p.desert || (p.owner === 'RUS' && ['LTU', 'LVA', 'EST'].includes(p.modern)),
         leftoverOwners: new Set(['RUS']),
         looseKey: (p) => `${p.owner}|${lang(p)}|${p.prot || ''}|${['costa', 'interno'].includes(claim(p)) ? 'dalmazia' : claim(p)}|${p.rhine}`,
         soft: (p) => AFRICA_MODERN.has(p.modern) ? p.acls : regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
@@ -1143,6 +1149,11 @@ async function main() {
   }
   log(`controlli storici: ${CHECKS.length - bad}/${CHECKS.length} corretti`);
   if (bad && process.env.STRICT_MAP) process.exit(1);
+  if (process.env.DEBUG_MIX) {
+    const mix = new Map();
+    for (const p of P) if (p.owner === 'RUS') { const r = find(p.i); if (!mix.has(r)) mix.set(r, new Map()); const m = mix.get(r); m.set(`${p.modern}:${p.zone ? 'z' : 'n'}`, (m.get(`${p.modern}:${p.zone ? 'z' : 'n'}`) || 0) + Math.round(p.area)); }
+    for (const [r, m] of mix) if (new Set([...m.keys()].map((k) => k.split(':')[0])).size > 1) console.log('MIX', gInfo[gid.get(r)].name, JSON.stringify([...m]));
+  }
   for (const p of P) p.feat.properties = { g: gid.get(find(p.i)) };
   fs.writeFileSync(path.join(TMP, 'grouped.geojson'), JSON.stringify(turf.featureCollection(P.map((p) => p.feat))));
   log(`${roots.length} province di gioco`);

@@ -61,6 +61,8 @@ export const OVERRIDES = [
   { iso: iso('RS', '01 02 03 04 05 06 07'), to: 'AUH' }, // Voivodina
   // Sangiaccato di Novi Pazar (Sjenica, Novi Pazar, Tutin, Prijepolje, Priboj, Nova Varoš) e valle di Preševo: ottomani fino al 1912
   { modern: 'SRB', when: (pt) => inRing(pt, SANDZAK_SRB) || inRing(pt, PRESEVO), to: 'TUR' },
+  // costa del golfo di Aqaba (Haql): ottomana come il resto dell'Higiaz settentrionale, non un'exclave araba sul mare
+  { modern: 'SAU', when: ([x, y]) => x < 35.6 && y > 27.4, to: 'TUR' },
   { iso: iso('ME', '12 16 02 20 06 07 18 09 15 21 11 01'), to: 'MNE' },
   { iso: iso('ME', '14 04 03 17 13'), to: 'TUR' }, // Sangiaccato di Novi Pazar, Plav-Gusinje
   { iso: iso('ME', '10 19 08 05'), to: 'AUH' }, // Bocche di Cattaro
@@ -326,7 +328,7 @@ export const RENAMES = [
     Homyel: 'Gomel', 'Mahilyow': 'Mogilev', Vitsyebsk: 'Vitebsk', 'Chişinău': 'Kišinëv', Chisinau: 'Kišinëv', 'Kryvyy Rih': 'Krivoj Rog', Mykolayiv: 'Nikolaev',
     'Zaporizhzhya': 'Aleksandrovsk', Krasnodar: 'Ekaterinodar', Makhachkala: 'Petrovsk', Ganca: 'Elisavetpol', 'Gəncə': 'Elisavetpol', Yerevan: 'Erevan', Batumi: 'Batum',
     Stepanakert: 'Šuša', Naxcivan: 'Nachičevan', Lankaran: 'Lenkoran', Engels: 'Pokrovskaja Sloboda', Kotlas: 'Solvyčegodsk', Nikel: 'Pečenga', Khmelnytskyy: 'Proskurov',
-    Vinnytsya: 'Vinnica', Zhytomyr: 'Žitomir', Dnipro: 'Ekaterinoslav', Kropyvnytskyy: 'Elisavetgrad', Luhansk: 'Lugansk', Donetsk: 'Juzovka', Rivne: 'Rovno', Lutsk: 'Luck',
+    Vinnytsya: 'Vinnica', Trok: 'Mariampol', Zhytomyr: 'Žitomir', Dnipro: 'Ekaterinoslav', Kropyvnytskyy: 'Elisavetgrad', Luhansk: 'Lugansk', Donetsk: 'Juzovka', Rivne: 'Rovno', Lutsk: 'Luck',
     Chernihiv: 'Černigov', Kharkiv: 'Char\'kov', Sumy: 'Sumy', Poltava: 'Poltava', Kyiv: 'Kiev', Odesa: 'Odessa', Kherson: 'Cherson', Volgograd: 'Caricyn', Samara: 'Samara',
     'Nizhny Novgorod': 'Nižnij Novgorod', Tver: 'Tver\'' }).map(([a, b]) => [a, b, 'RUS']),
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
