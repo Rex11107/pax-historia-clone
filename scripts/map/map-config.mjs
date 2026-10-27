@@ -202,7 +202,7 @@ export const CHECKS = [
 // owner: solo se la provincia appartiene a quella nazione.
 export const RENAMES = [
   ['Odense', 'Odense'], ['Assens', 'Assens'],
-  ['Kaliningrad', 'Königsberg'], ['Klaipėda', 'Memel', 'GER'], ['Sovetsk', 'Tilsit'], ['Chernyakhovsk', 'Insterburg'],
+  ['Kaliningrad', 'Königsberg'], ['Klaipėda', 'Memel', 'GER'], ['Sovetsk', 'Tilsit', 'GER'], ['Chernyakhovsk', 'Insterburg'],
   ['Olsztyn', 'Allenstein'], ['Ełk', 'Lyck'], ['Elbląg', 'Elbing'], ['Gdańsk', 'Danzica'], ['Szczecin', 'Stettino'], ['Koszalin', 'Köslin'],
   ['Poznań', 'Posen', 'GER'], ['Bydgoszcz', 'Bromberg'], ['Opole', 'Oppeln'], ['Wrocław', 'Breslavia'], ['Legnica', 'Liegnitz'], ['Wałbrzych', 'Waldenburg'],
   ['Zielona Góra', 'Grünberg'], ['Gorzów Wielkopolski', 'Landsberg'], ['Lubusz', 'Neumark', 'GER'], ['Grande Polonia', 'Posen', 'GER'],
@@ -318,6 +318,17 @@ export const RENAMES = [
   ...Object.entries({ 'Er Rachidia': 'Ksar es-Souk', Marrakesh: 'Marrakech', Khouribga: 'Ouardigha', Taounate: 'Uezzan', 'El Jadida': 'Mazagan', 'Ksar El Kebir': 'Alcazarquivir',
     Tangier: 'Tangeri', Tetouan: 'Tetuan', 'Tétouan': 'Tetuan', Essaouira: 'Mogador', Kenitra: 'Mehdia', Nador: 'Melilla (retroterra)', 'Ait Melloul': 'Sus', Agadir: 'Agadir',
     Laayoune: 'Saguia el-Hamra', 'Al Hoceïma': 'Rif', 'Al Hoceima': 'Rif', Khemisset: 'Zemmour', 'Sidi Bennour': 'Doukkala' }).map(([a, b]) => [a, b, 'MOR']),
+  // Granducato di Finlandia: nomi ufficiali svedesi dell'epoca; Baltico e Bessarabia: nomi russi o tedeschi del 1881
+  ...Object.entries({ Helsinki: 'Helsingfors', Turku: 'Åbo', Tampere: 'Tammerfors', Oulu: 'Uleåborg', Vyborg: 'Viborg', Viipuri: 'Viborg', Vaasa: 'Nikolaistad',
+    Lappeenranta: 'Villmanstrand', Porvoo: 'Borgå', Kokkola: 'Gamlakarleby', Mikkeli: 'S:t Michel', Kajaani: 'Kajana', 'Hämeenlinna': 'Tavastehus', Pori: 'Björneborg',
+    Raahe: 'Brahestad', Loviisa: 'Lovisa', Kotka: 'Kotka', Tallinn: 'Reval', Tartu: 'Dorpat', Riga: 'Riga', Jelgava: 'Mitau', Liepaja: 'Libau', 'Liepāja': 'Libau',
+    Daugavpils: 'Dünaburg', Ventspils: 'Windau', Kaunas: 'Kovno', Vilnius: 'Vilna', 'Šiauliai': 'Šavli', 'Panevėžys': 'Ponevež', Hrodna: 'Grodno', Babruysk: 'Bobrujsk',
+    Homyel: 'Gomel', 'Mahilyow': 'Mogilev', Vitsyebsk: 'Vitebsk', 'Chişinău': 'Kišinëv', Chisinau: 'Kišinëv', 'Kryvyy Rih': 'Krivoj Rog', Mykolayiv: 'Nikolaev',
+    'Zaporizhzhya': 'Aleksandrovsk', Krasnodar: 'Ekaterinodar', Makhachkala: 'Petrovsk', Ganca: 'Elisavetpol', 'Gəncə': 'Elisavetpol', Yerevan: 'Erevan', Batumi: 'Batum',
+    Stepanakert: 'Šuša', Naxcivan: 'Nachičevan', Lankaran: 'Lenkoran', Engels: 'Pokrovskaja Sloboda', Kotlas: 'Solvyčegodsk', Nikel: 'Pečenga', Khmelnytskyy: 'Proskurov',
+    Vinnytsya: 'Vinnica', Zhytomyr: 'Žitomir', Dnipro: 'Ekaterinoslav', Kropyvnytskyy: 'Elisavetgrad', Luhansk: 'Lugansk', Donetsk: 'Juzovka', Rivne: 'Rovno', Lutsk: 'Luck',
+    Chernihiv: 'Černigov', Kharkiv: 'Char\'kov', Sumy: 'Sumy', Poltava: 'Poltava', Kyiv: 'Kiev', Odesa: 'Odessa', Kherson: 'Cherson', Volgograd: 'Caricyn', Samara: 'Samara',
+    'Nizhny Novgorod': 'Nižnij Novgorod', Tver: 'Tver\'' }).map(([a, b]) => [a, b, 'RUS']),
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
 ];
 
@@ -348,7 +359,7 @@ export const POLISH_AREAS = [
 ];
 
 // Città nate o cresciute dopo il 1881: non danno il nome a una provincia
-export const ANACHRONISTIC = new Set(['Wolfsburg', '6th of October City', 'Sadat City', 'Hassi Messaoud', 'Al ‘Āshir min Ramaḑān', 'Badr', 'El Shorouk', 'New Cairo', 'Al Obour', 'Ain Sokhna', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój',
+export const ANACHRONISTIC = new Set(['Wolfsburg', 'Kovdor', 'Ostrovnoy', 'Apatity', 'Monchegorsk', 'Severomorsk', 'Polyarnyye Zori', 'Novodvinsk', 'Severodvinsk', 'Nikel', 'Zapolyarnyy', 'Kostomuksha', 'Dimitrovgrad', 'Novocheboksarsk', 'Togliatti', 'Tolyatti', 'Novomoskovsk','6th of October City', 'Sadat City', 'Hassi Messaoud', 'Al ‘Āshir min Ramaḑān', 'Badr', 'El Shorouk', 'New Cairo', 'Al Obour', 'Ain Sokhna', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój',
   'Milton Keynes', 'Telford', 'Craigavon', 'Livingston', 'Cumbernauld', 'East Kilbride', 'Glenrothes', 'Stevenage', 'Harlow', 'Basildon', 'Peterlee', 'Bracknell', 'Skelmersdale', 'Irvine New Town', 'Shannon', 'Tallaght', 'Guidonia Montecelio', 'Latina', 'Sabaudia', 'Aprilia', 'Pomezia', 'Carbonia', 'Arborea', 'Fertilia',
   'Velingrad', 'Gotse Delchev', 'Tres Cantos', 'Rivas-Vaciamadrid', 'Ptolemaḯda', 'Ptolemaida', 'Igoumenitsa', 'Victoria', 'Onești', 'Motru', 'Rovinari', 'Dimitrovgrad']);
 

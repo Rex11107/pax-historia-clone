@@ -39,6 +39,8 @@ export function inZone(p) {
   if (p.owner === 'GBR' && ['GBR', 'IRL', 'IMN', 'JEY', 'GGY', 'ALD'].includes(p.modern)) return true; // quarta fase: isole britanniche
   // quinta fase: Spagna e Balcani (con la Rumelia ottomana: Albania, Macedonia, Tracia, Kosovo, Tessaglia, Epiro, Creta)
   if (['SPA', 'AND', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'POR'].includes(p.owner)) return true;
+  // nona fase: l'Impero russo (con Polonia, Finlandia, Baltico, Ucraina, Bielorussia, Bessarabia, Caucaso)
+  if (p.owner === 'RUS') return true;
   // sesta fase: Nord Africa (Marocco, Algeria francese, Tunisia, Tripolitania ottomana, Egitto)
   if (['MOR', 'TUN', 'EGY'].includes(p.owner)) return true;
   if (p.owner === 'FRA' && p.modern === 'DZA') return true;
@@ -65,10 +67,39 @@ export function prepareBasins8({ ms, RAW, TMP }) {
   return out;
 }
 
+
+/** Divide un poligono grande in ~A/piece pezzi compatti (k-means di punti interni + celle di Voronoi). */
+function splitKMeans(a, A, piece) {
+  const k = Math.ceil(A / piece);
+  const bb = turf.bbox(a);
+  const pts = [];
+  const step = Math.sqrt(((bb[2] - bb[0]) * (bb[3] - bb[1])) / 600);
+  for (let x = bb[0] + step / 2; x < bb[2]; x += step) for (let y = bb[1] + step / 2; y < bb[3]; y += step) if (turf.booleanPointInPolygon([x, y], a)) pts.push([x, y]);
+  if (pts.length < k * 3) return null;
+  let cs = pts.filter((_, i) => i % Math.floor(pts.length / k) === 0).slice(0, k);
+  for (let it = 0; it < 15; it++) {
+    const sum = cs.map(() => [0, 0, 0]);
+    for (const q of pts) { let bi = 0, bd = Infinity; cs.forEach((c, i) => { const d = (c[0] - q[0]) ** 2 * Math.cos((q[1] * Math.PI) / 180) ** 2 + (c[1] - q[1]) ** 2; if (d < bd) { bd = d; bi = i; } }); sum[bi][0] += q[0]; sum[bi][1] += q[1]; sum[bi][2]++; }
+    cs = cs.map((c, i) => (sum[i][2] ? [sum[i][0] / sum[i][2], sum[i][1] / sum[i][2]] : c));
+  }
+  const vor = turf.voronoi(turf.featureCollection(cs.map((c) => turf.point(c))), { bbox: [bb[0] - 1, bb[1] - 1, bb[2] + 1, bb[3] + 1] });
+  let ok = 0;
+  const out = [];
+  for (const cell of vor.features) {
+    if (!cell) continue;
+    const part = turf.intersect(turf.featureCollection([a, cell]));
+    if (!part) continue;
+    for (const g of part.geometry.type === 'MultiPolygon' ? part.geometry.coordinates.map((c) => turf.polygon(c)) : [part]) { out.push({ type: 'Feature', geometry: g.geometry, properties: a.properties }); ok++; }
+  }
+  return ok ? out : null;
+}
+
 /**
  * Taglia le province della zona sui bacini di livello 8. pid degli atomi: `${pid}~a${k}`.
  */
 export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, riverPath, riverModern }) {
+  // anche gli uezd russi enormi fuori dai riquadri (Kola, Arcangelo, steppa dei Kirghisi): si dividono in pezzi
+  const bigEast = (f) => ['RUS', 'KAZ'].includes(f.properties.modern) && turf.area(f) / 1e6 > 40000;
   const inBox = (f) => { const [x, y] = turf.centroid(f).geometry.coordinates; return ZONE_BOXES.some((b) => x > b[0] && x < b[2] && y > b[1] && y < b[3]); };
   const zone = [], rest = [];
   for (const f of fc.features) (inBox(f) ? zone : rest).push(f);
@@ -91,27 +122,10 @@ export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, ri
     // nel deserto bastano pezzi grandi: le province lì saranno enormi
     const piece = AFRICA_MODERN.has(a.properties.modern) && turf.centroid(a).geometry.coordinates[1] < 31.5 ? 12000 : 2000;
     if (A < piece * 1.75) { atoms.push(a); continue; }
-    const k = Math.ceil(A / piece);
-    const bb = turf.bbox(a);
-    const pts = [];
-    const step = Math.sqrt(((bb[2] - bb[0]) * (bb[3] - bb[1])) / 600);
-    for (let x = bb[0] + step / 2; x < bb[2]; x += step) for (let y = bb[1] + step / 2; y < bb[3]; y += step) if (turf.booleanPointInPolygon([x, y], a)) pts.push([x, y]);
-    if (pts.length < k * 3) { atoms.push(a); continue; }
-    let cs = pts.filter((_, i) => i % Math.floor(pts.length / k) === 0).slice(0, k);
-    for (let it = 0; it < 15; it++) {
-      const sum = cs.map(() => [0, 0, 0]);
-      for (const q of pts) { let bi = 0, bd = Infinity; cs.forEach((c, i) => { const d = (c[0] - q[0]) ** 2 * Math.cos((q[1] * Math.PI) / 180) ** 2 + (c[1] - q[1]) ** 2; if (d < bd) { bd = d; bi = i; } }); sum[bi][0] += q[0]; sum[bi][1] += q[1]; sum[bi][2]++; }
-      cs = cs.map((c, i) => (sum[i][2] ? [sum[i][0] / sum[i][2], sum[i][1] / sum[i][2]] : c));
-    }
-    const vor = turf.voronoi(turf.featureCollection(cs.map((c) => turf.point(c))), { bbox: [bb[0] - 1, bb[1] - 1, bb[2] + 1, bb[3] + 1] });
-    let ok = 0;
-    for (const cell of vor.features) {
-      if (!cell) continue;
-      const part = turf.intersect(turf.featureCollection([a, cell]));
-      if (!part) continue;
-      for (const g of part.geometry.type === 'MultiPolygon' ? part.geometry.coordinates.map((c) => turf.polygon(c)) : [part]) { atoms.push({ type: 'Feature', geometry: g.geometry, properties: a.properties }); ok++; }
-    }
-    if (!ok) atoms.push(a); else cut++;
+    const parts = splitKMeans(a, A, piece);
+    if (!parts) { atoms.push(a); continue; }
+    atoms.push(...parts);
+    cut++;
   }
   if (cut) log(`${cut} atomi troppo grandi divisi in pezzi compatti`);
   // fiumi maggiori come linee di taglio (Balcani, Portogallo): una fascia sottile lungo il fiume separa le due rive
@@ -129,6 +143,18 @@ export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, ri
   }
   const count = new Map();
   const out = [...rest];
+  // uezd enormi fuori dai riquadri: il primo pezzo resta al suo posto, gli altri in coda (l'ordine degli altri atomi
+  // non cambia, così il raggruppamento delle aree già approvate resta identico)
+  const tail = [];
+  let eastCut = 0;
+  out.forEach((f, idx) => {
+    if (!bigEast(f)) return;
+    const parts = splitKMeans(f, turf.area(f) / 1e6, 15000);
+    if (!parts) return;
+    parts.forEach((g, k) => { const pr = { ...f.properties, pid: `${f.properties.pid}~e${k + 1}` }; if (k === 0) out[idx] = { ...g, properties: pr }; else tail.push({ ...g, properties: pr }); });
+    eastCut++;
+  });
+  if (eastCut) log(`${eastCut} distretti russi enormi divisi in pezzi`);
   for (const a of atoms) {
     const base = zone[a.properties.zi].properties;
     const k = (count.get(base.pid) || 0) + 1;
@@ -145,6 +171,7 @@ export function atomize(fc, { ms, TMP, basinsPath, log, modernLayer, cutPath, ri
     out.push({ type: 'Feature', geometry: a.geometry, properties: np });
   }
   log(`${zone.length} province della zona italiana tagliate in ${atoms.length} atomi (bacini HydroBASINS liv. 8)`);
+  out.push(...tail);
   return turf.featureCollection(out);
 }
 
@@ -225,7 +252,7 @@ export function topoMetrics(topo, geoms, riverNear = null) {
  * @param P pezzi ({area, owner, …}); key(p) vincolo rigido; soft(p) regione (vincolo morbido)
  * @returns array di gruppi (array di indici di pezzi)
  */
-export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, soft2 = () => '', softPenalty = () => 0.55, riverOwners = new Set(), aspectStrip = () => false, log }) {
+export function compactClusters(atoms, P, metrics, { key, soft, min, target, max, maxSpan = 190, tiny = 500, keepSmall = () => false, looseKey = (p) => p.owner, stripOwners = new Set(), sizeScale = () => 1, soft2 = () => '', softPenalty = () => 0.55, riverOwners = new Set(), aspectStrip = () => false, leftoverOwners = new Set(), log }) {
   const { perim, shared, sharedRiver } = metrics;
   const inSet = new Set(atoms);
   const cl = new Map(); // id -> {ids:Set, A, Pm, nb: Map<clusterId, len>, key}
@@ -434,6 +461,20 @@ export function compactClusters(atoms, P, metrics, { key, soft, min, target, max
     }
   }
   if (strips) log(`${strips} province a striscia fuse col vicino`);
+  // avanzi piccoli (un terzo del minimo) rimasti soli perché il vicino era già al massimo: al vicino dello stesso
+  // gruppo con il confine più lungo, oltre il limite (strisce di costa di un distretto enorme, come a Kola)
+  let left = 0;
+  for (const [id, c] of [...cl]) {
+    if (!cl.has(id) || c.A >= min * c.f * 0.35 || keepSmall(P[[...c.ids][0]]) || !leftoverOwners.has(P[[...c.ids][0]].owner)) continue;
+    const best = [...clusterNb(id).entries()].filter(([o]) => cl.get(o).key === c.key).sort((a, b) => b[1] - a[1])[0];
+    if (!best) continue;
+    const O = cl.get(best[0]);
+    O.Pm = O.Pm + c.Pm - 2 * best[1]; O.A += c.A; O.bb = union(O.bb, c.bb);
+    for (const i of c.ids) { O.ids.add(i); of.set(i, best[0]); }
+    cl.delete(id);
+    left++;
+  }
+  if (left) log(`${left} avanzi piccoli uniti al vicino`);
   // enclavi: una provincia chiusa dentro un'altra dello stesso gruppo (nessuna costa, un solo vicino) le si unisce
   let encl = 0;
   for (const [id, c] of [...cl]) {

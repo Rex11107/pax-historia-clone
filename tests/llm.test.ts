@@ -144,3 +144,38 @@ describe('territorio nella diplomazia', () => {
     expect(p.provinces!.map((id) => w.map.provinces[id].name).sort()).toEqual(['Trento', 'Trieste']);
   });
 });
+
+describe('modelli che ragionano (OpenRouter, DeepSeek V4)', () => {
+  const cfg: LLMConfig = { apiKey: 'k', baseUrl: 'https://openrouter.ai/api/v1', model: 'deepseek/deepseek-v4-flash' };
+  it('riduce il ragionamento, lascia margine di token e recupera il JSON dal ragionamento', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    setTransport(async (_u, init) => {
+      bodies.push(JSON.parse(init.body));
+      return { status: 200, text: async () => JSON.stringify({ choices: [{ message: { content: '', reasoning: 'penso... {"ok": true}' }, finish_reason: 'stop' }] }) };
+    });
+    const r = await chatJSON(cfg, [{ role: 'user', content: 'x' }], { maxTokens: 20 });
+    expect(r.ok).toBe(true);
+    expect(bodies[0].reasoning).toBeTruthy();
+    expect(Number(bodies[0].max_tokens)).toBeGreaterThan(1000);
+  });
+  it('se il provider rifiuta il parametro del ragionamento riprova senza', async () => {
+    const bodies: Record<string, unknown>[] = [];
+    setTransport(async (_u, init) => {
+      const b = JSON.parse(init.body); bodies.push(b);
+      if (b.reasoning) return { status: 400, text: async () => '{"error":{"message":"unknown parameter reasoning"}}' };
+      return { status: 200, text: async () => JSON.stringify({ choices: [{ message: { content: '{"ok": true}' }, finish_reason: 'stop' }] }) };
+    });
+    const r = await chatJSON(cfg, [{ role: 'user', content: 'x' }]);
+    expect(r.ok).toBe(true);
+    expect(bodies.length).toBe(2);
+  });
+  it('risposta vuota per token finiti: raddoppia il limite e riprova', async () => {
+    let n = 0;
+    setTransport(async () => {
+      n++;
+      if (n === 1) return { status: 200, text: async () => JSON.stringify({ choices: [{ message: { content: '' }, finish_reason: 'length' }] }) };
+      return { status: 200, text: async () => JSON.stringify({ choices: [{ message: { content: '{"ok": 1}' }, finish_reason: 'stop' }] }) };
+    });
+    expect((await chatJSON(cfg, [{ role: 'user', content: 'x' }])).ok).toBe(1);
+  });
+});

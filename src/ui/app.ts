@@ -545,8 +545,9 @@ export class App {
   private async testKey() {
     this.game.config = this.settings;
     try {
-      const r = await chatJSON(this.settings, [{ role: 'user', content: 'Rispondi con {"ok": true} in JSON.' }], { maxTokens: 20, temperature: 0 });
-      this.toast(r.ok ? 'Connessione riuscita.' : 'Il provider risponde, ma in modo inatteso.');
+      this.toast('Prova in corso…');
+      const r = await chatJSON(this.settings, [{ role: 'system', content: 'Rispondi solo con un oggetto JSON.' }, { role: 'user', content: 'Rispondi con {"ok": true}.' }], { maxTokens: 50, temperature: 0 });
+      this.toast(r.ok ? `Connessione riuscita (${this.settings.model}).` : `Il provider risponde, ma in modo inatteso: ${JSON.stringify(r).slice(0, 80)}`);
     } catch (e) { this.toast((e as Error).message); }
   }
 

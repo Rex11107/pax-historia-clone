@@ -807,11 +807,20 @@ async function main() {
       // Eubea: isola a sé, non una striscia con la costa della Locride (la parte del poligono di Natural Earth che contiene Calcide est)
       const euboea = (() => { const h = readJSON(path.join(RAW, 'ne_admin1.geojson')).features.find((f) => f.properties.iso_3166_2 === 'GR-H'); if (!h) return null; const parts = h.geometry.type === 'MultiPolygon' ? h.geometry.coordinates.map((c) => turf.polygon(c)) : [turf.polygon(h.geometry.coordinates)]; return parts.find((q) => turf.booleanPointInPolygon([23.9, 38.55], q)) || null; })();
       const isle = (p) => (euboea && (p.owner === 'GRE' || p.modern === 'GRC') && turf.booleanPointInPolygon(turf.pointOnFeature(p.feat), euboea) ? 'eubea' : '');
-      const dens = new Map(), densCap = new Map();
+      const dens = new Map(), densCap = new Map(), rdens = new Map();
       {
         const CELL = 0.5, grid = new Map();
         for (const c of geoCities()) { const k = `${Math.floor(c.lon / CELL)},${Math.floor(c.lat / CELL)}`; if (!grid.has(k)) grid.set(k, []); grid.get(k).push(c); }
         for (const i of freeIdx) {
+          if (P[i].owner === 'RUS') {
+            // Impero russo: densità di località entro 40 km, ogni città contata al massimo 50.000 abitanti
+            // (le metropoli sovietiche non dicono nulla del 1881)
+            const [x, y] = cent[i]; let capped = 0;
+            for (let gx = Math.floor(x / CELL) - 2; gx <= Math.floor(x / CELL) + 2; gx++) for (let gy = Math.floor(y / CELL) - 1; gy <= Math.floor(y / CELL) + 1; gy++)
+              for (const c of grid.get(`${gx},${gy}`) || []) if (turf.distance([x, y], [c.lon, c.lat]) < 40) capped += Math.min(c.pop, 50000);
+            rdens.set(i, capped / (Math.PI * 1600));
+            continue;
+          }
           if (!AFRICA_MODERN.has(P[i].modern)) continue;
           const [x, y] = cent[i]; let sum = 0;
           for (let gx = Math.floor(x / CELL) - 1; gx <= Math.floor(x / CELL) + 1; gx++) for (let gy = Math.floor(y / CELL) - 1; gy <= Math.floor(y / CELL) + 1; gy++)
@@ -850,6 +859,13 @@ async function main() {
         else { p.desert = desertRegion(p); p.acls = `D:${p.desert}`; p.owner = ''; }
       }
       { const h = {}; for (const i of freeIdx) { const p = P[i]; if (!p.acls) continue; const k = p.acls.startsWith('oasi') ? 'oasi' : p.acls; h[k] = (h[k] || 0) + Math.round(p.area); } log('classi Nord Africa (km²)', JSON.stringify(h)); }
+      // Impero russo: province grandi dove la terra è vuota (taiga, tundra, steppa dei Kirghisi), più piccole nelle
+      // terre fitte (Polonia, Ucraina, Russia centrale); classi dalla densità di località
+      const rusScale = (p) => {
+        const d = rdens.get(p.i) ?? 30;
+        return d >= 60 ? 1.4 : d >= 30 ? 1.8 : d >= 15 ? 2.4 : d >= 7 ? 3.3 : d >= 3 ? 4.6 : d >= 1 ? 6.5 : 9;
+      };
+      if (rdens.size) { const h = {}; for (const [i, d] of rdens) { const k = d >= 60 ? 'a' : d >= 30 ? 'b' : d >= 15 ? 'c' : d >= 7 ? 'd' : d >= 3 ? 'e' : d >= 1 ? 'f' : 'g'; h[k] = (h[k] || 0) + Math.round(P[i].area); } log('densità Impero russo (km² per classe)', JSON.stringify(h)); }
       const africaScale = (p) => {
         if (p.acls === 'nilo') return 0.9;
         if (p.oasis) return 1;
@@ -872,15 +888,16 @@ async function main() {
         soft2: (p) => (AFRICA_MODERN.has(p.modern) ? p.acls : FREE_OWNERS.has(p.owner) ? p.modern : ''),
         riverOwners: FREE_OWNERS,
         aspectStrip: (p) => !!p.desert,
+        leftoverOwners: new Set(['RUS']),
         looseKey: (p) => `${p.owner}|${lang(p)}|${p.prot || ''}|${['costa', 'interno'].includes(claim(p)) ? 'dalmazia' : claim(p)}|${p.rhine}`,
         soft: (p) => AFRICA_MODERN.has(p.modern) ? p.acls : regionOf({ modern: p.modern, iso: p.iso, reg: p.reg, regModern: p.nreg, name: p.name, owner: p.owner }, cent[p.i]) || p.modern,
         min: ZONE_MIN, target: ZONE_TARGET, max: ZONE_MAX, log,
         keepSmall: (p) => !!p.prot || ['trieste', 'fiume'].includes(claim(p)),
         // controllo delle strisce più severo dove non c'è già una mappa approvata
-        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR', 'MOR', 'TUN', 'EGY', 'FRA']),
+        stripOwners: new Set(['GBR', 'GER', 'DEN', 'NED', 'SPA', 'SER', 'MNE', 'BUL', 'ROM', 'GRE', 'TUR', 'POR', 'MOR', 'TUN', 'EGY', 'FRA', 'RUS']),
         // terre poco popolate, province più grandi (radice del rapporto di densità con l'Italia del 1881)
         // il Kosovo in tre province (Priştine, İpek, Prizren) invece di una sola
-        sizeScale: (p) => (AFRICA_MODERN.has(p.modern) ? africaScale(p) : p.owner === 'TUR' && p.modern === 'KOS' ? 0.8 : p.owner === 'TUR' && p.modern === 'ALB' ? 0.9 : SIZE_SCALE[p.owner] ?? 1),
+        sizeScale: (p) => (AFRICA_MODERN.has(p.modern) ? africaScale(p) : p.owner === 'RUS' ? rusScale(p) : p.owner === 'TUR' && p.modern === 'KOS' ? 0.8 : p.owner === 'TUR' && p.modern === 'ALB' ? 0.9 : SIZE_SCALE[p.owner] ?? 1),
       });
       // schegge abitate isolate nel deserto (un villaggio moderno, un pezzo di costa del Mar Rosso): diventano deserto
       {
@@ -1053,7 +1070,9 @@ async function main() {
     else if (desert) name = desertName(mem);
     else if (mem[0].zone && !P[r].prot) {
       const t = mem.filter((m) => m.topTown).sort((a, b) => b.topPop - a.topPop)[0];
-      if (t && t.topPop >= 8000 && !PROTECTED.some((x) => x.name === exo(t.topTown)) && !ANACHRONISTIC.has(t.topTown)) { name = exo(t.topTown); byTown = true; }
+      // nell'Impero russo il nome è quello del distretto d'epoca (uezd), non della città di oggi (Kryvyi Rih, Dnipro…)
+      const histRus = mem[0].owner === 'RUS' && mem.some((m) => m.hist);
+      if (!histRus && t && t.topPop >= 8000 && !PROTECTED.some((x) => x.name === exo(t.topTown)) && !ANACHRONISTIC.has(t.topTown)) { name = exo(t.topTown); byTown = true; }
       else {
         // prima i nomi d'epoca (distretti, Regierungsbezirke), poi le città minori, infine i nomi amministrativi moderni
         const w = (list) => { const m = new Map(); for (const x of list) m.set(x.name, (m.get(x.name) || 0) + (x.urban || 0) + x.area * 2); return [...m.entries()].sort((a, b) => b[1] - a[1]).map((e) => e[0]); };
