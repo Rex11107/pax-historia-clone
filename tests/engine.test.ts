@@ -241,3 +241,48 @@ describe('risorse', () => {
     expect(budget(w, 'GER').resources).toBeGreaterThan(0);
   });
 });
+
+describe('commercio', () => {
+  it('prezzi, dazi, malus tolto, relazioni e guerra', async () => {
+    const T = await import('../src/engine/trade');
+    const { addTreaty } = await import('../src/engine/diplomacy');
+    const { changeOpinion, opinion } = await import('../src/engine/world');
+    const w = newGame(MAP);
+    const s = w.state;
+    expect(T.effectiveResources(w, 'TUR').missing).toContain('ferro');
+    const seller = (['GBR', 'SWE', 'SPA', 'GER', 'FRA', 'RUS'] as const).find((t) => T.freeLots(w, t, 'ferro') > 0)!;
+    expect(seller).toBeTruthy();
+    changeOpinion(s, seller, 'TUR', 30);
+    const q1 = T.quote(w, seller, 'TUR', 'ferro', 1);
+    addTreaty(w, 'trade', seller, 'TUR', 5);
+    const q2 = T.quote(w, seller, 'TUR', 'ferro', 1);
+    expect(q1.total / q2.total).toBeCloseTo(T.TARIFF, 1); // l'accordo toglie i dazi
+    const before = budget(w, 'TUR').net;
+    expect(T.signTrade(w, seller, 'TUR', 'ferro', 1)).toBeNull();
+    expect(T.signTrade(w, seller, 'TUR', 'ferro', 1)).not.toBeNull(); // niente doppioni
+    expect(T.effectiveResources(w, 'TUR').missing).not.toContain('ferro');
+    const b = budget(w, 'TUR');
+    expect(b.trade).toBeLessThan(0);
+    expect(b.net).not.toBe(before);
+    expect(budget(w, seller).trade).toBeGreaterThan(0);
+    // le relazioni crescono piano
+    const op = opinion(s, 'TUR', seller);
+    for (let i = 0; i < 12; i++) T.weeklyTrade(w, []);
+    expect(opinion(s, 'TUR', seller)).toBeGreaterThan(op);
+    // la guerra interrompe i traffici
+    declareWar(w, seller, 'TUR', 'prova');
+    T.weeklyTrade(w, []);
+    expect(T.contractsOf(s, 'TUR').some((c) => c.seller === seller)).toBe(false);
+  });
+
+  it('il motore rifiuta chi disprezza e i lotti che non ci sono', async () => {
+    const T = await import('../src/engine/trade');
+    const { changeOpinion } = await import('../src/engine/world');
+    const w = newGame(MAP);
+    changeOpinion(w.state, 'GER', 'FRA', -100);
+    w.state.player = 'FRA';
+    expect(T.quote(w, 'GER', 'FRA', 'carbone', 1).refusal).toMatch(/disprezza/);
+    expect(T.quote(w, 'SER', 'FRA', 'petrolio', 1).refusal).toBeTruthy();
+    expect(T.tradeTreatyRefusal(w, 'FRA', 'GER')).toMatch(/stima/);
+  });
+});

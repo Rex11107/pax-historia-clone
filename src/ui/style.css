@@ -175,3 +175,9 @@ details summary { cursor: pointer; font: italic 600 1rem var(--serif); margin-to
 
 .toasts { position: fixed; left: 12px; right: 12px; top: calc(var(--top) + var(--safe-t) + 10px); z-index: 50; display: grid; gap: 8px; justify-items: center; pointer-events: none; }
 .toast { background: var(--ink); color: var(--paper); padding: 10px 14px; max-width: 480px; border-left: 3px solid var(--brass); font-size: 0.95rem; box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); }
+
+.subnav { margin: 0 0 12px; }
+.list.plain li { cursor: default; }
+.list li.dim { opacity: 0.6; }
+.trade-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
+.trade-pick select { max-width: 100%; }

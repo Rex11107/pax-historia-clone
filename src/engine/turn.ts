@@ -3,6 +3,7 @@ import { resolveBattles } from './combat';
 import { updateDeserts } from './desert';
 import { expireTreaties } from './diplomacy';
 import { weeklyEconomy } from './economy';
+import { weeklyTrade } from './trade';
 import { processUnit, unitPosition } from './orders';
 import { updateSupply } from './supply';
 import type { GameEvent, TurnReport } from './types';
@@ -39,6 +40,7 @@ export function runTurn(w: World): TurnReport {
     report.frames.push(snapshot(w));
     if (d === 3) { invalidatePresence(w); aiPlan(w); }
   }
+  weeklyTrade(w, sink);
   weeklyEconomy(w, sink);
   aiEndOfTurn(w, sink);
   expireTreaties(w, sink);

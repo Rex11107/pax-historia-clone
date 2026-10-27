@@ -3,7 +3,8 @@ import { Game, type Phase, type TurnOutcome } from '../game';
 import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diplomacy';
 import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
 import { TERRAIN_NAME } from '../engine/map';
-import { nationResources, RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
+import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
+import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
 import { al, atWar, di, enemiesOf, formatDate, nationName, opinion, treatyBetween } from '../engine/world';
@@ -31,6 +32,8 @@ export class App {
   chatBusy = false;
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
+  govTab: 'budget' | 'trade' = 'budget';
+  trade: { mode: 'buy' | 'sell'; res: ResourceId; qty: number } = { mode: 'buy', res: 'carbone', qty: 1 };
 
   constructor(private mapData: MapData, public settings: Settings) {}
 
@@ -339,6 +342,75 @@ export class App {
   }
 
   private viewGovernment(): Node {
+    const nav = h('div', { class: 'seg subnav' },
+      h('button', { class: this.govTab === 'budget' ? 'on' : '', onclick: () => { this.govTab = 'budget'; this.render(); } }, 'Bilancio e politiche'),
+      h('button', { class: this.govTab === 'trade' ? 'on' : '', onclick: () => { this.govTab = 'trade'; this.render(); } }, 'Commercio'));
+    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.viewBudget());
+  }
+
+  private viewTrade(): Node {
+    const w = this.game.world, s = w.state, me = s.player;
+    const eff = effectiveResources(w, me);
+    const t = this.trade;
+    const ids = Object.keys(RESOURCES) as ResourceId[];
+    const mine = contractsOf(s, me);
+    const fmt = (v: number) => v.toFixed(2).replace('.', ',');
+    const contractsNode = h('div', null, h('h3', null, 'Contratti in corso'),
+      mine.length ? h('ul', { class: 'list plain' }, ...mine.map((c) => {
+        const buy = c.buyer === me, other = buy ? c.seller : c.buyer;
+        const rate = bondRate(w, c, other);
+        return h('li', null,
+          h('div', { class: 'row' }, h('span', null, `${buy ? 'Importiamo' : 'Esportiamo'} ${c.qty} ${c.qty === 1 ? 'lotto' : 'lotti'} di ${resourceLabel(c.res)} ${buy ? 'da' : 'verso'} `, h('b', null, nationName(w, other))),
+            h('span', { class: `num ${buy ? 'neg' : 'pos'}` }, `${buy ? '−' : '+'}${fmt(c.price)}`)),
+          h('div', { class: 'row sub' }, h('span', null, `dal ${formatDate(c.startDay)} · stima loro verso di noi ${signed(opinion(s, other, me))} (+${fmt(rate)}/sett.)`),
+            h('button', { class: 'link', onclick: () => { const err = cancelTrade(w, c.id, me); this.toast(err ?? 'Contratto disdetto: il partner non l\'ha presa bene.'); this.afterStateChange(); } }, 'Disdici')));
+      })) : h('p', { class: 'muted' }, 'Nessun contratto. Le nazioni senza carbone o ferro pagano ogni settimana di più: comprarli all\'estero toglie il malus.'));
+    // scelta della risorsa e dei lotti
+    const resOpts = t.mode === 'buy' ? ids : ids.filter((r) => freeLots(w, me, r) > 0);
+    if (!resOpts.includes(t.res) && resOpts.length) t.res = resOpts[0];
+    const picker = h('div', { class: 'trade-pick' },
+      h('div', { class: 'seg' },
+        h('button', { class: t.mode === 'buy' ? 'on' : '', onclick: () => { t.mode = 'buy'; this.render(); } }, 'Comprare'),
+        h('button', { class: t.mode === 'sell' ? 'on' : '', onclick: () => { t.mode = 'sell'; this.render(); } }, 'Vendere')),
+      resOpts.length ? h('select', { onchange: (e: Event) => { t.res = (e.target as HTMLSelectElement).value as ResourceId; this.render(); } },
+        ...resOpts.map((r) => h('option', { value: r, selected: r === t.res }, `${resourceLabel(r)} (nostre ${eff.count[r] ?? 0}${t.mode === 'sell' ? `, vendibili ${freeLots(w, me, r)}` : ''})`))) : null,
+      h('select', { onchange: (e: Event) => { t.qty = Number((e.target as HTMLSelectElement).value); this.render(); } },
+        ...Array.from({ length: MAX_LOTS }, (_, i) => h('option', { value: i + 1, selected: i + 1 === t.qty }, `${i + 1} ${i ? 'lotti' : 'lotto'}/sett.`))));
+    let market: Node;
+    if (!resOpts.length) market = h('p', { class: 'muted' }, 'Non abbiamo eccedenze da vendere.');
+    else {
+      const partners = Object.keys(s.nations).filter((x) => x !== me && s.nations[x].alive && !w.profiles[x]?.micro);
+      const qs: Quote[] = t.mode === 'buy'
+        ? partners.filter((x) => freeLots(w, x, t.res) > 0).map((x) => quote(w, x, me, t.res, t.qty))
+        : partners.map((x) => quote(w, me, x, t.res, t.qty));
+      qs.sort((a, b) => (a.refusal ? 1 : 0) - (b.refusal ? 1 : 0) || (t.mode === 'buy' ? a.total - b.total : b.buyerValue - a.buyerValue));
+      const shown = qs.slice(0, 14);
+      market = shown.length ? h('ul', { class: 'list plain' }, ...shown.map((q) => {
+        const other = t.mode === 'buy' ? q.seller : q.buyer;
+        return h('li', { class: q.refusal ? 'dim' : '' },
+          h('div', { class: 'row' }, h('span', null, h('i', { class: 'swatch', style: `background:${w.profiles[other].color}` }), h('b', null, nationName(w, other))),
+            h('span', { class: 'num' }, `${fmt(q.total)} M/sett.`)),
+          h('div', { class: 'row sub' },
+            h('span', null, `${q.treaty ? 'accordo commerciale' : 'dazi +30%'}${t.mode === 'buy' ? ` · disponibili ${q.free} · valore per noi ${fmt(q.buyerValue)}` : ` · valore per loro ${fmt(q.buyerValue)}`}${q.refusal ? ` · ${q.refusal}` : ''}`),
+            q.treaty || tradeTreatyRefusal(w, me, other) ? null : h('button', { class: 'link', onclick: () => { const err = proposeTradeTreaty(w, me, other); this.toast(err ?? `Accordo commerciale con ${nationName(w, other)} per 5 anni: niente più dazi.`); this.afterStateChange(); } }, 'Accordo'),
+            q.refusal ? null : h('button', { class: 'link', onclick: () => {
+              const err = t.mode === 'buy' ? signTrade(w, q.seller, me, t.res, t.qty) : signTrade(w, me, q.buyer, t.res, t.qty);
+              this.toast(err ?? 'Contratto firmato.'); this.afterStateChange();
+            } }, 'Firma')));
+      })) : h('p', { class: 'muted' }, 'Nessuno ne vende.');
+    }
+    return h('div', null,
+      h('dl', { class: 'facts' },
+        h('dt', null, 'Pagamenti'), h('dd', null, `${fmt(eff.pay)} M/sett.`),
+        h('dt', null, 'Incassi'), h('dd', null, `${fmt(eff.earn)} M/sett.`),
+        h('dt', null, 'Mancano'), h('dd', null, eff.missing.length ? eff.missing.join(' e ') : 'nulla di strategico')),
+      contractsNode,
+      h('h3', null, 'Mercato'), picker, market,
+      h('p', { class: 'muted' }, 'Un lotto è la produzione settimanale di una provincia. Il prezzo è il valore per chi vende più il 25%; senza accordo commerciale dazi e intermediari aggiungono il 30% (l\'accordo si chiede col pulsante \"Accordo\", che compare quando il partner ci stima abbastanza: 15, oppure 5 se commerciamo già insieme, 35 per un rivale storico; o si negozia in Diplomazia). Una risorsa che in patria manca vale per chi la compra quasi il doppio. Ogni contratto migliora un poco i rapporti, di più se la risorsa è strategica e se pesa sull\'economia del partner; chi disdice perde un po\' di stima. Le guerre interrompono i traffici.'),
+    );
+  }
+
+  private viewBudget(): Node {
     const w = this.game.world, s = w.state, me = s.player;
     const n = s.nations[me];
     const b = budget(w, me);
@@ -352,7 +424,7 @@ export class App {
     };
     return h('div', null,
       h('table', { class: 'budget' }, h('caption', null, 'Bilancio settimanale previsto (milioni)'),
-        row('Entrate fiscali', b.income - (b.resources ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
+        row('Entrate fiscali', b.income - (b.resources ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Commercio (saldo)', b.trade ?? 0, (b.trade ?? 0) >= 0 ? 1 : -1), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
         h('tr', { class: 'total' }, h('td', null, 'Saldo'), h('td', { class: `num ${b.net >= 0 ? 'pos' : 'neg'}` }, `${b.net >= 0 ? '+' : '−'}${Math.abs(b.net).toFixed(1)}`))),
       h('dl', { class: 'facts' },
         h('dt', null, 'Debito pubblico'), h('dd', null, `${Math.round(n.debt).toLocaleString('it-IT')} M`),
@@ -362,10 +434,11 @@ export class App {
         h('dt', null, 'Rete ferroviaria'), h('dd', null, `${Math.round(n.rail)}/100`),
       ),
       (() => {
-        const r = nationResources(w.map, w.map.resources, s.controller, s.owner, me, w.profiles[me].industry);
+        const r = effectiveResources(w, me);
         const ids = (Object.keys(r.count) as ResourceId[]).sort((a, c) => RESOURCES[c].value - RESOURCES[a].value);
         return h('div', null, h('h3', null, 'Risorse'),
           h('p', null, ids.map((x) => `${resourceLabel(x)} ×${r.count[x]}`).join(' · ') || 'nessuna'),
+          Object.keys(r.imports).length ? h('p', { class: 'sub' }, `Importate: ${(Object.entries(r.imports) as [ResourceId, number][]).map(([x, q]) => `${resourceLabel(x)} ×${q}`).join(' · ')}`) : null,
           r.missing.length ? h('p', { class: 'sub' }, `Mancano ${r.missing.join(' e ')}: ${r.missing.includes('carbone') && w.profiles[me].industry >= 50 ? 'senza carbone le entrate calano del 5%' : ''}${r.missing.length === 2 && w.profiles[me].industry >= 50 ? '; ' : ''}${r.missing.includes('ferro') ? 'senza ferro l\'artiglieria costa il 30% in più' : ''}.`) : null);
       })(),
       policy('tax', 'Imposte'), policy('mobilization', 'Esercito'), policy('infrastructure', 'Ferrovie e opere'), policy('press', 'Stampa'),

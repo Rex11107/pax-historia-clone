@@ -4,7 +4,8 @@
 import { TREATY_LABEL } from '../engine/diplomacy';
 import { POLICY_EFFECTS } from '../engine/economy';
 import { TERRAIN_NAME } from '../engine/map';
-import { nationResources, RESOURCES, type ResourceId } from '../engine/resources';
+import { RESOURCES, type ResourceId } from '../engine/resources';
+import { contractsOf, effectiveResources } from '../engine/trade';
 import type { Tag } from '../engine/types';
 import { atWar, enemiesOf, formatDate, nationName, opinion, warsOf, type World } from '../engine/world';
 
@@ -43,8 +44,7 @@ export function resolveNation(w: World, ref: unknown): Tag | null {
 
 /** Riassunto delle risorse controllate da una nazione (per il modello). */
 export function resourceSummary(w: World, tag: Tag): string {
-  const s = w.state;
-  const r = nationResources(w.map, w.map.resources, s.controller, s.owner, tag, w.profiles[tag]?.industry ?? 30);
+  const r = effectiveResources(w, tag);
   const parts = (Object.entries(r.count) as [ResourceId, number][]).sort((a, b) => b[1] - a[1]).map(([id, n]) => `${RESOURCES[id].label} ${n}`);
   return `${parts.join(', ') || 'nessuna'} (rendita ${r.income.toFixed(1)} M/sett.)${r.missing.length ? `; MANCA: ${r.missing.join(', ')}` : ''}`;
 }
@@ -56,6 +56,12 @@ function strategic(w: World, tag: Tag): string {
   const c: Record<string, number> = {};
   w.map.resources.forEach((rs, i) => { if (s.owner[i] === tag) for (const r of rs) if (RESOURCES[r].strategic) c[RESOURCES[r].label] = (c[RESOURCES[r].label] ?? 0) + 1; });
   return Object.entries(c).map(([l, n]) => `${l} ${n}`).join(', ') || 'nessuna';
+}
+
+/** Contratti commerciali di una nazione, visti da lei. */
+export function tradeSummary(w: World, tag: Tag): string {
+  const c = contractsOf(w.state, tag);
+  return c.length ? c.map((x) => x.buyer === tag ? `compra ${x.qty} ${RESOURCES[x.res].label} da ${x.seller} (${x.price.toFixed(2)} M/sett.)` : `vende ${x.qty} ${RESOURCES[x.res].label} a ${x.buyer} (${x.price.toFixed(2)} M/sett.)`).join('; ') : 'nessuno';
 }
 
 /** Profili statici di tutte le nazioni: blocco stabile, cacheabile. */
@@ -78,6 +84,7 @@ export function worldDigest(w: World): string {
   lines.push(`INTERNO: tesoro ${Math.round(n.treasury)} M, debito ${Math.round(n.debt)} M${b ? `, saldo settimanale ${b.net >= 0 ? '+' : ''}${b.net.toFixed(1)} M` : ''}, riserva ${k(n.manpower)} uomini, stabilità ${Math.round(n.stability)}/100, stanchezza di guerra ${Math.round(n.warExhaustion)}/100, ferrovie ${Math.round(n.rail)}/100.`);
   lines.push(`POLITICHE: ${POLICY_EFFECTS.tax[pol.tax].label}; ${POLICY_EFFECTS.mobilization[pol.mobilization].label}; ${POLICY_EFFECTS.infrastructure[pol.infrastructure].label}; ${POLICY_EFFECTS.press[pol.press].label}.`);
   lines.push(`RISORSE: ${resourceSummary(w, me)}.`);
+  lines.push(`CONTRATTI COMMERCIALI: ${tradeSummary(w, me)}.`);
   const wars = s.wars;
   lines.push(`GUERRE IN CORSO: ${wars.length ? wars.map((x) => `${x.name} [${x.attackers.join(',')} vs ${x.defenders.join(',')}] dal ${formatDate(x.startDay)}`).join('; ') : 'nessuna'}.`);
   const tr = s.treaties.filter((t) => t.a === me || t.b === me);
@@ -148,6 +155,7 @@ export function bilateralView(w: World, tag: Tag): string {
     `LA TUA SITUAZIONE: tesoro ${Math.round(n.treasury)} M, debito ${Math.round(n.debt)} M, esercito ${k(men(tag))} uomini, stabilità ${Math.round(n.stability)}/100, stanchezza di guerra ${Math.round(n.warExhaustion)}/100.`,
     `IL TUO GIUDIZIO SU ${nationName(w, me).toUpperCase()}: ${opinion(s, tag, me)}/100 (loro verso di te: ${opinion(s, me, tag)}). Esercito ${k(men(me))} uomini.`,
     `LE TUE RISORSE: ${resourceSummary(w, tag)}. LE LORO: ${resourceSummary(w, me)}.`,
+    `I TUOI CONTRATTI COMMERCIALI: ${tradeSummary(w, tag)}.`,
     `TRATTATI FRA VOI: ${treaties.length ? treaties.map((t) => TREATY_LABEL[t.type]).join(', ') : 'nessuno'}.`,
     `I TUOI ALTRI TRATTATI: ${theirTreaties.length ? theirTreaties.map((t) => `${TREATY_LABEL[t.type]} con ${nationName(w, t.a === tag ? t.b : t.a)}`).join('; ') : 'nessuno'}.`,
     `GUERRE: ${warsOf(s, tag).map((x) => x.name).join('; ') || 'nessuna'}${atWar(s, tag, me) ? ' — SEI IN GUERRA CON IL TUO INTERLOCUTORE' : ''}.`,

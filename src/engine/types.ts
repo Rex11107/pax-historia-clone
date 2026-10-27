@@ -184,6 +184,8 @@ export interface Budget {
   income: number;
   /** entrate dalle risorse delle province controllate (già comprese in income) */
   resources?: number;
+  /** saldo dei contratti commerciali: incassi meno pagamenti (non compreso in income) */
+  trade?: number;
   upkeep: number;
   administration: number;
   interest: number;
@@ -230,6 +232,8 @@ export interface GameState {
   battles: Record<string, Battle>;
   wars: War[];
   treaties: Treaty[];
+  /** contratti commerciali sulle risorse (assente nei salvataggi vecchi) */
+  trades?: import('./trade').TradeContract[];
   situations: Situation[];
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];
