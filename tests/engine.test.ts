@@ -197,16 +197,22 @@ describe('deserto, oasi e piste carovaniere', () => {
   it('il deserto va a chi controlla tutte le terre transitabili attorno', async () => {
     const { desertOwner, updateDeserts } = await import('../src/engine/desert');
     const w = newGame(MAP, 'FRA', 'dom');
-    const d = w.map.provinces.find((p) => p.impassable && w.state.owner[p.id] === '' && w.map.adj[p.id].some((e) => !e.strait && !e.route && w.map.passable(e.to)))!;
-    for (const e of w.map.adj[d.id]) if (!e.strait && !e.route && w.map.passable(e.to)) w.state.controller[e.to] = 'ITA';
+    const land = (id: number) => w.map.adj[id].filter((e) => !e.strait && !e.route && w.map.passable(e.to) && w.map.provinces[e.to].modern === w.map.provinces[id].modern);
+    const d = w.map.provinces.find((p) => p.impassable && w.state.owner[p.id] === '' && land(p.id).length)!;
+    for (const e of land(d.id)) w.state.controller[e.to] = 'ITA';
     expect(desertOwner(w, d.id)).toBe('ITA');
     updateDeserts(w);
     expect(w.state.owner[d.id]).toBe('ITA');
-    const one = w.map.adj[d.id].find((e) => !e.strait && !e.route && w.map.passable(e.to))!;
+    const one = land(d.id)[0];
     w.state.controller[one.to] = 'FRA';
     updateDeserts(w);
     expect(w.state.owner[d.id]).toBe('');
     expect(checkProposal(w, 'FRA', 'ITA', { type: 'cede_provinces', giver: 'ITA', provinces: [d.id] })).toMatch(/deserto/);
+  });
+  it('nessun deserto passa a chi ne tocca solo il bordo da un altro paese (Gadames e il deserto algerino)', () => {
+    const w = newGame(MAP, 'ITA', 'gore');
+    for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'TUR') expect(p.modern).toBe('LBY');
+    for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'EGY') expect(p.modern).toBe('EGY');
   });
   it('il Sangiaccato di Novi Pazar è ottomano, il Sinai separato dal canale', () => {
     const w = newGame(MAP);
