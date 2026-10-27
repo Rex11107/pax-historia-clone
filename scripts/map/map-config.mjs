@@ -309,7 +309,7 @@ export const RENAMES = [
   ...Object.entries({ Annaba: 'Bona', 'Béjaïa': 'Bugia', Bejaia: 'Bugia', Skikda: 'Philippeville', Chlef: 'Orléansville', Tiarat: 'Tiaret', Tlimcen: 'Tlemcen', Constantine: 'Costantina',
     Oran: 'Orano', 'El Bayadh': 'Géryville', Ghardaia: 'Ghardaïa', 'I-n-Salah': 'In Salah', 'Béchar (sud)': 'Saoura', 'El Khroub': 'Le Khroub', 'Aïn Oussera': 'Boghari',
     'Bouïra': 'Aumale', Bouira: 'Aumale', 'Tizi-Ouzou': 'Tizi Ouzou', "M'sila": 'Msila', 'Bir el Ater': 'Nemencha', Sefra: 'Aïn Sefra', Tinerkouk: 'Gourara', Illizi: 'Tassili' }).map(([a, b]) => [a, b, 'FRA']),
-  ...Object.entries({ 'Az Zawiyah': 'Zavia', Misrata: 'Misurata', Banghazi: 'Bengasi', Tubruq: 'Tobruch', 'Al Jaghbūb': 'Giarabub', Ajdabiya: 'Agedabia', 'Bin Jawwād': 'Sirte',
+  ...Object.entries({ 'Az Zawiyah': 'Zavia', Misrata: 'Misurata', Banghazi: 'Bengasi', Tubruq: 'Tobruch', 'Al Jaghbūb': 'Giarabub', Ajdabiya: 'Agedabia', 'Bin Jawwād': 'Nufilia', Surt: 'Sirte', 'Al Bardīyah': 'Marmarica', 'Bani Walid': 'Beni Ulid', 'Banī Walīd': 'Beni Ulid',
     Sabha: 'Sebha', Ghadames: 'Gadames', Illizi: 'Tassili', 'Al Marj': 'Barce', Darnah: 'Derna', 'Al Khums': 'Homs', Zuwarah: 'Zuara', Gharyan: 'Garian' }).map(([a, b]) => [a, b, 'TUR']),
   ...Object.entries({ 'El Kef': 'Il Kef', Qasserine: 'Kasserine', Qairouan: 'Cairuan', Kairouan: 'Cairuan', Sousse: 'Susa', Bizerte: 'Biserta', 'El Guetar': 'Gafsa (nord)',
     Zarzis: 'Gerba', Mahdia: 'Mahdia', Monastir: 'Monastir' }).map(([a, b]) => [a, b, 'TUN']),

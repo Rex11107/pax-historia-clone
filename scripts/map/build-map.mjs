@@ -526,13 +526,29 @@ async function main() {
         for (const c of ring) { if (keep(c)) cur.push(c); else { if (cur.length > 1) segs.push(cur); cur = []; } }
         if (cur.length > 1) segs.push(cur);
       }
+      let all = nileCut || null;
       let band = segs.length ? turf.buffer(turf.multiLineString(segs), 30, { units: 'kilometers', steps: 3 }) : null;
       if (band) {
         band = minus(band, nileCut);
         if (band) cuts.push({ ...band, properties: { band: 1 }, big: true });
+        if (band) all = all ? turf.union(turf.featureCollection([all, band])) : band;
       }
-      let all = nileCut || null;
-      if (band) all = all ? turf.union(turf.featureCollection([all, band])) : band;
+      // Libia ottomana: oltre alla costa, l'entroterra che il governo di Tripoli e di Bengasi teneva davvero
+      // (Gebel Nefusa e Garian, Tarhuna e Beni Ulid, il Gebel Achdar e il retroterra di Derna e Tobruch):
+      // 110 km dal mare, ma non nel fondo della Sirte, deserto fino alla costa
+      {
+        const lyPath = path.join(TMP, 'libya_land.geojson');
+        ms(path.join(TMP, 'prov.geojson'), '-filter', "modern == 'LBY'", '-dissolve', '-simplify', 'interval=3000', 'keep-shapes', '-o', lyPath);
+        const lyj = readJSON(lyPath);
+        const lyGeom = lyj.features ? lyj.features[0].geometry : lyj.geometries ? lyj.geometries[0] : lyj;
+        const ly = turf.feature(lyGeom);
+        const lsegs = segs.map((sg) => sg.filter(([x, y]) => x > 9.5 && x < 25.3 && y > 30)).filter((sg) => sg.length > 1);
+        let inner = lsegs.length ? turf.buffer(turf.multiLineString(lsegs), 110, { units: 'kilometers', steps: 3 }) : null;
+        if (inner) inner = turf.intersect(turf.featureCollection([inner, ly]));
+        if (inner) inner = minus(inner, turf.bboxPolygon([16.3, 27, 19.9, 30.85]));
+        if (inner) { cuts.push({ ...inner, properties: { inner: 1 }, big: true }); all = all ? turf.union(turf.featureCollection([all, inner])) : inner; }
+      }
+
       for (const o of OASES) {
         let c = turf.circle(o.at, o.r, { units: 'kilometers', steps: 24 });
         c = minus(c, all);
@@ -828,7 +844,7 @@ async function main() {
         else if (pr.oasis) { p.acls = `oasi:${pr.oasis}`; p.oasis = pr.oasis; p.owner = OASES.find((o) => o.name === pr.oasis)?.owner ?? ''; }
         // deserto vero solo nella zona arida; fuori (Rif, Atlante, Tell) anche le terre spopolate restano normali
         else if (!inArid(cent[i]) || (densCap.get(i) ?? 0) >= 15) p.acls = 'P';
-        else if (pr.band) p.acls = 'costa';
+        else if (pr.band || pr.inner) p.acls = 'costa';
         else { p.desert = desertRegion(p); p.acls = `D:${p.desert}`; p.owner = ''; }
       }
       { const h = {}; for (const i of freeIdx) { const p = P[i]; if (!p.acls) continue; const k = p.acls.startsWith('oasi') ? 'oasi' : p.acls; h[k] = (h[k] || 0) + Math.round(p.area); } log('classi Nord Africa (km²)', JSON.stringify(h)); }
@@ -840,7 +856,11 @@ async function main() {
         const d = dens.get(p.i) ?? 99, b = AFRICA_BASE[p.owner] ?? 2;
         return d >= 80 ? b : d >= 20 ? b * 1.5 : b * 2.5;
       };
-      const akey = (p) => (p.acls === 'costa' ? 'P' : p.acls);
+      // il deserto segue i confini moderni (le forme saranno quelle degli stati di domani)
+      // l'Altopiano Libico (Marmarica) resta un deserto a sé, a sud delle terre di Derna e Tobruch
+      const plateau = readJSON(path.join(TMP, 'phys.geojson')).features.find((f) => f.properties.name === 'Libyan Plateau');
+      const onPlateau = (p) => !!plateau && turf.booleanPointInPolygon(cent[p.i], plateau);
+      const akey = (p) => (p.acls === 'costa' ? 'P' : p.desert ? `${p.acls}:${p.modern}${onPlateau(p) ? ':altopiano' : ''}` : p.acls);
       if (dens.size) { const h = {}; for (const [i, d] of dens) { const k = `${P[i].owner}:${d >= 80 ? 'a' : d >= 20 ? 'b' : d >= 5 ? 'c' : 'e'}`; h[k] = (h[k] || 0) + Math.round(P[i].area); } log('densità Nord Africa (km² per classe)', JSON.stringify(h)); }
       const groups = compactClusters(freeIdx, P, metrics, {
         // la contea di Gorizia resta unita anche a cavallo del confine italo-sloveno di oggi
@@ -880,6 +900,22 @@ async function main() {
           groups[d[0]].push(...g); g.length = 0; turned++;
         });
         if (turned) log(`${turned} schegge abitate isolate nel deserto unite al deserto`);
+        // ritagli di deserto lungo i confini moderni o il bordo della mappa (sotto 12.000 km²): al deserto vicino
+        // con il confine più lungo, se possibile dello stesso paese di oggi
+        let scraps = 0;
+        for (let pass = 0; pass < 3; pass++) groups.forEach((g, k) => {
+          if (!g.length || !P[g[0]].desert) return;
+          const area = g.reduce((t, i) => t + P[i].area, 0);
+          if (area >= 12000) return;
+          const gOf2 = new Map(); groups.forEach((h, kk) => h.forEach((i) => gOf2.set(i, kk)));
+          const nb = new Map();
+          for (const i of g) for (const j of nbr[i]) { const h = gOf2.get(j); if (h !== undefined && h !== k && P[groups[h][0]].desert) nb.set(h, (nb.get(h) || 0) + 1); }
+          const same = [...nb.entries()].filter(([h]) => P[groups[h][0]].modern === P[g[0]].modern);
+          const best = (same.length ? same : [...nb.entries()]).sort((a, b) => b[1] - a[1])[0];
+          if (!best) return;
+          groups[best[0]].push(...g); g.length = 0; scraps++;
+        });
+        if (scraps) log(`${scraps} ritagli di deserto uniti al deserto vicino`);
       }
       for (const g of groups) for (const i of g.slice(1)) join(g[0], i);
       // un'isola con chiave propria (Eubea) resta una provincia sola anche se lunga
