@@ -1,4 +1,5 @@
 import type { MapData, ProvinceData, Terrain } from './types';
+import { assignResources, type ResourceId } from './resources';
 
 export interface Edge {
   to: number;
@@ -39,6 +40,10 @@ export class GameMap {
     }
   }
 
+  /** Risorse di ogni provincia (calcolate una volta, dalla geografia e dai giacimenti noti). */
+  private resCache: ResourceId[][] | null = null;
+  get resources(): ResourceId[][] { return (this.resCache ??= assignResources(this)); }
+
   /** Le truppe possono entrare nella provincia? (il deserto no) */
   passable(p: number): boolean { return !this.provinces[p].impassable; }
 
@@ -60,8 +65,17 @@ export class GameMap {
     const [px, py] = laea(lon, lat);
     const y = -py;
     const arcs = (this.decoded ??= decodeArcs(this.data));
+    if (!this.boxes) {
+      this.boxes = this.provinces.map((p) => {
+        let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        for (const r of provinceRings(p, arcs)) for (let i = 0; i < r.length; i += 2) { x0 = Math.min(x0, r[i]); x1 = Math.max(x1, r[i]); y0 = Math.min(y0, r[i + 1]); y1 = Math.max(y1, r[i + 1]); }
+        return [x0, y0, x1, y1];
+      });
+    }
     for (const p of this.provinces) {
       if (owner && p.owner !== owner) continue;
+      const b = this.boxes[p.id];
+      if (px < b[0] || px > b[2] || y < b[1] || y > b[3]) continue;
       let inside = false;
       for (const ring of provinceRings(p, arcs)) {
         for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
@@ -74,6 +88,7 @@ export class GameMap {
     return null;
   }
   private decoded: Float32Array[] | null = null;
+  private boxes: number[][] | null = null;
 
   /** Provincia il cui centro è più vicino a lon/lat (con preferenza per un proprietario). */
   nearest(lon: number, lat: number, owner?: string): number {

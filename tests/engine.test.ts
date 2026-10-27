@@ -222,3 +222,22 @@ describe('deserto, oasi e piste carovaniere', () => {
     expect(MAP.canals?.length).toBeGreaterThan(0);
   });
 });
+
+describe('risorse', () => {
+  it('giacimenti storici nelle province giuste e rendita nel bilancio', async () => {
+    const { RESOURCES, nationResources } = await import('../src/engine/resources');
+    const w = newGame(MAP);
+    const at = (lon: number, lat: number) => w.map.resources[w.map.locate(lon, lat)!];
+    expect(at(7.2, 51.5)).toContain('carbone'); // Ruhr
+    expect(at(49.87, 40.4)).toContain('petrolio'); // Baku
+    // deterministico
+    expect(JSON.stringify(w.map.resources)).toBe(JSON.stringify(newGame(MAP).map.resources));
+    // il deserto non ha risorse proprie, le oasi i datteri
+    w.map.provinces.forEach((p) => { if (p.impassable) expect(w.map.resources[p.id].every((r) => RESOURCES[r].strategic || r === 'sale')).toBe(true); });
+    const s = w.state;
+    const r = nationResources(w.map, w.map.resources, s.controller, s.owner, 'GER', w.profiles.GER.industry);
+    expect(r.count.carbone).toBeGreaterThan(0);
+    expect(r.missing).not.toContain('carbone');
+    expect(budget(w, 'GER').resources).toBeGreaterThan(0);
+  });
+});

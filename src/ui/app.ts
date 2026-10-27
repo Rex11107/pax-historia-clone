@@ -3,6 +3,7 @@ import { Game, type Phase, type TurnOutcome } from '../game';
 import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diplomacy';
 import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
 import { TERRAIN_NAME } from '../engine/map';
+import { nationResources, RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
 import { al, atWar, di, enemiesOf, formatDate, nationName, opinion, treatyBetween } from '../engine/world';
@@ -60,6 +61,11 @@ export class App {
     $('#settings-btn').addEventListener('click', () => this.setTab('settings'));
     $('#sheet-close').addEventListener('click', () => this.closeSheet());
     $('#end-turn').addEventListener('click', () => this.openTurnDialog());
+    $('#res-btn').addEventListener('click', (e) => {
+      this.map.showResources = !this.map.showResources;
+      (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showResources));
+      this.map.invalidate();
+    });
     $('#relief-btn').addEventListener('click', (e) => {
       this.map.showRelief = !this.map.showRelief;
       (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showRelief));
@@ -313,6 +319,7 @@ export class App {
       h('dl', { class: 'facts' },
         h('dt', null, 'Popolazione'), h('dd', null, p.pop.toLocaleString('it-IT')),
         h('dt', null, 'Superficie'), h('dd', null, `${p.area.toLocaleString('it-IT')} km²`),
+        ...(w.map.resources[id].length ? [h('dt', null, 'Risorse'), h('dd', null, w.map.resources[id].map(resourceLabel).join(', '))] : []),
         h('dt', null, 'Terreno'), h('dd', null, p.impassable ? `deserto intransitabile${p.region ? ` (${p.region})` : ''}` : `${TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}`),
         ...(w.map.adj[id].some((e) => e.route) ? [h('dt', null, 'Piste carovaniere'), h('dd', null, w.map.adj[id].filter((e) => e.route).map((e) => `verso ${w.map.provinces[e.to].name} (${Math.round(e.km)} km)`).join(', '))] : []),
         ...(w.map.riversOf(id).length ? [h('dt', null, 'Fiumi di confine'), h('dd', null, w.map.riversOf(id).map((r) => `${r.name} (verso ${w.map.provinces[r.to].name})`).join(', '))] : []),
@@ -345,7 +352,7 @@ export class App {
     };
     return h('div', null,
       h('table', { class: 'budget' }, h('caption', null, 'Bilancio settimanale previsto (milioni)'),
-        row('Entrate fiscali', b.income, 1), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
+        row('Entrate fiscali', b.income - (b.resources ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
         h('tr', { class: 'total' }, h('td', null, 'Saldo'), h('td', { class: `num ${b.net >= 0 ? 'pos' : 'neg'}` }, `${b.net >= 0 ? '+' : '−'}${Math.abs(b.net).toFixed(1)}`))),
       h('dl', { class: 'facts' },
         h('dt', null, 'Debito pubblico'), h('dd', null, `${Math.round(n.debt).toLocaleString('it-IT')} M`),
@@ -354,6 +361,13 @@ export class App {
         h('dt', null, 'Stanchezza di guerra'), h('dd', null, `${Math.round(n.warExhaustion)}/100`),
         h('dt', null, 'Rete ferroviaria'), h('dd', null, `${Math.round(n.rail)}/100`),
       ),
+      (() => {
+        const r = nationResources(w.map, w.map.resources, s.controller, s.owner, me, w.profiles[me].industry);
+        const ids = (Object.keys(r.count) as ResourceId[]).sort((a, c) => RESOURCES[c].value - RESOURCES[a].value);
+        return h('div', null, h('h3', null, 'Risorse'),
+          h('p', null, ids.map((x) => `${resourceLabel(x)} ×${r.count[x]}`).join(' · ') || 'nessuna'),
+          r.missing.length ? h('p', { class: 'sub' }, `Mancano ${r.missing.join(' e ')}: ${r.missing.includes('carbone') && w.profiles[me].industry >= 50 ? 'senza carbone le entrate calano del 5%' : ''}${r.missing.length === 2 && w.profiles[me].industry >= 50 ? '; ' : ''}${r.missing.includes('ferro') ? 'senza ferro l\'artiglieria costa il 30% in più' : ''}.`) : null);
+      })(),
       policy('tax', 'Imposte'), policy('mobilization', 'Esercito'), policy('infrastructure', 'Ferrovie e opere'), policy('press', 'Stampa'),
       s.situations.length ? h('div', null, h('h3', null, 'Questioni aperte'), ...s.situations.map((x) => h('p', null, h('b', null, x.title), ': ', x.summary))) : null,
     );

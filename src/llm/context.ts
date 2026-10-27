@@ -4,6 +4,7 @@
 import { TREATY_LABEL } from '../engine/diplomacy';
 import { POLICY_EFFECTS } from '../engine/economy';
 import { TERRAIN_NAME } from '../engine/map';
+import { nationResources, RESOURCES, type ResourceId } from '../engine/resources';
 import type { Tag } from '../engine/types';
 import { atWar, enemiesOf, formatDate, nationName, opinion, warsOf, type World } from '../engine/world';
 
@@ -40,7 +41,22 @@ export function resolveNation(w: World, ref: unknown): Tag | null {
   return null;
 }
 
+/** Riassunto delle risorse controllate da una nazione (per il modello). */
+export function resourceSummary(w: World, tag: Tag): string {
+  const s = w.state;
+  const r = nationResources(w.map, w.map.resources, s.controller, s.owner, tag, w.profiles[tag]?.industry ?? 30);
+  const parts = (Object.entries(r.count) as [ResourceId, number][]).sort((a, b) => b[1] - a[1]).map(([id, n]) => `${RESOURCES[id].label} ${n}`);
+  return `${parts.join(', ') || 'nessuna'} (rendita ${r.income.toFixed(1)} M/sett.)${r.missing.length ? `; MANCA: ${r.missing.join(', ')}` : ''}`;
+}
+
 const pname = (w: World, id: number) => `${w.map.provinces[id].name} (${id})`;
+
+function strategic(w: World, tag: Tag): string {
+  const s = w.state;
+  const c: Record<string, number> = {};
+  w.map.resources.forEach((rs, i) => { if (s.owner[i] === tag) for (const r of rs) if (RESOURCES[r].strategic) c[RESOURCES[r].label] = (c[RESOURCES[r].label] ?? 0) + 1; });
+  return Object.entries(c).map(([l, n]) => `${l} ${n}`).join(', ') || 'nessuna';
+}
 
 /** Profili statici di tutte le nazioni: blocco stabile, cacheabile. */
 export function nationsBlock(w: World): string {
@@ -61,6 +77,7 @@ export function worldDigest(w: World): string {
   const b = n.lastBudget;
   lines.push(`INTERNO: tesoro ${Math.round(n.treasury)} M, debito ${Math.round(n.debt)} M${b ? `, saldo settimanale ${b.net >= 0 ? '+' : ''}${b.net.toFixed(1)} M` : ''}, riserva ${k(n.manpower)} uomini, stabilità ${Math.round(n.stability)}/100, stanchezza di guerra ${Math.round(n.warExhaustion)}/100, ferrovie ${Math.round(n.rail)}/100.`);
   lines.push(`POLITICHE: ${POLICY_EFFECTS.tax[pol.tax].label}; ${POLICY_EFFECTS.mobilization[pol.mobilization].label}; ${POLICY_EFFECTS.infrastructure[pol.infrastructure].label}; ${POLICY_EFFECTS.press[pol.press].label}.`);
+  lines.push(`RISORSE: ${resourceSummary(w, me)}.`);
   const wars = s.wars;
   lines.push(`GUERRE IN CORSO: ${wars.length ? wars.map((x) => `${x.name} [${x.attackers.join(',')} vs ${x.defenders.join(',')}] dal ${formatDate(x.startDay)}`).join('; ') : 'nessuna'}.`);
   const tr = s.treaties.filter((t) => t.a === me || t.b === me);
@@ -75,7 +92,7 @@ export function worldDigest(w: World): string {
   lines.push('RAPPORTI (opinione loro→noi / noi→loro, esercito):');
   for (const p of rel) {
     const men = s.units.filter((u) => u.nation === p.tag).reduce((x, u) => x + u.strength, 0);
-    lines.push(`- ${p.tag} ${p.name}: ${opinion(s, p.tag, me)} / ${opinion(s, me, p.tag)}, ${k(men)} uomini${atWar(s, me, p.tag) ? ', IN GUERRA CON NOI' : ''}${warsOf(s, p.tag).length && !atWar(s, me, p.tag) ? ', in guerra altrove' : ''}, stanchezza ${Math.round(s.nations[p.tag].warExhaustion)}.`);
+    lines.push(`- ${p.tag} ${p.name}: ${opinion(s, p.tag, me)} / ${opinion(s, me, p.tag)}, ${k(men)} uomini, risorse strategiche ${strategic(w, p.tag)}${atWar(s, me, p.tag) ? ', IN GUERRA CON NOI' : ''}${warsOf(s, p.tag).length && !atWar(s, me, p.tag) ? ', in guerra altrove' : ''}, stanchezza ${Math.round(s.nations[p.tag].warExhaustion)}.`);
   }
   // unità del giocatore
   lines.push('UNITÀ DEL GIOCATORE (id: nome, tipo, forza/organico, morale, rifornimento, posizione, ordini):');
@@ -112,8 +129,9 @@ export function provinceIndex(w: World): string {
   return [...ids].sort((a, b) => a - b).map((id) => {
     const p = w.map.provinces[id];
     const tag = (t: string) => t || 'nessuno';
+    const rs = w.map.resources[id];
     const piste = w.map.adj[id].filter((e) => e.route).map((e) => e.to);
-    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}]`;
+    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}${rs.length ? `; ${rs.map((r) => RESOURCES[r].label).join(', ')}` : ''}]`;
   }).join('\n');
 }
 
@@ -129,6 +147,7 @@ export function bilateralView(w: World, tag: Tag): string {
     `DATA: ${formatDate(s.day)}.`,
     `LA TUA SITUAZIONE: tesoro ${Math.round(n.treasury)} M, debito ${Math.round(n.debt)} M, esercito ${k(men(tag))} uomini, stabilità ${Math.round(n.stability)}/100, stanchezza di guerra ${Math.round(n.warExhaustion)}/100.`,
     `IL TUO GIUDIZIO SU ${nationName(w, me).toUpperCase()}: ${opinion(s, tag, me)}/100 (loro verso di te: ${opinion(s, me, tag)}). Esercito ${k(men(me))} uomini.`,
+    `LE TUE RISORSE: ${resourceSummary(w, tag)}. LE LORO: ${resourceSummary(w, me)}.`,
     `TRATTATI FRA VOI: ${treaties.length ? treaties.map((t) => TREATY_LABEL[t.type]).join(', ') : 'nessuno'}.`,
     `I TUOI ALTRI TRATTATI: ${theirTreaties.length ? theirTreaties.map((t) => `${TREATY_LABEL[t.type]} con ${nationName(w, t.a === tag ? t.b : t.a)}`).join('; ') : 'nessuno'}.`,
     `GUERRE: ${warsOf(s, tag).map((x) => x.name).join('; ') || 'nessuna'}${atWar(s, tag, me) ? ' — SEI IN GUERRA CON IL TUO INTERLOCUTORE' : ''}.`,
@@ -140,7 +159,9 @@ export function bilateralView(w: World, tag: Tag): string {
     lines.push(`LORO PROVINCE CHE OCCUPI: ${taken.map((p) => `${p.name} (${p.id})`).join(', ') || 'nessuna'}.`);
   }
   const border = w.map.provinces.filter((p) => s.owner[p.id] === tag && w.map.adj[p.id].some((e) => s.owner[e.to] === me));
-  if (border.length) lines.push(`PROVINCE DI CONFINE CON LORO (tue): ${border.slice(0, 15).map((p) => `${p.name} (${p.id})`).join(', ')}.`);
+  if (border.length) lines.push(`PROVINCE DI CONFINE CON LORO (tue): ${border.slice(0, 15).map((p) => `${p.name} (${p.id})${w.map.resources[p.id].length ? ' [' + w.map.resources[p.id].map((r) => RESOURCES[r].label).join(', ') + ']' : ''}`).join(', ')}.`);
+  const theirs = w.map.provinces.filter((p) => s.owner[p.id] === me && w.map.adj[p.id].some((e) => s.owner[e.to] === tag) && w.map.resources[p.id].some((r) => RESOURCES[r].strategic));
+  if (theirs.length) lines.push(`LORO PROVINCE DI CONFINE CON RISORSE STRATEGICHE: ${theirs.slice(0, 10).map((p) => `${p.name} (${p.id}) [${w.map.resources[p.id].map((r) => RESOURCES[r].label).join(', ')}]`).join(', ')}.`);
   const recent = s.events.filter((e) => e.nations.includes(tag) && e.nations.includes(me)).slice(-8);
   if (recent.length) lines.push(`FATTI RECENTI FRA VOI: ${recent.map((e) => `${formatDate(e.day)}: ${e.text}`).join(' ')}`);
   const sit = s.situations.filter((x) => x.nations.includes(tag));

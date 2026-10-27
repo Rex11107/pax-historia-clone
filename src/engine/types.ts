@@ -182,6 +182,8 @@ export interface NationState {
 
 export interface Budget {
   income: number;
+  /** entrate dalle risorse delle province controllate (già comprese in income) */
+  resources?: number;
   upkeep: number;
   administration: number;
   interest: number;

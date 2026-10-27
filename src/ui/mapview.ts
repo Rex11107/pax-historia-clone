@@ -3,6 +3,7 @@
 
 import { decodeArcs, provinceRings } from '../engine/map';
 import { unitPosition } from '../engine/orders';
+import { RESOURCES } from '../engine/resources';
 import type { MapData, Unit } from '../engine/types';
 import type { World } from '../engine/world';
 
@@ -39,6 +40,8 @@ export class MapView {
   selectedUnit: string | null = null;
   /** livello fisico: laghi sempre, rilievi solo se attivato */
   showRelief = false;
+  /** icone delle risorse sulle province */
+  showResources = false;
   private phys: { relief: { cls: string; path: Path2D; bb: number[] }[]; rivers: { rank: number; path: Path2D; bb: number[] }[]; lakes: Path2D } | null = null;
   private mountainPattern: CanvasPattern | null = null;
   previewPath: number[] | null = null;
@@ -462,6 +465,25 @@ export class MapView {
         ctx.fillText(l.text.toUpperCase(), x, y);
       }
       (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px';
+    }
+    // risorse: icone al centro delle province (le strategiche anche da lontano)
+    if (this.showResources) {
+      const res = this.world.map.resources;
+      const size = k < 0.35 ? 11 : k < 0.8 ? 14 : 17;
+      ctx.font = `${size}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      for (const p of this.world.map.provinces) {
+        if (!visible(p.id) || !res[p.id].length) continue;
+        const list = k < 0.55 ? res[p.id].filter((r) => RESOURCES[r].strategic) : res[p.id];
+        if (!list.length) continue;
+        const [x, y] = this.worldToScreen(p.c[0], -p.c[1]);
+        const txt = list.map((r) => RESOURCES[r].icon).join('');
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(247,244,234,0.85)';
+        ctx.beginPath(); ctx.roundRect(x - tw / 2 - 3, y - size / 2 - 6, tw + 6, size + 6, 4); ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.fillText(txt, x, y - 2);
+      }
     }
     // nome del canale, da vicino (una volta sola anche se il canale ha più tratti)
     if (k >= 0.7) {

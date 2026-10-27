@@ -24,7 +24,7 @@ export function loadLock(file) {
       rings.push(pts);
     }
     const xs = rings.flat().map((q) => q[0]), ys = rings.flat().map((q) => q[1]);
-    return { id: p.id, name: p.name, owner: p.owner, rings, bb: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] };
+    return { id: p.id, name: p.name, owner: p.owner, area: p.area, impassable: !!p.impassable, region: p.region, rings, bb: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] };
   });
   const inside = (pr, x, y) => {
     let c = false;
@@ -41,7 +41,7 @@ export function loadLock(file) {
     locate([lon, lat], owner) {
       const [x, y] = laea(lon, lat);
       for (const pr of provs) {
-        if (owner && pr.owner !== owner) continue;
+        if (owner !== undefined && pr.owner !== owner) continue;
         if (x < pr.bb[0] || x > pr.bb[2] || y < pr.bb[1] || y > pr.bb[3]) continue;
         if (inside(pr, x, y)) return pr;
       }

@@ -3,6 +3,7 @@ import { makePeace } from './diplomacy';
 import { moveCost } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
 import { allied, enemiesOf, warsOf, type World } from './world';
+import { RESOURCES } from './resources';
 
 // Riflessi deterministici delle nazioni non giocanti (zero chiamate AI):
 // difendono, liberano le province occupate, attaccano dove hanno superiorità locale,
@@ -43,7 +44,9 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       const defense = strengthAt(w, p, (u) => isEnemy(u.nation));
       const liberation = s.owner[p] === tag || allied(s, tag, s.owner[p]) ? 3 : 1;
       const capital = Object.values(s.nations).some((n) => n.capital === p && isEnemy(n.tag)) ? 2 : 1;
-      targets.push({ p, score: (liberation * capital * (1 + Math.log10(map.provinces[p].pop + 10))) / (1 + defense / 20000) });
+      // le province con carbone, ferro o petrolio valgono di più
+      const resBonus = 1 + map.resources[p].reduce((x, r) => x + (RESOURCES[r].strategic ? RESOURCES[r].value * 3 : 0), 0);
+      targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop + 10))) / (1 + defense / 20000) });
     }
   }
   const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length);
