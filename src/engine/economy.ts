@@ -55,9 +55,9 @@ export function budget(w: World, tag: Tag): Budget {
   const war = warsOf(s, tag).length > 0;
   const upkeep = (men / 1000) * 0.023 * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
   const administration = income * 0.3;
-  const interest = (n.debt * 0.045) / 52;
+  const interest = ((n.debt * 0.045) / 52) * gov.interest;
   const infrastructure = income * POLICY_EFFECTS.infrastructure[pol.infrastructure].cost;
-  const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower);
+  const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower * gov.manpower);
   const r = (v: number) => Math.round(v * 100) / 100;
   const tradeNet = res.earn - res.pay;
   return { income: r(income), resources: r(res.income), trade: r(tradeNet), upkeep: r(upkeep), administration: r(administration), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet - upkeep - administration - interest - infrastructure), manpowerGain };

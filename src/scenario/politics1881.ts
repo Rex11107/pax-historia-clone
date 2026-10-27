@@ -102,7 +102,7 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
   TUR: {
     regime: 'autocracy', crown: true,
     parties: [
-      p('palazzo', 'Uomini del Palazzo', 'corte', 1, ['Küçük Said Pascià'], 55),
+      p('palazzo', 'Uomini del Palazzo', 'corte', 1, ['Küçük Said Pascià', 'Kâmil Pascià'], 55),
       p('ulema', 'Ulema e conservatori religiosi', 'tradizionalista', 2, ['lo Şeyhülislam'], 25),
       p('costituzionalisti', 'Costituzionalisti', 'riformista', -1, ['Midhat Pascià'], 20),
     ],

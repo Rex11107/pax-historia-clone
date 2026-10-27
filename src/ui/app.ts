@@ -5,6 +5,7 @@ import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } 
 import { TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
+import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
@@ -384,12 +385,39 @@ export class App {
           h('td', null, h('b', null, p.name), h('div', { class: 'sub' }, `${p.program} · ${p.leaders[0]}${ps.gov.includes(p.id) ? ' · al governo' : ''}`)),
           h('td', { class: 'num' }, pct(p.seats)),
           h('td', { class: `num ${p.pop > p.seats + 1 ? 'pos' : p.pop < p.seats - 1 ? 'neg' : ''}` }, pct(p.pop))))),
+      this.viewCabinet(),
       h('h3', null, 'Programma di governo'),
       h('ul', { class: 'list plain' }, ...[...new Set(gov.map((p) => p.program))].map((pr) => h('li', null, h('b', null, pr), ': ', PROGRAM_EFFECTS[pr].label))),
       auto ? null : h('div', { class: 'buttons' }, h('button', { onclick: () => { const err = callElection(w, me); this.toast(err ?? 'Camere sciolte: si vota fra quattro settimane.'); this.afterStateChange(); } }, 'Sciogliere le Camere')),
       h('p', { class: 'muted' }, auto
         ? 'Il sovrano non risponde a un parlamento, ma le fazioni di corte pesano: il loro favore cambia con l\'ordine nel paese, la guerra e il passare del tempo. Se il governo scivola sotto la soglia, la crisi non scatta di colpo: il rischio cresce settimana dopo settimana.'
         : 'Non decidi tu le elezioni: il consenso dei partiti si muove con la stanchezza di guerra, la stabilità, il deficit, le imposte, gli umori del paese e il logoramento di chi governa. La censura rallenta i cambiamenti ma irrita liberali e radicali. Il governo non cade automaticamente sotto la soglia: il rischio di crisi cresce quanto più la fiducia è bassa, e nella crisi scegli tu la via d\'uscita.'),
+    );
+  }
+
+  private viewCabinet(): Node | null {
+    const w = this.game.world, s = w.state, me = s.player;
+    const c = cabinetOf(w, me);
+    if (!c) return null;
+    const ps = politicsOf(w, me)!;
+    const head = headMinister(w, me);
+    const party = (id: string | null) => (id ? ps.parties.find((p) => p.id === id)?.name ?? id : 'senza partito');
+    return h('div', null,
+      h('h3', null, 'Ministri'),
+      head ? h('p', null, h('b', null, `${head.name}, capo del governo`), h('div', { class: 'sub' }, `${head.note} Effetti: ${describeEffects(w, head.effects)}.`)) : null,
+      h('ul', { class: 'list plain' }, ...OFFICES.map((o: Office) => {
+        const cur = minister(c.posts[o]);
+        const opts = candidates(w, me, o);
+        const sel = h('select', { onchange: (e: Event) => {
+          const id = (e.target as HTMLSelectElement).value;
+          const err = appoint(w, me, o, id);
+          this.toast(err ?? `${minister(id)!.name} nominato.`); this.afterStateChange();
+        } }, ...(cur ? [] : [h('option', { value: '' }, '—')]), ...opts.map((x) => h('option', { value: x.id, selected: x.id === cur?.id }, `${x.name} (${party(x.party)})`))) as HTMLSelectElement;
+        return h('li', null,
+          h('div', { class: 'row' }, h('b', null, OFFICE_LABEL[o]), opts.length > 1 ? sel : h('span', null, cur?.name ?? 'vacante')),
+          cur && cur.id === head?.id ? h('div', { class: 'sub' }, 'Tiene il dicastero lo stesso capo del governo: i suoi effetti contano una volta sola.') : cur ? h('div', { class: 'sub' }, `${cur.note} Effetti: ${describeEffects(w, cur.effects)}.`) : h('div', { class: 'sub' }, 'Nessun personaggio storico disponibile: un funzionario di carriera, senza effetti.'));
+      })),
+      h('p', { class: 'muted' }, 'Si nominano solo uomini dei partiti al governo (o senza partito), vivi e attivi in quell\'anno. Ogni cambio costa un punto di stabilità, si può rifare dopo quattro settimane, e licenziare un uomo della maggioranza la irrita. Se il governo cambia, chi resta senza maggioranza lascia il posto.'),
     );
   }
 

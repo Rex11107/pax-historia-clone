@@ -6,6 +6,7 @@
 // epurazione…); le nazioni non giocanti e il giocatore che non sceglie seguono il motore.
 
 import { dayOf, genericPolitics, POLITICS, type Program, type Regime } from '../scenario/politics1881';
+import { ministerEffects, reshuffleCabinet } from './ministers';
 import type { GameEvent, Tag } from './types';
 import { clamp, emit, formatDate, rand, warsOf, type World } from './world';
 
@@ -97,8 +98,8 @@ export function politicsOf(w: World, tag: Tag): PoliticsState | null {
     nextElection: seed.regime !== 'autocracy' && seed.election ? Math.max(7, dayOf(...seed.election)) : null,
     confidence: 0, honeymoon: 0, calmUntil: 0, since: 0,
   };
-  ps.confidence = confidence(w, tag, ps);
   s.politics[tag] = ps;
+  ps.confidence = confidence(w, tag, ps);
   return ps;
 }
 
@@ -107,8 +108,11 @@ const share = (ps: PoliticsState, ids: string[], k: 'seats' | 'pop') => ps.parti
 /** Effetti combinati del programma di governo. */
 export function govEffects(w: World, tag: Tag) {
   const ps = politicsOf(w, tag);
-  const out = { income: 1, stability: 0, exhaustion: 1, upkeep: 1, rail: 0 };
+  const out = { income: 1, stability: 0, exhaustion: 1, upkeep: 1, rail: 0, manpower: 1, interest: 1, quality: 1 };
   if (!ps) return out;
+  const me = ministerEffects(w, tag);
+  out.income *= me.income; out.stability += me.stability; out.exhaustion *= me.exhaustion; out.upkeep *= me.upkeep; out.rail += me.rail;
+  out.manpower *= me.manpower; out.interest *= me.interest; out.quality *= me.quality;
   const gov = ps.parties.filter((p) => ps.gov.includes(p.id));
   const tot = gov.reduce((a, p) => a + Math.max(1, p.seats), 0) || 1;
   for (const p of gov) {
@@ -139,7 +143,7 @@ function policyMood(w: World, tag: Tag, ps: PoliticsState): number {
 export function confidence(w: World, tag: Tag, ps: PoliticsState): number {
   const seats = share(ps, ps.gov, 'seats'), pop = share(ps, ps.gov, 'pop');
   const n = w.state.nations[tag];
-  let c = seats + (pop - seats) * 0.7 + policyMood(w, tag, ps) + ps.honeymoon;
+  let c = seats + (pop - seats) * 0.7 + policyMood(w, tag, ps) + ps.honeymoon + ministerEffects(w, tag).confidence;
   if (ps.regime === 'autocracy') c += (n.stability - 50) * 0.2; // a corte conta l'ordine nel paese
   return clamp(Math.round(c * 10) / 10, 0, 100);
 }
@@ -192,6 +196,7 @@ function setGov(w: World, tag: Tag, ps: PoliticsState, gov: string[], sink: Game
     else head = lead.leaders[0];
   }
   ps.gov = gov; ps.head = head; ps.honeymoon = 8; ps.since = s.day;
+  reshuffleCabinet(w, tag);
   ps.confidence = confidence(w, tag, ps);
   const names = gov.map((g) => ps.parties.find((p) => p.id === g)!.name).join(', ');
   emit(w, { type: 'government', nations: [tag], text: `${w.profiles[tag].name}: ${why}. Nuovo governo ${head}${ps.fixedHead ? '' : ` (${names})`}.` }, sink);

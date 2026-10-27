@@ -342,3 +342,39 @@ describe('politica', () => {
     expect(crises).toBeLessThan(40);
   }, 60000);
 });
+
+describe('ministri', () => {
+  it('gabinetto 1881, vincoli di partito e anni, effetti', async () => {
+    const M = await import('../src/engine/ministers');
+    const P = await import('../src/engine/politics');
+    const w = newGame(MAP);
+    const ita = M.cabinetOf(w, 'ITA')!;
+    expect(M.minister(ita.posts.finanze)!.name).toBe('Agostino Magliani');
+    expect(M.headMinister(w, 'ITA')!.name).toBe('Benedetto Cairoli');
+    expect(M.cabinetOf(w, 'SER')).toBeNull();
+    // un uomo della Destra non entra in un governo della Sinistra; Boulanger non prima del 1886
+    expect(M.appoint(w, 'ITA', 'finanze', 'sella')).not.toBeNull();
+    expect(M.appoint(w, 'FRA', 'guerra', 'boulanger')).not.toBeNull();
+    // Ricotti alla Guerra: qualità militare in più, un punto di stabilità in meno
+    const st = w.state.nations.ITA.stability;
+    const q0 = P.govEffects(w, 'ITA').quality;
+    expect(M.appoint(w, 'ITA', 'guerra', 'ricotti')).toBeNull();
+    expect(P.govEffects(w, 'ITA').quality).toBeGreaterThan(q0);
+    expect(w.state.nations.ITA.stability).toBe(st - 1);
+    expect(M.appoint(w, 'ITA', 'guerra', 'ferrero')).toMatch(/quattro settimane/);
+    // Mancini agli Esteri migliora l'opinione austriaca e tedesca
+    w.state.day = 60;
+    expect(M.appoint(w, 'ITA', 'esteri', 'mancini')).toBeNull();
+    const op = w.state.nations.AUH.opinion.ITA ?? 0;
+    for (let i = 0; i < 10; i++) M.weeklyMinisters(w, []);
+    expect(w.state.nations.AUH.opinion.ITA).toBeGreaterThan(op);
+    // cambio di maggioranza: i ministri della Sinistra lasciano, il motore li rimpiazza
+    const ps = P.politicsOf(w, 'ITA')!;
+    ps.parties.find((p) => p.id === 'sinistra')!.pop = 30;
+    ps.parties.find((p) => p.id === 'destra')!.pop = 66;
+    P.holdElection(w, 'ITA', ps, []);
+    M.weeklyMinisters(w, []);
+    expect(M.minister(ita.posts.esteri)?.party).not.toBe('sinistra');
+    expect(M.minister(ita.posts.interno)?.party ?? null).not.toBe('sinistra');
+  });
+});

@@ -1,3 +1,4 @@
+import { govEffects } from './politics';
 import { TERRAIN_DEFENSE } from './map';
 import { UNIT_STATS } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
@@ -17,7 +18,7 @@ function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean):
   let p = (u.strength / 1000) * (defending ? st.defense : st.attack);
   p *= 0.5 + 0.5 * u.morale;
   p *= 0.4 + 0.6 * u.supply;
-  p *= 0.75 + 0.5 * (pr.militaryQuality / 100);
+  p *= (0.75 + 0.5 * (pr.militaryQuality / 100)) * govEffects(w, u.nation).quality;
   p *= 1 + 0.3 * u.experience;
   if (pr.doctrine === 'offensive' && !defending) p *= 1.1;
   if (pr.doctrine === 'defensive' && defending) p *= 1.1;
