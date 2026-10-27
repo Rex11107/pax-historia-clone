@@ -4,6 +4,7 @@ import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diploma
 import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
 import { TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
+import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
@@ -32,7 +33,7 @@ export class App {
   chatBusy = false;
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
-  govTab: 'budget' | 'trade' = 'budget';
+  govTab: 'budget' | 'trade' | 'politics' = 'budget';
   trade: { mode: 'buy' | 'sell'; res: ResourceId; qty: number } = { mode: 'buy', res: 'carbone', qty: 1 };
 
   constructor(private mapData: MapData, public settings: Settings) {}
@@ -87,6 +88,7 @@ export class App {
       h('span', { title: 'Riserva di uomini' }, h('b', null, fmtK(n.manpower)), ' uomini'),
       h('span', { title: 'Stabilità interna' }, 'stabilità ', h('b', null, Math.round(n.stability))),
       enemiesOf(s, s.player).size ? h('span', { class: 'war' }, 'in guerra') : null,
+      politicsOf(this.game.world, s.player)?.crisis ? h('span', { class: 'war', style: 'cursor:pointer', onclick: () => { this.govTab = 'politics'; this.setTab('government'); } }, 'crisi di governo') : null,
     ].filter((x): x is HTMLSpanElement => !!x));
   }
 
@@ -344,8 +346,51 @@ export class App {
   private viewGovernment(): Node {
     const nav = h('div', { class: 'seg subnav' },
       h('button', { class: this.govTab === 'budget' ? 'on' : '', onclick: () => { this.govTab = 'budget'; this.render(); } }, 'Bilancio e politiche'),
+      h('button', { class: this.govTab === 'politics' ? 'on' : '', onclick: () => { this.govTab = 'politics'; this.render(); } }, politicsOf(this.game.world, this.game.state.player)?.crisis ? 'Politica ⚠' : 'Politica'),
       h('button', { class: this.govTab === 'trade' ? 'on' : '', onclick: () => { this.govTab = 'trade'; this.render(); } }, 'Commercio'));
-    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.viewBudget());
+    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.viewBudget());
+  }
+
+  private viewPolitics(): Node {
+    const w = this.game.world, s = w.state, me = s.player;
+    const ps = politicsOf(w, me);
+    if (!ps) return h('p', { class: 'muted' }, 'Nessuna vita politica.');
+    const auto = ps.regime === 'autocracy';
+    const thr = THRESHOLD[ps.regime];
+    const gov = ps.parties.filter((p) => ps.gov.includes(p.id));
+    const risk = crisisChance(ps);
+    const pct = (v: number) => `${v.toFixed(0)}%`;
+    const crisis = ps.crisis ? h('div', { class: 'card confirm' },
+      h('p', null, h('b', null, auto ? 'Crisi a corte.' : ps.regime === 'constitutional' ? 'Il parlamento blocca il governo.' : 'Il governo ha perso la maggioranza.'),
+        ` Scegli come uscirne entro la fine della prossima settimana, altrimenti decide il corso degli eventi.`),
+      h('ul', { class: 'list plain' }, ...ps.crisis.options.map((o) => h('li', null,
+        h('div', { class: 'row' }, h('b', null, OPTION_LABEL[o][0]), h('button', { class: 'link', onclick: () => { const err = resolveCrisis(w, me, o); this.toast(err ?? OPTION_LABEL[o][0]); this.afterStateChange(); } }, 'Scegli')),
+        h('div', { class: 'sub' }, OPTION_LABEL[o][1]))))) : null;
+    return h('div', null,
+      crisis,
+      h('dl', { class: 'facts' },
+        h('dt', null, 'Regime'), h('dd', null, REGIME_LABEL[ps.regime]),
+        h('dt', null, auto ? 'Al potere' : 'Governo'), h('dd', null, `${ps.head}${ps.fixedHead ? ' (nominato dalla Corona)' : ''} · ${gov.map((p) => p.name).join(' + ')}`),
+        h('dt', null, 'In carica dal'), h('dd', null, ps.since ? formatDate(ps.since) : 'prima del 1881'),
+        h('dt', null, 'Prossime elezioni'), h('dd', null, ps.nextElection !== null ? formatDate(ps.nextElection) : 'nessuna'),
+        ps.decreeUntil ? h('dt', null, 'Decreto') : null, ps.decreeUntil ? h('dd', null, `si governa per decreto fino al ${formatDate(ps.decreeUntil)}`) : null),
+      h('h3', null, 'Fiducia nel governo'),
+      h('div', { class: 'meter' }, h('i', { style: `width:${ps.confidence}%` }), h('b', { style: `left:${thr}%` })),
+      h('p', { class: 'sub' }, `${Math.round(ps.confidence)}/100; sotto ${thr} il governo è a rischio. ${risk > 0 ? `Rischio di crisi questa settimana: ${Math.round(risk * 100)}%.` : 'Nessun rischio di crisi per ora.'}`),
+      h('h3', null, auto ? 'Fazioni a corte' : 'Partiti'),
+      h('table', { class: 'budget parties' },
+        h('tr', null, h('th', null, ''), h('th', { class: 'num' }, auto ? 'peso' : 'seggi'), h('th', { class: 'num' }, auto ? 'oggi' : 'consenso')),
+        ...[...ps.parties].sort((a, b) => b.seats - a.seats).map((p) => h('tr', { class: ps.gov.includes(p.id) ? 'gov' : '' },
+          h('td', null, h('b', null, p.name), h('div', { class: 'sub' }, `${p.program} · ${p.leaders[0]}${ps.gov.includes(p.id) ? ' · al governo' : ''}`)),
+          h('td', { class: 'num' }, pct(p.seats)),
+          h('td', { class: `num ${p.pop > p.seats + 1 ? 'pos' : p.pop < p.seats - 1 ? 'neg' : ''}` }, pct(p.pop))))),
+      h('h3', null, 'Programma di governo'),
+      h('ul', { class: 'list plain' }, ...[...new Set(gov.map((p) => p.program))].map((pr) => h('li', null, h('b', null, pr), ': ', PROGRAM_EFFECTS[pr].label))),
+      auto ? null : h('div', { class: 'buttons' }, h('button', { onclick: () => { const err = callElection(w, me); this.toast(err ?? 'Camere sciolte: si vota fra quattro settimane.'); this.afterStateChange(); } }, 'Sciogliere le Camere')),
+      h('p', { class: 'muted' }, auto
+        ? 'Il sovrano non risponde a un parlamento, ma le fazioni di corte pesano: il loro favore cambia con l\'ordine nel paese, la guerra e il passare del tempo. Se il governo scivola sotto la soglia, la crisi non scatta di colpo: il rischio cresce settimana dopo settimana.'
+        : 'Non decidi tu le elezioni: il consenso dei partiti si muove con la stanchezza di guerra, la stabilità, il deficit, le imposte, gli umori del paese e il logoramento di chi governa. La censura rallenta i cambiamenti ma irrita liberali e radicali. Il governo non cade automaticamente sotto la soglia: il rischio di crisi cresce quanto più la fiducia è bassa, e nella crisi scegli tu la via d\'uscita.'),
+    );
   }
 
   private viewTrade(): Node {

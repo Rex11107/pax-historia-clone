@@ -2,6 +2,7 @@ import { ROMAN, UNIT_LABEL } from './setup';
 import type { Budget, GameEvent, Policies, Tag, UnitType } from './types';
 import { clamp, emit, hostileUnitsAt, warsOf, type World } from './world';
 import { effectiveResources } from './trade';
+import { govEffects } from './politics';
 
 // Effetti meccanici delle politiche interne (il pannello "Interno" li mostra così come sono).
 export const POLICY_EFFECTS = {
@@ -46,12 +47,13 @@ export function budget(w: World, tag: Tag): Budget {
   }
   const trade = s.treaties.filter((t) => t.type === 'trade' && !t.violated && (t.a === tag || t.b === tag)).length;
   const res = effectiveResources(w, tag);
+  const gov = govEffects(w, tag);
   // senza carbone le nazioni industriali lo comprano all'estero: entrate ridotte del 5%
   const coalMalus = pr.industry >= 50 && res.missing.includes('carbone') ? 0.95 : 1;
-  const income = (popEff / 1e6) * (0.6 + (0.8 * pr.industry) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus + res.income;
+  const income = (popEff / 1e6) * (0.6 + (0.8 * pr.industry) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income;
   const men = s.units.filter((u) => u.nation === tag).reduce((x, u) => x + u.strength, 0);
   const war = warsOf(s, tag).length > 0;
-  const upkeep = (men / 1000) * 0.023 * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1);
+  const upkeep = (men / 1000) * 0.023 * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
   const administration = income * 0.3;
   const interest = (n.debt * 0.045) / 52;
   const infrastructure = income * POLICY_EFFECTS.infrastructure[pol.infrastructure].cost;
@@ -64,7 +66,7 @@ export function budget(w: World, tag: Tag): Budget {
 export function stabilityTarget(w: World, tag: Tag): number {
   const n = w.state.nations[tag];
   const pol = n.policies;
-  return clamp(w.profiles[tag].cohesion * 0.6 + 30 + POLICY_EFFECTS.tax[pol.tax].stability + POLICY_EFFECTS.mobilization[pol.mobilization].stability + POLICY_EFFECTS.press[pol.press].stability - n.warExhaustion * 0.4, 0, 100);
+  return clamp(w.profiles[tag].cohesion * 0.6 + 30 + POLICY_EFFECTS.tax[pol.tax].stability + POLICY_EFFECTS.mobilization[pol.mobilization].stability + POLICY_EFFECTS.press[pol.press].stability + govEffects(w, tag).stability - n.warExhaustion * 0.4, 0, 100);
 }
 
 /** Aggiornamento economico settimanale (fine turno). */
@@ -84,9 +86,9 @@ export function weeklyEconomy(w: World, sink: GameEvent[]) {
       if (tag === s.player) emit(w, { type: 'deficit', nations: [tag], text: 'Le casse sono vuote: il governo emette nuovo debito.' }, sink);
     }
     n.manpower += b.manpowerGain;
-    n.rail = clamp(n.rail + POLICY_EFFECTS.infrastructure[n.policies.infrastructure].rail, 0, 100);
+    n.rail = clamp(n.rail + POLICY_EFFECTS.infrastructure[n.policies.infrastructure].rail + govEffects(w, tag).rail, 0, 100);
     const pop = w.map.provinces.reduce((x, p, i) => x + (s.owner[i] === tag ? p.pop : 0), 0) || 1;
-    if (warsOf(s, tag).length) n.warExhaustion = clamp(n.warExhaustion + (n.turnLosses / (pop / 1e6)) * 0.01 * POLICY_EFFECTS.press[n.policies.press].exhaustion * (1.3 - pr.cohesion / 100) + 0.3, 0, 100);
+    if (warsOf(s, tag).length) n.warExhaustion = clamp(n.warExhaustion + (n.turnLosses / (pop / 1e6)) * 0.01 * POLICY_EFFECTS.press[n.policies.press].exhaustion * govEffects(w, tag).exhaustion * (1.3 - pr.cohesion / 100) + 0.3, 0, 100);
     else n.warExhaustion = clamp(n.warExhaustion - 1.5, 0, 100);
     n.turnLosses = 0;
     const target = stabilityTarget(w, tag);

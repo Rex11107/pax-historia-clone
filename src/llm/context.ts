@@ -6,6 +6,7 @@ import { POLICY_EFFECTS } from '../engine/economy';
 import { TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, type ResourceId } from '../engine/resources';
 import { contractsOf, effectiveResources } from '../engine/trade';
+import { politicsSummary } from '../engine/politics';
 import type { Tag } from '../engine/types';
 import { atWar, enemiesOf, formatDate, nationName, opinion, warsOf, type World } from '../engine/world';
 
@@ -85,6 +86,7 @@ export function worldDigest(w: World): string {
   lines.push(`POLITICHE: ${POLICY_EFFECTS.tax[pol.tax].label}; ${POLICY_EFFECTS.mobilization[pol.mobilization].label}; ${POLICY_EFFECTS.infrastructure[pol.infrastructure].label}; ${POLICY_EFFECTS.press[pol.press].label}.`);
   lines.push(`RISORSE: ${resourceSummary(w, me)}.`);
   lines.push(`CONTRATTI COMMERCIALI: ${tradeSummary(w, me)}.`);
+  lines.push(`POLITICA INTERNA: ${politicsSummary(w, me)}.`);
   const wars = s.wars;
   lines.push(`GUERRE IN CORSO: ${wars.length ? wars.map((x) => `${x.name} [${x.attackers.join(',')} vs ${x.defenders.join(',')}] dal ${formatDate(x.startDay)}`).join('; ') : 'nessuna'}.`);
   const tr = s.treaties.filter((t) => t.a === me || t.b === me);
@@ -156,6 +158,7 @@ export function bilateralView(w: World, tag: Tag): string {
     `IL TUO GIUDIZIO SU ${nationName(w, me).toUpperCase()}: ${opinion(s, tag, me)}/100 (loro verso di te: ${opinion(s, me, tag)}). Esercito ${k(men(me))} uomini.`,
     `LE TUE RISORSE: ${resourceSummary(w, tag)}. LE LORO: ${resourceSummary(w, me)}.`,
     `I TUOI CONTRATTI COMMERCIALI: ${tradeSummary(w, tag)}.`,
+    `LA TUA POLITICA INTERNA: ${politicsSummary(w, tag)}. LA LORO: ${politicsSummary(w, me)}.`,
     `TRATTATI FRA VOI: ${treaties.length ? treaties.map((t) => TREATY_LABEL[t.type]).join(', ') : 'nessuno'}.`,
     `I TUOI ALTRI TRATTATI: ${theirTreaties.length ? theirTreaties.map((t) => `${TREATY_LABEL[t.type]} con ${nationName(w, t.a === tag ? t.b : t.a)}`).join('; ') : 'nessuno'}.`,
     `GUERRE: ${warsOf(s, tag).map((x) => x.name).join('; ') || 'nessuna'}${atWar(s, tag, me) ? ' — SEI IN GUERRA CON IL TUO INTERLOCUTORE' : ''}.`,

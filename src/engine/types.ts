@@ -234,6 +234,8 @@ export interface GameState {
   treaties: Treaty[];
   /** contratti commerciali sulle risorse (assente nei salvataggi vecchi) */
   trades?: import('./trade').TradeContract[];
+  /** politica interna per nazione (assente nei salvataggi vecchi: si crea dai dati d'epoca) */
+  politics?: Record<Tag, import('./politics').PoliticsState>;
   situations: Situation[];
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];

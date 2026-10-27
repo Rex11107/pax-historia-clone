@@ -4,6 +4,7 @@ import { updateDeserts } from './desert';
 import { expireTreaties } from './diplomacy';
 import { weeklyEconomy } from './economy';
 import { weeklyTrade } from './trade';
+import { weeklyPolitics } from './politics';
 import { processUnit, unitPosition } from './orders';
 import { updateSupply } from './supply';
 import type { GameEvent, TurnReport } from './types';
@@ -42,6 +43,7 @@ export function runTurn(w: World): TurnReport {
   }
   weeklyTrade(w, sink);
   weeklyEconomy(w, sink);
+  weeklyPolitics(w, sink);
   aiEndOfTurn(w, sink);
   expireTreaties(w, sink);
   updateDeserts(w, sink);

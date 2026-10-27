@@ -181,3 +181,9 @@ details summary { cursor: pointer; font: italic 600 1rem var(--serif); margin-to
 .list li.dim { opacity: 0.6; }
 .trade-pick { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 6px 0; }
 .trade-pick select { max-width: 100%; }
+
+.meter { position: relative; height: 10px; background: var(--rule); border-radius: 5px; margin: 6px 0 4px; }
+.meter i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--ink); border-radius: 5px; }
+.meter b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--wax); }
+table.parties tr.gov td:first-child b::after { content: ' ●'; color: var(--brass); }
+table.parties th { font-weight: 500; color: var(--muted); font-size: 0.85rem; }
