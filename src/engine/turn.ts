@@ -1,5 +1,6 @@
 import { aiEndOfTurn, aiPlan } from './ai';
 import { resolveBattles } from './combat';
+import { updateDeserts } from './desert';
 import { expireTreaties } from './diplomacy';
 import { weeklyEconomy } from './economy';
 import { processUnit, unitPosition } from './orders';
@@ -41,6 +42,7 @@ export function runTurn(w: World): TurnReport {
   weeklyEconomy(w, sink);
   aiEndOfTurn(w, sink);
   expireTreaties(w, sink);
+  updateDeserts(w, sink);
   s.turn++;
   if (s.events.length > MAX_EVENTS) s.events.splice(0, s.events.length - MAX_EVENTS);
   return report;

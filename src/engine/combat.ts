@@ -121,7 +121,7 @@ function retreat(w: World, u: Unit, sink: GameEvent[]) {
   const here = w.map.provinces[u.location];
   const options = w.map.adj[u.location]
     .map((e) => e.to)
-    .filter((p) => allied(s, u.nation, s.controller[p]) && !s.units.some((o) => o.location === p && atWar(s, u.nation, o.nation)));
+    .filter((p) => w.map.passable(p) && allied(s, u.nation, s.controller[p]) && !s.units.some((o) => o.location === p && atWar(s, u.nation, o.nation)));
   if (u.strength < 500 || !options.length) {
     s.units.splice(s.units.indexOf(u), 1);
     emit(w, { type: 'unit_destroyed', province: u.location, nations: [u.nation], text: `${u.name} si arrende a ${here.name}.` }, sink);

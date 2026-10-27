@@ -16,11 +16,14 @@ export interface MapData {
   rivers?: [number, number, string][];
   /** canali navigabili (Suez): linee con la stessa codifica degli archi */
   canals?: { name: string; pts: number[] }[];
+  /** piste carovaniere attraverso il deserto: collegano due province transitabili, più lente di una strada */
+  routes?: { a: number; b: number; name: string; km: number; pts: number[] }[];
 }
 
 export interface ProvinceData {
   id: number;
   name: string;
+  /** '' = terra di nessuno (deserto, oasi non ancora conquistate) */
   owner: Tag;
   modern: string;
   area: number;
@@ -34,6 +37,12 @@ export interface ProvinceData {
   n: number[];
   /** troppo piccola per la geometria: disegnata come simbolo (microstati, Gibilterra…) */
   tiny?: boolean;
+  /** deserto: le truppe non lo attraversano; appartiene a chi controlla tutte le terre transitabili attorno */
+  impassable?: boolean;
+  /** regione che contiene la provincia (Sahara, Deserto Libico…) */
+  region?: string;
+  /** oasi: transitabile, raggiunta dalle piste carovaniere */
+  oasis?: boolean;
 }
 
 /** Profilo statico di una nazione (dati di scenario, non ricalcolati). Scala 0-100. */

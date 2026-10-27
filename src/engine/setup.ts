@@ -1,6 +1,7 @@
 import { GameMap } from './map';
 import type { GameState, MapData, NationProfile, NationState, Tag, Unit, UnitType } from './types';
-import type { World } from './world';
+import { NOBODY, type World } from './world';
+import { updateDeserts } from './desert';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
 
 export const ROMAN = (n: number) => {
@@ -22,7 +23,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   const map = new GameMap(mapData);
   const profiles = profilesFor();
   const owner = map.provinces.map((p) => p.owner);
-  const present = new Set(owner);
+  const present = new Set(owner.filter((t) => t !== NOBODY));
 
   const nations: Record<Tag, NationState> = {};
   for (const tag of present) {
@@ -62,6 +63,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   });
 
   const w: World = { map, profiles, state };
+  updateDeserts(w); // il deserto circondato da un solo stato è suo fin dall'inizio
   for (const tag of present) placeArmies(w, tag);
   return w;
 }
@@ -70,7 +72,7 @@ function placeArmies(w: World, tag: Tag) {
   const pr = w.profiles[tag];
   const s = w.state;
   if (!pr.armyPeace) return;
-  const own = w.map.provinces.filter((p) => p.owner === tag).map((p) => p.id);
+  const own = w.map.provinces.filter((p) => p.owner === tag && !p.impassable).map((p) => p.id);
   if (!own.length) return;
   const n = Math.max(1, Math.min(28, Math.round(pr.armyPeace / 30000)));
   const each = Math.round(pr.armyPeace / n / 1000) * 1000;
@@ -80,7 +82,7 @@ function placeArmies(w: World, tag: Tag) {
     let sc = 0;
     for (const e of w.map.adj[id]) {
       const o = s.owner[e.to];
-      if (o === tag || e.strait) continue;
+      if (o === tag || e.strait || e.route || o === NOBODY || w.map.provinces[e.to].impassable) continue;
       sc += pr.rivals.includes(o) ? 3 : w.profiles[o]?.major ? 1.5 : 0.5;
     }
     return sc;

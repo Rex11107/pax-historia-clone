@@ -9,7 +9,7 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   const alliedCache = new Map<Tag, boolean>();
   const isAllied = (t: Tag) => { let v = alliedCache.get(t); if (v === undefined) { v = allied(s, tag, t); alliedCache.set(t, v); } return v; };
   const contested = (p: number) => { for (const t of pres[p]) if (enemies.has(t)) return true; return false; };
-  const friendly = (p: number) => isAllied(s.controller[p]) && !contested(p);
+  const friendly = (p: number) => w.map.passable(p) && isAllied(s.controller[p]) && !contested(p);
   const seeds: number[] = [];
   const cap = s.nations[tag].capital;
   if (s.controller[cap] === tag) seeds.push(cap);
@@ -23,7 +23,7 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   const connected: number[] = [];
   for (let p = 0; p < n; p++) if (core[p] >= 0) { level[p] = 1 - Math.min(0.25, core[p] * 0.01); connected.push(p); }
   // fuori dal territorio amico il rifornimento cala a ogni provincia di distanza
-  const out = w.map.hops(connected, (p) => canEnter(s, tag, p), 8);
+  const out = w.map.hops(connected, (p) => w.map.passable(p) && canEnter(s, tag, p), 8);
   const reach = 0.12 + 0.08 * (1 - w.profiles[tag].industry / 100);
   for (let p = 0; p < n; p++) if (core[p] < 0 && out[p] > 0) level[p] = Math.max(0, 1 - reach * out[p] - 0.1);
   return level;

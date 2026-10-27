@@ -100,7 +100,7 @@ export function relocateStranded(w: World) {
   for (const u of s.units) {
     const ctrl = s.controller[u.location];
     if (ctrl === u.nation || allied(s, u.nation, ctrl) || atWar(s, u.nation, ctrl) || treatyBetween(s, u.nation, ctrl, 'military_access')) continue;
-    const home = w.map.provinces.filter((p) => s.controller[p.id] === u.nation);
+    const home = w.map.provinces.filter((p) => s.controller[p.id] === u.nation && !p.impassable);
     if (!home.length) continue;
     const here = w.map.provinces[u.location].c;
     home.sort((p, q) => Math.hypot(p.c[0] - here[0], p.c[1] - here[1]) - Math.hypot(q.c[0] - here[0], q.c[1] - here[1]));
@@ -186,6 +186,7 @@ function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null 
   for (const id of list) {
     const pv = w.map.provinces[id];
     if (!pv) return `provincia inesistente: ${id}`;
+    if (pv.impassable) return `${pv.name} è deserto: non si cede, passa da sé a chi controlla tutte le terre transitabili attorno`;
     if (s.owner[id] !== giver) return `${pv.name} non appartiene ${al(w, giver)}`;
     if (id === s.nations[giver].capital) return `${pv.name} è la capitale ${di(w, giver)}`;
   }

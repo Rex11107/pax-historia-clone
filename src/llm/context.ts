@@ -111,7 +111,9 @@ export function provinceIndex(w: World): string {
   for (const u of s.units.filter((x) => x.nation === me)) w.map.adj[u.location].forEach((e) => w.map.adj[e.to].forEach((f) => ids.add(f.to)));
   return [...ids].sort((a, b) => a - b).map((id) => {
     const p = w.map.provinces[id];
-    return `${id} ${p.name} [${s.controller[id]}${s.owner[id] !== s.controller[id] ? `, di ${s.owner[id]}` : ''}; ${TERRAIN_NAME[p.terrain]}${p.coast ? ', costa' : ''}]`;
+    const tag = (t: string) => t || 'nessuno';
+    const piste = w.map.adj[id].filter((e) => e.route).map((e) => e.to);
+    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}]`;
   }).join('\n');
 }
 

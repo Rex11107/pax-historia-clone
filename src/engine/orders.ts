@@ -1,6 +1,6 @@
 import { TERRAIN_SPEED, type Edge } from './map';
 import type { Condition, GameEvent, Order, Unit, UnitType } from './types';
-import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, type World } from './world';
+import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, NOBODY, The, type World } from './world';
 
 export const UNIT_STATS: Record<UnitType, { speed: number; attack: number; defense: number }> = {
   infantry: { speed: 22, attack: 1, defense: 1 },
@@ -9,6 +9,8 @@ export const UNIT_STATS: Record<UnitType, { speed: number; attack: number; defen
 };
 
 const STRAIT_DAYS = 2;
+/** sulle piste carovaniere si marcia a meno della metà della velocità (acqua, foraggio, guide) */
+const ROUTE_SPEED = 0.4;
 
 /** Durata in giorni di una tappa da `from` lungo l'arco `e` per l'unità. */
 export function legDays(w: World, u: Unit, from: number, e: Edge): number {
@@ -19,7 +21,8 @@ export function legDays(w: World, u: Unit, from: number, e: Edge): number {
   speed *= 0.7 + 0.3 * u.morale;
   // ferrovia: solo in territorio proprio o alleato non conteso
   const friendly = (p: number) => allied(s, u.nation, s.controller[p]) && !hostilePresent(w, u.nation, p);
-  if (!e.strait && friendly(from) && friendly(e.to)) {
+  if (e.route) speed *= ROUTE_SPEED;
+  else if (!e.strait && friendly(from) && friendly(e.to)) {
     const rail = Math.min(s.nations[s.controller[from]]?.rail ?? 0, s.nations[s.controller[e.to]]?.rail ?? 0);
     speed *= 1 + (5 * rail) / 100;
   }
@@ -29,7 +32,7 @@ export function legDays(w: World, u: Unit, from: number, e: Edge): number {
 export function moveCost(w: World, u: Unit, attack: boolean, target = -1) {
   const s = w.state;
   return (from: number, e: Edge) => {
-    if (!canEnter(s, u.nation, e.to)) return Infinity;
+    if (!w.map.passable(e.to) || !canEnter(s, u.nation, e.to)) return Infinity;
     let c = legDays(w, u, from, e);
     if (hostilePresent(w, u.nation, e.to)) c = attack || e.to === target ? c * 3 : c * 8;
     return c;
@@ -103,6 +106,12 @@ function startLeg(w: World, u: Unit) {
 function capture(w: World, u: Unit, p: number, sink: GameEvent[]) {
   const s = w.state;
   const ctrl = s.controller[p];
+  // terra di nessuno (un'oasi indipendente): chi ci entra la occupa e la annette
+  if (ctrl === NOBODY) {
+    s.owner[p] = u.nation; s.controller[p] = u.nation;
+    emit(w, { type: 'province_captured', province: p, nations: [u.nation], text: `${The(w, u.nation)} occupa ${w.map.provinces[p].name}, terra di nessuno.` }, sink);
+    return;
+  }
   if (ctrl === u.nation || !atWar(s, u.nation, ctrl)) return;
   // una provincia liberata torna al proprietario di diritto se è amico
   const owner = s.owner[p];
@@ -156,7 +165,7 @@ function advance(w: World, u: Unit, o: Order, sink: GameEvent[]) {
   let budget = 1;
   while (budget > 0 && u.move && u.move.path.length) {
     const next = u.move.path[0];
-    if (!canEnter(s, u.nation, next)) { u.move = null; return; } // ricalcolo il giorno dopo
+    if (!w.map.passable(next) || !canEnter(s, u.nation, next)) { u.move = null; return; } // ricalcolo il giorno dopo
     const hostile = hostileUnitsAt(s, u.nation, next);
     if (hostile.length && o.type === 'move' && next !== o.target) {
       emit(w, { type: 'contact', nations: [u.nation, hostile[0].nation], province: next, text: `${u.name} incontra truppe nemiche a ${w.map.provinces[next].name} e si ferma in attesa di ordini.` }, sink);

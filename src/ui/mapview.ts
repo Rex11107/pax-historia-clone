@@ -11,6 +11,8 @@ const SEA = '#c4d3d4';
 const SEA_DEEP = '#b5c7c9';
 const BRASS = '#b08d3c';
 const WAX = '#8e2430';
+const SAND = '#ead9ad';      // deserto di nessuno
+const NOMANS = '#c9b48a';    // oasi e terre di nessuno transitabili
 
 interface Camera { x: number; y: number; scale: number } // centro in km, pixel per km
 
@@ -49,6 +51,12 @@ export class MapView {
   private dpr = 1;
   /** canali (Suez): sempre visibili, disegnati come acqua */
   private canals: { name: string; path: Path2D; mid: [number, number] }[] = [];
+  /** regioni del deserto: contorno e nome */
+  private regionBorder = new Path2D();
+  private regionLabels: { text: string; x: number; y: number; size: number }[] = [];
+  /** piste carovaniere */
+  private routes = new Path2D();
+  private sandPattern: CanvasPattern | null = null;
 
   constructor(canvas: HTMLCanvasElement, world: World, private cb: MapCallbacks) {
     this.canvas = canvas;
@@ -78,6 +86,21 @@ export class MapView {
     });
     world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) this.coast.addPath(this.arcPaths[i]); });
     this.tiny = world.map.provinces.filter((p) => p.tiny).map((p) => p.id);
+    // regioni del deserto (Sahara, Deserto Libico…): province maggiori che ne contengono altre
+    const reg = (i: number) => (i >= 0 ? world.map.provinces[i].region : undefined);
+    world.map.data.arcSides.forEach(([a, b], i) => { if (b >= 0 && (reg(a) || reg(b)) && reg(a) !== reg(b)) this.regionBorder.addPath(this.arcPaths[i]); });
+    const byRegion = new Map<string, { x: number; y: number; a: number }>();
+    for (const p of world.map.provinces) {
+      if (!p.region) continue;
+      const r = byRegion.get(p.region) ?? { x: 0, y: 0, a: 0 };
+      r.x += p.c[0] * p.area; r.y += -p.c[1] * p.area; r.a += p.area;
+      byRegion.set(p.region, r);
+    }
+    for (const [name, r] of byRegion) this.regionLabels.push({ text: name, x: r.x / r.a, y: r.y / r.a, size: Math.min(80, Math.max(14, Math.sqrt(r.a) / 11)) });
+    for (const r of world.map.data.routes ?? []) {
+      const [pts] = decodeArcs({ arcs: [r.pts] } as MapData);
+      for (let i = 0; i < pts.length; i += 2) if (i === 0) this.routes.moveTo(pts[i], pts[i + 1]); else this.routes.lineTo(pts[i], pts[i + 1]);
+    }
     for (const c of world.map.data.canals ?? []) {
       const [pts] = decodeArcs({ arcs: [c.pts] } as MapData);
       const path = new Path2D();
@@ -133,6 +156,17 @@ export class MapView {
     this.mountainPattern = this.ctx.createPattern(c, 'repeat')!;
     return this.mountainPattern;
   }
+  /** puntinato di sabbia per il deserto */
+  private desertPattern(): CanvasPattern {
+    if (this.sandPattern) return this.sandPattern;
+    const c = document.createElement('canvas');
+    c.width = 12; c.height = 12;
+    const g = c.getContext('2d')!;
+    g.fillStyle = 'rgba(140,100,45,0.38)';
+    for (const [x, y] of [[2, 3], [8, 1], [5, 8], [11, 6], [1, 10]]) { g.beginPath(); g.arc(x, y, 0.75, 0, Math.PI * 2); g.fill(); }
+    this.sandPattern = this.ctx.createPattern(c, 'repeat')!;
+    return this.sandPattern;
+  }
   invalidate() { this.dirty = true; }
 
   /** Ricalcola confini nazionali ed etichette dopo un cambio di proprietà. */
@@ -162,7 +196,7 @@ export class MapView {
     }
     this.labels = [];
     for (const [tag, e] of best) {
-      if (tag === 'NUL') continue;
+      if (tag === 'NUL' || tag === '' || !this.world.profiles[tag]) continue;
       let x = 0, y = 0, wsum = 0;
       for (const id of e.ids) { const pr = map.provinces[id]; const wgt = pr.area + pr.pop / 400; x += pr.c[0] * wgt; y += -pr.c[1] * wgt; wsum += wgt; }
       const cx = x / wsum, cy = y / wsum;
@@ -258,8 +292,15 @@ export class MapView {
     for (let i = 0; i < this.paths.length; i++) {
       if (!visible(i)) continue;
       const owner = s.owner[i], ctrl = s.controller[i];
-      ctx.fillStyle = prof[owner]?.color ?? '#aaa';
+      const pv = this.world.map.provinces[i];
+      ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
       ctx.fill(this.paths[i]);
+      if (pv.impassable) {
+        const pat = this.desertPattern();
+        pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
+        ctx.fillStyle = pat;
+        ctx.fill(this.paths[i]);
+      }
       if (ctrl !== owner) {
         const pat = this.hatch(prof[ctrl]?.color ?? '#000');
         pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
@@ -324,6 +365,22 @@ export class MapView {
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.1 / k;
     ctx.stroke(this.national);
+    // regioni del deserto: contorno tratteggiato color sabbia bruciata
+    ctx.strokeStyle = 'rgba(128,88,34,0.75)';
+    ctx.lineWidth = 2.4 / k;
+    ctx.setLineDash([10 / k, 5 / k]);
+    ctx.stroke(this.regionBorder);
+    ctx.setLineDash([]);
+    // piste carovaniere: una striscia chiara con il tratteggio della pista
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    ctx.strokeStyle = 'rgba(247,236,205,0.9)';
+    ctx.lineWidth = 5 / k;
+    ctx.stroke(this.routes);
+    ctx.strokeStyle = '#7a5428';
+    ctx.lineWidth = 1.8 / k;
+    ctx.setLineDash([6 / k, 4 / k]);
+    ctx.stroke(this.routes);
+    ctx.setLineDash([]);
 
     if (this.selectedProvince !== null) {
       ctx.strokeStyle = BRASS;
@@ -393,6 +450,19 @@ export class MapView {
       }
     }
 
+    // nomi delle regioni del deserto, da lontano e a media distanza
+    if (k < 1.1) {
+      for (const l of this.regionLabels) {
+        const size = Math.min(34, l.size * k * 2.2);
+        if (size < 10) continue;
+        const [x, y] = this.worldToScreen(l.x, l.y);
+        ctx.font = `italic 500 ${size}px Alegreya, Georgia, serif`;
+        (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = `${Math.min(8, size / 4)}px`;
+        ctx.fillStyle = 'rgba(122,84,40,0.6)';
+        ctx.fillText(l.text.toUpperCase(), x, y);
+      }
+      (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px';
+    }
     // nome del canale, da vicino (una volta sola anche se il canale ha più tratti)
     if (k >= 0.7) {
       const seen = new Set<string>();

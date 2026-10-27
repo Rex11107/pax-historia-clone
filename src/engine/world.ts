@@ -1,6 +1,9 @@
 import { GameMap } from './map';
 import type { GameEvent, GameState, NationProfile, Tag, Treaty, Unit, War } from './types';
 
+/** Proprietario/controllore delle terre di nessuno (deserto, oasi indipendenti). */
+export const NOBODY: Tag = '';
+
 /** Mappa statica + profili statici + stato mutabile. */
 export interface World {
   map: GameMap;
@@ -46,7 +49,7 @@ export function rand(...key: (string | number)[]): number {
   return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
 
-export function nationName(w: World, tag: Tag) { return w.profiles[tag]?.name ?? tag; }
+export function nationName(w: World, tag: Tag) { return tag === NOBODY ? 'Terra di nessuno' : w.profiles[tag]?.name ?? tag; }
 
 // Nomi brevi con articolo e preposizioni articolate: "l'Italia", "della Francia", "al Regno Unito".
 const PREP: Record<string, Record<string, string>> = {
@@ -90,6 +93,7 @@ export function allied(s: GameState, a: Tag, b: Tag) { return a === b || !!treat
 export function canEnter(s: GameState, nation: Tag, province: number): boolean {
   const ctrl = s.controller[province];
   if (ctrl === nation) return true;
+  if (ctrl === NOBODY) return true; // terra di nessuno: chi arriva la occupa
   if (atWar(s, nation, ctrl)) return true;
   if (allied(s, nation, ctrl)) return true;
   if (treatyBetween(s, ctrl, nation, 'military_access')) return true;

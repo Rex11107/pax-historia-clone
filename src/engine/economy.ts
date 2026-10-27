@@ -104,6 +104,7 @@ export function recruit(w: World, tag: Tag, type: UnitType, province: number, si
   const spec = RECRUIT[type];
   if (!spec) return `tipo di unità sconosciuto: ${type}`;
   if (s.owner[province] !== tag || s.controller[province] !== tag) return 'si può arruolare solo in province proprie e controllate';
+  if (!w.map.passable(province)) return 'nel deserto non si arruola';
   if (hostileUnitsAt(s, tag, province).length) return 'la provincia è contesa';
   if (n.treasury < spec.cost) return `fondi insufficienti (servono ${spec.cost} M)`;
   if (n.manpower < spec.men * 0.25) return 'riserva di uomini insufficiente';

@@ -4,6 +4,8 @@ export interface Edge {
   to: number;
   km: number;
   strait: boolean;
+  /** pista carovaniera attraverso il deserto (lenta) */
+  route?: string;
 }
 
 export const TERRAIN_SPEED: Record<Terrain, number> = { plain: 1, hills: 0.8, forest: 0.75, marsh: 0.6, desert: 0.7, mountain: 0.5 };
@@ -31,7 +33,14 @@ export class GameMap {
       if (!this.adj[a].some((e) => e.to === b)) this.adj[a].push({ to: b, km: dist(a, b), strait: true });
       if (!this.adj[b].some((e) => e.to === a)) this.adj[b].push({ to: a, km: dist(a, b), strait: true });
     }
+    for (const r of data.routes ?? []) {
+      if (!this.adj[r.a].some((e) => e.to === r.b)) this.adj[r.a].push({ to: r.b, km: r.km, strait: false, route: r.name });
+      if (!this.adj[r.b].some((e) => e.to === r.a)) this.adj[r.b].push({ to: r.a, km: r.km, strait: false, route: r.name });
+    }
   }
+
+  /** Le truppe possono entrare nella provincia? (il deserto no) */
+  passable(p: number): boolean { return !this.provinces[p].impassable; }
 
   get size() { return this.provinces.length; }
 

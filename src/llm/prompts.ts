@@ -38,6 +38,7 @@ CONDIZIONE (una tra):
 REGOLE:
 - Usa solo id di unità e province presenti nel contesto. Se il giocatore nomina un luogo non elencato, scegli la provincia elencata più vicina e dillo nelle note.
 - Le unità non possono entrare in territorio di nazioni neutrali (serve guerra, alleanza o accesso militare).
+- Il deserto (province "deserto intransitabile") non si attraversa: si va da un'oasi all'altra solo lungo le piste carovaniere, lente. Le oasi "terra di nessuno" si occupano semplicemente entrandoci. Il deserto passa da sé a chi controlla tutte le terre transitabili che lo circondano e non si cede nei trattati.
 - Dichiarare guerra è una scelta grave: inseriscila in "declare_war" solo se il giocatore lo chiede esplicitamente.
 - Non inventare unità: per nuove truppe usa "recruit" (costano denaro e uomini; il codice controlla).
 - Se la direttiva è solo diplomatica o narrativa, restituisci orders vuoto e spiegalo nelle note (la diplomazia si fa nel pannello Diplomazia).`;

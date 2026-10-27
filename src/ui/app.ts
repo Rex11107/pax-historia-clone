@@ -313,11 +313,14 @@ export class App {
       h('dl', { class: 'facts' },
         h('dt', null, 'Popolazione'), h('dd', null, p.pop.toLocaleString('it-IT')),
         h('dt', null, 'Superficie'), h('dd', null, `${p.area.toLocaleString('it-IT')} km²`),
-        h('dt', null, 'Terreno'), h('dd', null, `${TERRAIN_NAME[p.terrain]}${p.coast ? ', costa' : ''}`),
+        h('dt', null, 'Terreno'), h('dd', null, p.impassable ? `deserto intransitabile${p.region ? ` (${p.region})` : ''}` : `${TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}`),
+        ...(w.map.adj[id].some((e) => e.route) ? [h('dt', null, 'Piste carovaniere'), h('dd', null, w.map.adj[id].filter((e) => e.route).map((e) => `verso ${w.map.provinces[e.to].name} (${Math.round(e.km)} km)`).join(', '))] : []),
         ...(w.map.riversOf(id).length ? [h('dt', null, 'Fiumi di confine'), h('dd', null, w.map.riversOf(id).map((r) => `${r.name} (verso ${w.map.provinces[r.to].name})`).join(', '))] : []),
       ),
+      p.impassable ? h('p', { class: 'muted' }, 'Le truppe non attraversano il deserto: si passa solo lungo le piste carovaniere. Il deserto appartiene a chi controlla tutte le terre transitabili che lo circondano; se sono più d\'uno resta terra di nessuno.') : null,
+      !p.impassable && owner === '' ? h('p', { class: 'muted' }, 'Terra di nessuno: la prima nazione che vi porta le sue truppe la occupa.') : null,
       units.length ? h('div', null, h('h3', null, 'Truppe presenti'), h('ul', { class: 'list' }, ...units.map((u) => h('li', { onclick: () => this.selectUnit(u.id) }, h('div', { class: 'row' }, h('span', null, u.name), h('span', { class: 'num' }, fmtK(u.strength))))))) : h('p', { class: 'muted' }, 'Nessuna truppa nella provincia.'),
-      owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi ${al(w, owner)}`)) : null,
+      owner && owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi ${al(w, owner)}`)) : null,
       canRecruit ? h('div', null, h('h3', null, 'Arruolamento'), h('div', { class: 'buttons' }, ...(Object.keys(RECRUIT) as UnitType[]).map((t) => h('button', { onclick: () => this.doRecruit(t, id) }, `${RECRUIT[t].label} · ${RECRUIT[t].cost} M`)))) : null,
     );
   }

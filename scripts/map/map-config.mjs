@@ -36,6 +36,11 @@ export const HIST_TO_TAG = {
 
 // Correzioni (il dataset 1880 riporta alcuni confini del 1878-1912 in modo impreciso).
 // Ogni regola: paese moderno (adm0_a3), stato di partenza opzionale, condizione sul centro del pezzo.
+// punto in un anello [[lon, lat], …]
+const inRing = ([x, y], ring) => { let c = false; for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) { const [xi, yi] = ring[i], [xj, yj] = ring[j]; if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) c = !c; } return c; };
+// confine serbo-ottomano 1878-1912 (approssimato): Uvac, Javor, Golija, Kopaonik; a sud Preševo e Bujanovac
+const SANDZAK_SRB = [[19.22, 43.62], [19.48, 43.66], [19.72, 43.56], [19.95, 43.47], [20.2, 43.38], [20.42, 43.31], [20.58, 43.24], [20.72, 43.1], [20.66, 42.9], [20.3, 42.83], [20.05, 42.95], [19.8, 43.08], [19.55, 43.25], [19.3, 43.42], [19.22, 43.62]];
+const PRESEVO = [[21.45, 42.22], [21.98, 42.22], [21.98, 42.43], [21.78, 42.5], [21.55, 42.47], [21.45, 42.22]];
 export const OVERRIDES = [
   { modern: 'CYP', to: 'GBR' }, // Cipro amministrata dal Regno Unito dal 1878
   { modern: 'CYN', to: 'GBR' }, { modern: 'ESB', to: 'GBR' }, { modern: 'WSB', to: 'GBR' }, // basi di Dhekelia e Akrotiri: Cipro
@@ -54,6 +59,8 @@ export const OVERRIDES = [
   { iso: iso('UA', '77 21 46 26 61'), to: 'AUH' }, // Galizia, Bucovina settentrionale, Rutenia subcarpatica
   { iso: iso('RS', '00 08 09 10 11 12 13 14 15 16 17 19 20 21 22 23 24'), to: 'SER' },
   { iso: iso('RS', '01 02 03 04 05 06 07'), to: 'AUH' }, // Voivodina
+  // Sangiaccato di Novi Pazar (Sjenica, Novi Pazar, Tutin, Prijepolje, Priboj, Nova Varoš) e valle di Preševo: ottomani fino al 1912
+  { modern: 'SRB', when: (pt) => inRing(pt, SANDZAK_SRB) || inRing(pt, PRESEVO), to: 'TUR' },
   { iso: iso('ME', '12 16 02 20 06 07 18 09 15 21 11 01'), to: 'MNE' },
   { iso: iso('ME', '14 04 03 17 13'), to: 'TUR' }, // Sangiaccato di Novi Pazar, Plav-Gusinje
   { iso: iso('ME', '10 19 08 05'), to: 'AUH' }, // Bocche di Cattaro
@@ -183,7 +190,7 @@ export const CHECKS = [
   ['Dobrič', 27.83, 43.57, 'BUL'], ['Silistra', 27.26, 44.11, 'BUL'], ['Ruse', 25.96, 43.85, 'BUL'], ['Vidin', 22.88, 43.99, 'BUL'],
   ['Pirot', 22.59, 43.15, 'SER'], ['Vranje', 21.90, 42.55, 'SER'], ['Novi Sad', 19.84, 45.27, 'AUH'], ['Pljevlja', 19.36, 43.36, 'TUR'],
   ['Adrianopoli', 26.56, 41.68, 'TUR'], ['Burgas', 27.47, 42.50, 'TUR'], ['Nikšić', 18.94, 42.78, 'MNE'], ['Podgorica', 19.26, 42.44, 'MNE'],
-  ['Porto Said', 32.28, 31.25, 'EGY'], ['Ismailia', 32.26, 30.59, 'EGY'], ['El Arish', 33.80, 31.13, 'EGY'], ['Giannina', 20.85, 39.66, 'TUR'], ['Zante', 20.90, 37.78, 'GRE'], ['Foča', 18.78, 43.50, 'AUH'],
+  ['Porto Said', 32.28, 31.25, 'EGY'], ['Novi Pazar', 20.51, 43.14, 'TUR'], ['Sjenica', 20.0, 43.27, 'TUR'], ['Prijepolje', 19.65, 43.39, 'TUR'], ['Preševo', 21.65, 42.31, 'TUR'], ['Užice', 19.84, 43.86, 'SER'], ['Kraljevo', 20.69, 43.72, 'SER'], ['Vranje', 21.9, 42.55, 'SER'], ['Ismailia', 32.26, 30.59, 'EGY'], ['El Arish', 33.80, 31.13, 'EGY'], ['Giannina', 20.85, 39.66, 'TUR'], ['Zante', 20.90, 37.78, 'GRE'], ['Foča', 18.78, 43.50, 'AUH'],
   ['Jersey', -2.13, 49.21, 'GBR'],
   ['Königsberg', 20.51, 54.71, 'GER'], ['Riga', 24.11, 56.95, 'RUS'], ['Odessa', 30.73, 46.48, 'RUS'], ['Budapest', 19.04, 47.50, 'AUH'],
   ['Praga', 14.42, 50.08, 'AUH'], ['Bolzano', 11.35, 46.50, 'AUH'], ['Gorizia', 13.62, 45.94, 'AUH'], ['Pola', 13.85, 44.87, 'AUH'],
@@ -307,8 +314,8 @@ export const RENAMES = [
   ...Object.entries({ 'El Kef': 'Il Kef', Qasserine: 'Kasserine', Qairouan: 'Cairuan', Kairouan: 'Cairuan', Sousse: 'Susa', Bizerte: 'Biserta', 'El Guetar': 'Gafsa (nord)',
     Zarzis: 'Gerba', Mahdia: 'Mahdia', Monastir: 'Monastir' }).map(([a, b]) => [a, b, 'TUN']),
   ...Object.entries({ 'Al Bawīţī': 'Bahariya', Asyut: 'Assiut', 'El Minya': 'Minia', 'Damanhûr': 'Damanhur', 'El Faiyum': 'Fayyum', 'Bur Said': 'Sinai', 'Ismaïlia': 'Ismailia',
-    'El Mansura': 'Mansura', Rashid: 'Rosetta', Dumyat: 'Damietta', Hurghada: 'Deserto Orientale', 'Al Ghardaqah': 'Deserto Orientale', 'Marsa Matruh': 'Marsa Matruh' }).map(([a, b]) => [a, b, 'EGY']),
-  ...Object.entries({ 'Er Rachidia': 'Tafilalt', Marrakesh: 'Marrakech', Khouribga: 'Ouardigha', Taounate: 'Uezzan', 'El Jadida': 'Mazagan', 'Ksar El Kebir': 'Alcazarquivir',
+    'El Mansura': 'Mansura', Rashid: 'Rosetta', Dumyat: 'Damietta', Hurghada: 'Costa del Mar Rosso', 'Al Ghardaqah': 'Costa del Mar Rosso', 'Bilqās': 'Damietta', 'Munūf': 'Menufia', '6th of October City': 'Giza', 'Sidi Barrani': 'Sidi Barrani', 'Marsa Matruh': 'Marsa Matruh' }).map(([a, b]) => [a, b, 'EGY']),
+  ...Object.entries({ 'Er Rachidia': 'Ksar es-Souk', Marrakesh: 'Marrakech', Khouribga: 'Ouardigha', Taounate: 'Uezzan', 'El Jadida': 'Mazagan', 'Ksar El Kebir': 'Alcazarquivir',
     Tangier: 'Tangeri', Tetouan: 'Tetuan', 'Tétouan': 'Tetuan', Essaouira: 'Mogador', Kenitra: 'Mehdia', Nador: 'Melilla (retroterra)', 'Ait Melloul': 'Sus', Agadir: 'Agadir',
     Laayoune: 'Saguia el-Hamra', 'Al Hoceïma': 'Rif', 'Al Hoceima': 'Rif', Khemisset: 'Zemmour', 'Sidi Bennour': 'Doukkala' }).map(([a, b]) => [a, b, 'MOR']),
   ['Bratislava', 'Presburgo'], ['Košice', 'Cassovia'], ['Podgorica', 'Podgorica'], ['Kazakistan Occidentale', 'Ural\'sk'],
@@ -341,6 +348,80 @@ export const POLISH_AREAS = [
 ];
 
 // Città nate o cresciute dopo il 1881: non danno il nome a una provincia
-export const ANACHRONISTIC = new Set(['Wolfsburg', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój',
+export const ANACHRONISTIC = new Set(['Wolfsburg', '6th of October City', 'Sadat City', 'Hassi Messaoud', 'Al ‘Āshir min Ramaḑān', 'Badr', 'El Shorouk', 'New Cairo', 'Al Obour', 'Ain Sokhna', 'Salzgitter', 'Eisenhüttenstadt', 'Schwedt', 'Lelystad', 'Almere', 'Emmeloord', 'Zoetermeer', 'Nieuwegein', 'Gdynia', 'Tychy', 'Jastrzębie-Zdrój',
   'Milton Keynes', 'Telford', 'Craigavon', 'Livingston', 'Cumbernauld', 'East Kilbride', 'Glenrothes', 'Stevenage', 'Harlow', 'Basildon', 'Peterlee', 'Bracknell', 'Skelmersdale', 'Irvine New Town', 'Shannon', 'Tallaght', 'Guidonia Montecelio', 'Latina', 'Sabaudia', 'Aprilia', 'Pomezia', 'Carbonia', 'Arborea', 'Fertilia',
   'Velingrad', 'Gotse Delchev', 'Tres Cantos', 'Rivas-Vaciamadrid', 'Ptolemaḯda', 'Ptolemaida', 'Igoumenitsa', 'Victoria', 'Onești', 'Motru', 'Rovinari', 'Dimitrovgrad']);
+
+// Oasi del Sahara: province transitabili in mezzo al deserto. owner = chi le controllava a gennaio 1881
+// (null = terra di nessuno: tribù indipendenti, confraternita senussita, rivendicazioni marocchine mai esercitate).
+// r = raggio in km del cerchio che diventa la provincia dell'oasi; pop = abitanti stimati nel 1881.
+export const OASES = [
+  { name: 'Mzab', at: [3.67, 32.49], r: 35, owner: 'FRA', pop: 30000 }, // protettorato dal 1853, annesso nel 1882
+  { name: 'Ouargla', at: [5.33, 31.95], r: 30, owner: 'FRA', pop: 15000 }, // occupata nel 1872
+  { name: 'Touggourt', at: [6.07, 33.1], r: 30, owner: 'FRA', pop: 20000 },
+  { name: 'Souf', at: [6.86, 33.37], r: 30, owner: 'FRA', pop: 30000 },
+  { name: 'El Goléa', at: [2.88, 30.57], r: 30, owner: null, pop: 3000 }, // occupata nel 1891
+  { name: 'Gourara', at: [0.23, 29.26], r: 40, owner: null, pop: 30000 }, // 1900
+  { name: 'Touat', at: [-0.29, 27.87], r: 45, owner: null, pop: 40000 }, // 1900
+  { name: 'Tidikelt', at: [2.3, 27.25], r: 40, owner: null, pop: 10000 }, // In Salah, 1899-1900
+  { name: 'Saoura', at: [-2.0, 30.0], r: 35, owner: null, pop: 6000 }, // Béni Abbès, 1901
+  { name: 'Béchar', at: [-2.22, 31.62], r: 30, owner: null, pop: 4000 }, // Kenadsa, 1903
+  { name: 'Figuig', at: [-1.23, 32.11], r: 25, owner: 'MOR', pop: 15000 },
+  { name: 'Tindouf', at: [-8.15, 27.67], r: 30, owner: null, pop: 2000 },
+  { name: 'Tafilalt', at: [-4.27, 31.28], r: 35, owner: 'MOR', pop: 60000 },
+  { name: 'Draa', at: [-5.84, 30.33], r: 35, owner: 'MOR', pop: 40000 }, // Zagora
+  { name: 'Tata', at: [-7.97, 29.74], r: 30, owner: 'MOR', pop: 10000 },
+  { name: 'Djerid', at: [8.13, 33.92], r: 30, owner: 'TUN', pop: 25000 }, // Tozeur, Nefta
+  { name: 'Nefzaoua', at: [8.97, 33.7], r: 30, owner: 'TUN', pop: 15000 }, // Kebili
+  { name: 'Gadames', at: [9.5, 30.13], r: 30, owner: 'TUR', pop: 7000 },
+  { name: 'Giofra', at: [15.95, 29.13], r: 40, owner: 'TUR', pop: 8000 }, // Hun, Uaddan, Socna
+  { name: 'Fezzan', at: [14.35, 27.3], r: 45, owner: 'TUR', pop: 15000 }, // Sebha, Brak (Murzuk è più a sud)
+  { name: 'Augila', at: [21.4, 29.05], r: 35, owner: null, pop: 6000 }, // Augila e Gialo, senussiti
+  { name: 'Giarabub', at: [24.52, 29.74], r: 25, owner: null, pop: 1000 }, // sede della Senussia dal 1856
+  { name: 'Siwa', at: [25.52, 29.2], r: 30, owner: 'EGY', pop: 6000 },
+  { name: 'Bahariya', at: [28.95, 28.35], r: 30, owner: 'EGY', pop: 6000 },
+  { name: 'Farafra', at: [27.97, 27.15], r: 25, owner: 'EGY', pop: 500 },
+  { name: 'Nakhl', at: [33.75, 29.92], r: 20, owner: 'EGY', pop: 500 }, // forte sulla via dei pellegrini
+];
+
+// Piste carovaniere: collegano oasi e terre abitate attraverso il deserto (più lente di una strada normale).
+// Ogni pista va da una località all'altra passando per i punti intermedi.
+export const CARAVAN_ROUTES = [
+  ['Laghouat', 'Mzab', [[2.88, 33.8], [3.67, 32.49]]],
+  ['Mzab', 'Ouargla', [[3.67, 32.49], [5.33, 31.95]]],
+  ['Biskra', 'Touggourt', [[5.73, 34.85], [5.95, 34.0], [6.07, 33.1]]],
+  ['Touggourt', 'Ouargla', [[6.07, 33.1], [5.7, 32.5], [5.33, 31.95]]],
+  ['Touggourt', 'Souf', [[6.07, 33.1], [6.86, 33.37]]],
+  ['Souf', 'Djerid', [[6.86, 33.37], [7.88, 33.87], [8.13, 33.92]]],
+  ['Djerid', 'Nefzaoua', [[8.13, 33.92], [8.55, 33.8], [8.97, 33.7]]],
+  ['Nefzaoua', 'Gabès', [[8.97, 33.7], [9.6, 33.8], [10.1, 33.88]]],
+  ['Mzab', 'El Goléa', [[3.67, 32.49], [3.2, 31.5], [2.88, 30.57]]],
+  ['El Goléa', 'Tidikelt', [[2.88, 30.57], [2.6, 28.9], [2.3, 27.25]]],
+  ['El Goléa', 'Gourara', [[2.88, 30.57], [1.5, 29.9], [0.23, 29.26]]],
+  ['Gourara', 'Touat', [[0.23, 29.26], [-0.1, 28.5], [-0.29, 27.87]]],
+  ['Touat', 'Tidikelt', [[-0.29, 27.87], [1.0, 27.3], [2.3, 27.25]]],
+  ['Béchar', 'Saoura', [[-2.22, 31.62], [-2.1, 30.8], [-2.0, 30.0]]],
+  ['Saoura', 'Touat', [[-2.0, 30.0], [-1.42, 29.45], [-0.29, 27.87]]],
+  ['Figuig', 'Béchar', [[-1.23, 32.11], [-1.8, 31.85], [-2.22, 31.62]]],
+  ['Aïn Sefra', 'Figuig', [[-0.58, 32.75], [-1.23, 32.11]]],
+  ['Tafilalt', 'Figuig', [[-4.27, 31.28], [-3.6, 31.95], [-2.5, 32.1], [-1.23, 32.11]]],
+  ['Tafilalt', 'Draa', [[-4.27, 31.28], [-5.2, 30.6], [-5.84, 30.33]]],
+  ['Draa', 'Tata', [[-5.84, 30.33], [-7.0, 29.9], [-7.97, 29.74]]],
+  ['Tata', 'Tindouf', [[-7.97, 29.74], [-8.1, 28.7], [-8.15, 27.67]]],
+  ['Tindouf', 'Goulimine', [[-8.15, 27.67], [-9.2, 28.4], [-10.06, 28.99]]],
+  ['Ouargla', 'Gadames', [[5.33, 31.95], [7.5, 31.0], [9.5, 30.13]]],
+  ['Gadames', 'Nalut', [[9.5, 30.13], [10.3, 31.0], [10.98, 31.87]]],
+  ['Mizda', 'Giofra', [[12.98, 31.45], [14.2, 30.6], [15.95, 29.13]]],
+  ['Sirte', 'Giofra', [[16.59, 31.2], [16.2, 30.1], [15.95, 29.13]]],
+  ['Giofra', 'Fezzan', [[15.95, 29.13], [15.1, 28.2], [14.35, 27.3]]],
+  ['Agedabia', 'Augila', [[20.22, 30.76], [20.9, 29.9], [21.4, 29.05]]],
+  ['Augila', 'Giarabub', [[21.4, 29.05], [23.0, 29.4], [24.52, 29.74]]],
+  ['Giarabub', 'Siwa', [[24.52, 29.74], [25.52, 29.2]]],
+  ['Siwa', 'Marsa Matruh', [[25.52, 29.2], [26.4, 30.3], [27.24, 31.35]]],
+  ['Siwa', 'Bahariya', [[25.52, 29.2], [27.3, 28.9], [28.95, 28.35]]],
+  ['Bahariya', 'Farafra', [[28.95, 28.35], [27.97, 27.15]]],
+  ['Bahariya', 'Fayyum', [[28.95, 28.35], [29.9, 28.9], [30.84, 29.31]]],
+  ['Suez', 'Nakhl', [[32.68, 29.95], [33.2, 29.95], [33.75, 29.92]]],
+  ['Nakhl', 'El Arish', [[33.75, 29.92], [33.8, 30.6], [33.8, 31.13]]],
+  ['Nakhl', 'Aqaba', [[33.75, 29.92], [34.5, 29.7], [35.0, 29.53]]],
+];
