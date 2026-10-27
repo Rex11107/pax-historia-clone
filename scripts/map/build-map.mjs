@@ -546,6 +546,8 @@ async function main() {
         let inner = lsegs.length ? turf.buffer(turf.multiLineString(lsegs), 110, { units: 'kilometers', steps: 3 }) : null;
         if (inner) inner = turf.intersect(turf.featureCollection([inner, ly]));
         if (inner) inner = minus(inner, turf.bboxPolygon([16.3, 27, 19.9, 30.85]));
+        // niente sovrapposizioni fra i livelli di taglio: l'unione di mapshaper le trasforma in terra sul mare
+        if (inner && all) inner = minus(inner, all);
         if (inner) { cuts.push({ ...inner, properties: { inner: 1 }, big: true }); all = all ? turf.union(turf.featureCollection([all, inner])) : inner; }
       }
 
