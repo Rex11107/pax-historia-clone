@@ -9,6 +9,7 @@ import { weeklyMinisters } from './ministers';
 import { weeklyConstruction } from './construction';
 import { weeklySubjects } from './vassals';
 import { weeklyResearch } from './research';
+import { weeklyReparations } from './peace';
 import { processUnit, unitPosition } from './orders';
 import { updateSupply } from './supply';
 import type { GameEvent, TurnReport } from './types';
@@ -47,6 +48,7 @@ export function runTurn(w: World): TurnReport {
   }
   weeklyTrade(w, sink);
   weeklyEconomy(w, sink);
+  weeklyReparations(w);
   weeklyPolitics(w, sink);
   weeklyMinisters(w, sink);
   weeklyConstruction(w, sink);

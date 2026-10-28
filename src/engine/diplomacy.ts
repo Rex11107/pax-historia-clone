@@ -115,7 +115,7 @@ export function relocateStranded(w: World) {
   }
 }
 
-function checkAlive(w: World, sink?: GameEvent[]) {
+export function checkAlive(w: World, sink?: GameEvent[]) {
   const s = w.state;
   for (const n of Object.values(s.nations)) {
     if (!n.alive) continue;

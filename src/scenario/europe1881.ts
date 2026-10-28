@@ -111,6 +111,24 @@ export const NATIONS: Record<string, P> = {
   LIE: base({ name: 'Principato del Liechtenstein', short: ['il ', 'Liechtenstein'], adjective: 'liechtensteinese', color: '#4f6fa8', capital: [9.52, 47.14], government: 'principato', leader: 'Principe Giovanni II', micro: true, industry: 5, finance: 40, cohesion: 80, armyPeace: 0, debt: 0, temperament: 'neutrale, in unione doganale con l\'Austria', goals: ['indipendenza'], friends: ['AUH'] }),
   AND: base({ name: 'Valli di Andorra', short: ['', 'Andorra'], adjective: 'andorrano', color: '#5e8f6e', capital: [1.52, 42.51], government: 'coprincipato', leader: 'Coprincipi: il vescovo di Urgell e il capo dello Stato francese', micro: true, industry: 2, finance: 10, cohesion: 80, armyPeace: 0, debt: 0, temperament: 'neutrale, sotto i due coprincipi', goals: ['indipendenza'], friends: ['FRA', 'SPA'] }),
   NUL: base({ name: 'Territori tribali', short: ['le ', 'tribù'], adjective: 'tribale', color: '#b8b2a6', capital: [5, 28], government: 'nessuno', industry: 0, finance: 0, cohesion: 20, armyPeace: 0, debt: 0 }),
+  // nazioni senza Stato nel 1881: nascono solo se una pace le libera
+  POL: base({ name: 'Regno di Polonia', short: ['la ', 'Polonia'], adjective: 'polacco', color: '#d0505a', capital: [21.01, 52.23], releasable: 'polacchi', cohesion: 70, industry: 30, government: 'monarchia costituzionale', goals: ['riunire le terre polacche'] }),
+  ALB: base({ name: 'Principato d\'Albania', short: ["l'", 'Albania'], adjective: 'albanese', color: '#b33a3a', capital: [19.82, 41.33], releasable: 'albanesi', industry: 5, finance: 10 }),
+  IRL: base({ name: 'Irlanda', short: ["l'", 'Irlanda'], adjective: 'irlandese', color: '#3f9a5a', capital: [-6.26, 53.35], releasable: 'irlandesi', industry: 25, government: 'repubblica', rivals: ['GBR'] }),
+  FIN: base({ name: 'Finlandia', short: ['la ', 'Finlandia'], adjective: 'finlandese', color: '#8fb7d9', capital: [24.94, 60.17], releasable: 'finlandesi', industry: 20, cohesion: 75 }),
+  BOH: base({ name: 'Regno di Boemia', short: ['la ', 'Boemia'], adjective: 'boemo', color: '#4a6fb0', capital: [14.42, 50.08], releasable: 'cechi', industry: 55, cohesion: 65 }),
+  CRO: base({ name: 'Regno di Croazia', short: ['la ', 'Croazia'], adjective: 'croato', color: '#c84040', capital: [15.98, 45.81], releasable: 'croati', industry: 20 }),
+  SLK: base({ name: 'Slovacchia', short: ['la ', 'Slovacchia'], adjective: 'slovacco', color: '#5a7fc4', capital: [17.1, 48.15], releasable: 'slovacchi', industry: 20 }),
+  SLO: base({ name: 'Slovenia', short: ['la ', 'Slovenia'], adjective: 'sloveno', color: '#6a9bd1', capital: [14.5, 46.05], releasable: 'sloveni', industry: 30 }),
+  LIT: base({ name: 'Lituania', short: ['la ', 'Lituania'], adjective: 'lituano', color: '#c9a43a', capital: [23.9, 54.9], releasable: 'lituani', industry: 10 }),
+  LAT: base({ name: 'Lettonia', short: ['la ', 'Lettonia'], adjective: 'lettone', color: '#9a3a4a', capital: [24.1, 56.95], releasable: 'lettoni', industry: 25 }),
+  ESS: base({ name: 'Estonia', short: ["l'", 'Estonia'], adjective: 'estone', color: '#3a7ab0', capital: [24.75, 59.44], releasable: 'estoni', industry: 20 }),
+  UKR: base({ name: 'Ucraina', short: ["l'", 'Ucraina'], adjective: 'ucraino', color: '#e2c24a', capital: [30.52, 50.45], releasable: 'ucraini', industry: 15 }),
+  ARM: base({ name: 'Armenia', short: ["l'", 'Armenia'], adjective: 'armeno', color: '#d17a3a', capital: [44.51, 40.18], releasable: 'armeni', industry: 10 }),
+  GEO: base({ name: 'Georgia', short: ['la ', 'Georgia'], adjective: 'georgiano', color: '#b03a5a', capital: [44.8, 41.7], releasable: 'georgiani', industry: 8 }),
+  KUR: base({ name: 'Kurdistan', short: ['il ', 'Kurdistan'], adjective: 'curdo', color: '#7a9a4a', capital: [40.23, 37.91], releasable: 'curdi', industry: 3, government: 'emirato' }),
+  MAC: base({ name: 'Macedonia', short: ['la ', 'Macedonia'], adjective: 'macedone', color: '#c96f3a', capital: [21.43, 42.0], releasable: 'macedoni', industry: 5 }),
+  BOS: base({ name: 'Bosnia', short: ['la ', 'Bosnia'], adjective: 'bosniaco', color: '#4b9a6a', capital: [18.41, 43.86], releasable: 'bosgnacchi', industry: 5 }),
 };
 
 /** Trattati in vigore al 1° gennaio 1881. */

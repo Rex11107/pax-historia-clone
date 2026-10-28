@@ -81,6 +81,8 @@ export interface NationProfile {
   friends: Tag[];
   /** microstato: non giocabile, senza esercito */
   micro?: boolean;
+  /** nazione senza Stato nel 1881: nasce solo se una pace libera questo popolo */
+  releasable?: string;
 }
 
 export type UnitType = 'infantry' | 'cavalry' | 'artillery';
@@ -196,6 +198,8 @@ export interface Budget {
   trade?: number;
   /** tributi: incassati dai soggetti (+) o versati al signore (−), non compresi in income */
   tribute?: number;
+  /** indennità di guerra a rate: incassate (+) o pagate (−) */
+  reparations?: number;
   /** entrate delle opere (campi, industrie, porti), già comprese in income */
   works?: number;
   upkeep: number;
@@ -270,6 +274,14 @@ export interface GameState {
   ethnicBase?: Record<Tag, number>;
   /** rivendicazioni nate in partita: province perse in una pace */
   lostClaims?: import('./claims').LostClaim[];
+  /** indennità a rate */
+  reparations?: { payer: Tag; receiver: Tag; perWeek: number; weeksLeft: number }[];
+  /** confini smilitarizzati da una pace: niente fortezze fino alla scadenza */
+  demilitarized?: { nation: Tag; provinces: number[]; until: number }[];
+  /** opzioni della partita (dalle impostazioni) */
+  options?: { peaceMode?: import('./peace').PeaceMode; antiGore?: boolean };
+  /** guerre fra nazioni non giocanti in attesa che il giocatore detti la pace (modalità "tutte") */
+  pendingPeace?: { war: string; since: number }[];
   situations: Situation[];
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];

@@ -1,9 +1,8 @@
-import { imposeProtectorate, protectorateRefusal } from './vassals';
+import { concludePeace, engineTerms } from './peace';
 import { aiFinances, recruit } from './economy';
-import { makePeace } from './diplomacy';
 import { moveCost } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
-import { allied, enemiesOf, warsOf, type World } from './world';
+import { allied, emit, enemiesOf, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
 
 // Riflessi deterministici delle nazioni non giocanti (zero chiamate AI):
@@ -107,7 +106,9 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
       for (const p of own.slice(0, 5)) if (!recruit(w, tag, 'infantry', p.id, sink)) break;
     }
   }
-  // paci fra AI: chi è esausto cede ciò che il nemico occupa
+  // paci fra AI: quando una parte è esausta (o la guerra dura da molto), il motore detta la pace
+  // con il punteggio di guerra; in modalità "tutte" la detta il giocatore
+  const mode = s.options?.peaceMode ?? 'engine';
   for (const war of [...s.wars]) {
     if ([...war.attackers, ...war.defenders].includes(s.player)) continue;
     const a = war.attackers[0], d = war.defenders[0];
@@ -115,11 +116,13 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     const weA = s.nations[a].warExhaustion, weD = s.nations[d].warExhaustion;
     const long = s.day - war.startDay > 180;
     if (Math.max(weA, weD) < 55 && !(long && Math.max(weA, weD) > 35)) continue;
-    const loser = weA >= weD ? a : d;
-    const winner = loser === a ? d : a;
-    // capitale di uno stato minore occupata: protettorato invece delle cessioni
-    if (!protectorateRefusal(w, winner, loser)) { imposeProtectorate(w, winner, loser, sink); continue; }
-    const occupied = w.map.provinces.filter((p) => s.owner[p.id] === loser && s.controller[p.id] === winner && p.id !== s.nations[loser].capital).map((p) => p.id).slice(0, 3);
-    makePeace(w, a, d, { cedeTo: winner, provinces: occupied }, sink);
+    if (mode === 'all') {
+      s.pendingPeace ??= [];
+      const pend = s.pendingPeace.find((x) => x.war === war.id);
+      if (!pend) { s.pendingPeace.push({ war: war.id, since: s.day }); emit(w, { type: 'peace_pending', nations: [a, d], text: `${war.name}: le parti sono pronte alla pace. Detta tu le condizioni (Diplomazia → Conferenze di pace).` }, sink); continue; }
+      if (s.day - pend.since < 14) continue; // due settimane per decidere, poi decide il motore
+    }
+    concludePeace(w, war, engineTerms(w, war), sink);
+    if (s.pendingPeace) s.pendingPeace = s.pendingPeace.filter((x) => x.war !== war.id);
   }
 }

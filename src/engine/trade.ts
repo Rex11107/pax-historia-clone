@@ -26,6 +26,10 @@ export interface TradeContract {
   startDay: number;
   /** frazioni di opinione accumulate [verso il venditore, verso il compratore] */
   bond?: [number, number];
+  /** imposto da un trattato di pace: gratuito, non si disdice */
+  forced?: boolean;
+  /** scadenza (giorno) */
+  until?: number;
 }
 
 export const MARGIN = 1.25;
@@ -170,6 +174,7 @@ export function weeklyTrade(w: World, sink: GameEvent[]) {
   for (const c of [...contracts(s)]) {
     if (!s.nations[c.seller]?.alive || !s.nations[c.buyer]?.alive) { cancelTrade(w, c.id, c.seller, sink, 'una delle parti non esiste più'); continue; }
     if (atWar(s, c.seller, c.buyer)) { cancelTrade(w, c.id, c.seller, sink, 'la guerra interrompe i traffici'); continue; }
+    if (c.until !== undefined && s.day >= c.until) { cancelTrade(w, c.id, c.seller, sink, 'scade la concessione del trattato di pace'); continue; }
     const own = ownLots(w, c.seller).count[c.res] ?? 0;
     const sold = contracts(s).filter((x) => x.seller === c.seller && x.res === c.res).reduce((a, x) => a + x.qty, 0);
     if (sold > own) {
@@ -180,7 +185,7 @@ export function weeklyTrade(w: World, sink: GameEvent[]) {
     }
     // le nazioni non giocanti disdicono se i rapporti crollano
     for (const [me, other] of [[c.seller, c.buyer], [c.buyer, c.seller]] as [Tag, Tag][]) {
-      if (me !== s.player && opinion(s, me, other) < -40 && contracts(s).includes(c)) cancelTrade(w, c.id, me, sink, `${nationName(w, me)} rompe per l'ostilità`);
+      if (!c.forced && me !== s.player && opinion(s, me, other) < -40 && contracts(s).includes(c)) cancelTrade(w, c.id, me, sink, `${nationName(w, me)} rompe per l'ostilità`);
     }
     if (!contracts(s).includes(c)) continue;
     c.bond ??= [0, 0];

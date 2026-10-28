@@ -35,7 +35,7 @@ async function boot() {
       } }, `Continua: ${auto.label}`));
     }
     const majors = Object.entries(NATIONS).filter(([, p]) => p.major);
-    const minors = Object.entries(NATIONS).filter(([t, p]) => !p.major && !p.micro && t !== 'NUL');
+    const minors = Object.entries(NATIONS).filter(([t, p]) => !p.major && !p.micro && !p.releasable && t !== 'NUL');
     const sel = h('select', { id: 'nation-select', 'aria-label': 'Nazione' },
       h('optgroup', { label: 'Grandi potenze' }, ...majors.map(([t, p]) => h('option', { value: t, selected: t === 'ITA' }, p.name))),
       h('optgroup', { label: 'Altre nazioni' }, ...minors.map(([t, p]) => h('option', { value: t }, p.name))),

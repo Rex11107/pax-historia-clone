@@ -269,6 +269,7 @@ export function buildRefusal(w: World, tag: Tag, p: number, b: BuildingId): stri
   if (cur >= info.max) return 'livello massimo';
   if (cur + 1 > maxLevel(w, tag, b)) { const t = unlockTech(b, cur + 1); return `serve la ricerca "${t?.name ?? '?'}"`; }
   if (b === 'porto' && !pv.coast) return 'serve la costa';
+  if (b === 'fortezza' && (w.state.demilitarized ?? []).some((d) => d.provinces.includes(p) && d.until > w.state.day)) return 'confine smilitarizzato dal trattato di pace';
   if (b === 'agricoltura' && (pv.terrain === 'mountain' || pv.terrain === 'desert')) return 'terreno inadatto';
   if (b === 'miniera' && ![...w.map.resources[p], ...siteLots(w, p)].some((r) => MINERAL.has(r))) return 'non ci sono risorse minerarie';
   if (projects(w).filter((x) => x.nation === tag).length >= slots(w, tag)) return `tutti i cantieri sono occupati (${slots(w, tag)})`;

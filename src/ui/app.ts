@@ -6,9 +6,11 @@ import { TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
 import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, type BuildingId } from '../engine/construction';
-import { annex, annexRefusal, declareIndependence, imposeProtectorate, LEVEL_INFO, libertyTarget, loosen, protectorateRefusal, subjectOf, subjects, tighten } from '../engine/vassals';
+import { annex, annexRefusal, declareIndependence, LEVEL_INFO, libertyTarget, loosen, subjectOf, subjects, tighten } from '../engine/vassals';
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { ResearchView } from './research-view';
+import { PeaceView } from './peace-view';
+import { warScore } from '../engine/peace';
 import { ethLabel, ethnicTable, ETHNICITIES, foreignness } from '../engine/ethnic';
 import { CLAIM_LABEL, claimsOn } from '../engine/claims';
 import { projectsOf, researchSlots, tech } from '../engine/research';
@@ -22,7 +24,7 @@ import { deleteSave, listSaves, loadGame, saveSettings, type Settings } from '..
 import { $, fmtK, h, show } from './dom';
 import { MapView } from './mapview';
 
-type Tab = 'army' | 'diplomacy' | 'government' | 'dispatches' | 'province' | 'unit' | 'settings';
+type Tab = 'army' | 'diplomacy' | 'government' | 'dispatches' | 'province' | 'unit' | 'settings' | 'peace';
 
 const UNIT_TYPE: Record<UnitType, string> = { infantry: 'fanteria', cavalry: 'cavalleria', artillery: 'artiglieria' };
 const PHASE: Record<Phase, string> = { traduzione: 'Lo Stato maggiore legge le direttive…', simulazione: 'Le truppe marciano: sette giorni di campagna…', dispaccio: 'I dispacci arrivano dalle capitali…', salvataggio: 'Archiviazione…' };
@@ -44,6 +46,17 @@ export class App {
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
   govTab: 'home' | 'budget' | 'trade' | 'politics' | 'build' | 'research' = 'home';
+  peace = new PeaceView({
+    get world() { return app.game.world; },
+    mode: () => app.settings.peaceMode ?? 'engine',
+    antiGore: () => app.settings.antiGore ?? true,
+    toast: (m: string) => app.toast(m),
+    changed: () => app.afterStateChange(),
+    rerender: () => app.render(),
+    highlight: (ids: Set<number> | null) => { app.map.highlight = ids && ids.size ? ids : null; app.map.invalidate(); },
+    center: (p: number) => app.map.focusBetween(p, p),
+    close: () => { app.map.highlight = null; app.map.invalidate(); app.setTab('diplomacy'); },
+  });
   research = new ResearchView({
     get world() { return app.game.world; },
     toast: (m: string) => app.toast(m),
@@ -56,6 +69,7 @@ export class App {
 
   start(game: Game) {
     this.game = game;
+    game.state.options = { peaceMode: this.settings.peaceMode ?? 'engine', antiGore: this.settings.antiGore ?? true };
     show($('#start'), false);
     show($('#game'), true);
     const canvas = $<HTMLCanvasElement>('#map');
@@ -121,6 +135,7 @@ export class App {
   }
 
   setTab(t: Tab, open = true) {
+    if (t !== 'peace' && this.tab === 'peace' && this.map) { this.map.highlight = null; this.map.invalidate(); }
     this.tab = t;
     document.querySelectorAll<HTMLButtonElement>('.tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
     if (open) this.openSheet();
@@ -140,6 +155,7 @@ export class App {
       province: () => [this.provinceId !== null ? this.game.world.map.provinces[this.provinceId].name : 'Provincia', this.viewProvince()],
       unit: () => { const u = this.unit(); return [u ? u.name : 'Unità', this.viewUnit()]; },
       settings: () => ['Impostazioni', this.viewSettings()],
+      peace: () => ['Conferenza di pace', this.peace.view()],
     };
     const [t, node] = views[this.tab]();
     title.textContent = t;
@@ -171,6 +187,7 @@ export class App {
   // --- selezioni sulla mappa ---
   private onProvince(id: number | null) {
     if (this.pick && id !== null) { this.previewTarget(id); return; }
+    if (this.tab === 'peace' && id !== null && this.peace.handleProvince(id)) return;
     this.provinceId = id;
     this.map.selectedProvince = id;
     this.map.invalidate();
@@ -660,6 +677,7 @@ export class App {
     tags.sort((a, b) => rank(a) - rank(b) || w.profiles[a].name.localeCompare(w.profiles[b].name));
     return h('div', null,
       this.game.hasKey ? null : h('p', { class: 'notice' }, 'Per parlare con i governi serve la chiave API. ', h('button', { class: 'link', onclick: () => this.setTab('settings') }, 'Impostazioni')),
+      this.viewWars(),
       this.viewSubjects(),
       h('ul', { class: 'list nations' }, ...tags.map((t) => {
         const treaties = s.treaties.filter((x) => (x.a === t && x.b === me) || (x.b === t && x.a === me)).map((x) => TREATY_LABEL[x.type]);
@@ -671,6 +689,22 @@ export class App {
       })),
       h('p', { class: 'muted' }, 'Il numero è il giudizio che quel governo ha di noi (da −100 a 100).'),
     );
+  }
+
+  /** Guerre del giocatore (e, se dirige tutte le paci, quelle altrui pronte alla pace) con la conferenza. */
+  private viewWars(): Node | null {
+    const w = this.game.world, s = w.state, me = s.player;
+    const mine = s.wars.filter((x) => x.attackers.includes(me) || x.defenders.includes(me));
+    const pend = (s.pendingPeace ?? []).map((p) => s.wars.find((x) => x.id === p.war)).filter((x): x is NonNullable<typeof x> => !!x);
+    if (!mine.length && !pend.length) return null;
+    const row = (war: typeof mine[number], label: string) => {
+      const sc = warScore(w, war);
+      return h('div', { class: 'card' },
+        h('div', { class: 'row' }, h('b', null, war.name), h('span', { class: 'num' }, `${sc.att} – ${sc.def}`)),
+        h('p', { class: 'sub' }, sc.winner ? `In vantaggio ${sc.winner === 'att' ? war.attackers.map((t) => nationName(w, t)).join(', ') : war.defenders.map((t) => nationName(w, t)).join(', ')} di ${sc.points} punti.` : 'Equilibrio: nessuno detta condizioni.'),
+        h('div', { class: 'buttons' }, h('button', { class: 'primary', onclick: () => { this.peace.open(war.id); this.setTab('peace'); } }, label)));
+    };
+    return h('div', null, h('h3', null, 'Guerre e conferenze di pace'), ...mine.map((x) => row(x, 'Conferenza di pace')), ...pend.map((x) => row(x, 'Detta la pace')));
   }
 
   private viewSubjects(): Node | null {
@@ -720,7 +754,7 @@ export class App {
         this.offerPicker(tag),
         input,
         h('div', { class: 'buttons' }, send, war ? null : h('button', { class: 'danger', onclick: () => this.confirmWar(tag) }, 'Dichiara guerra'),
-          war && !protectorateRefusal(w, me, tag) ? h('button', { onclick: () => { const e = imposeProtectorate(w, me, tag); this.toast(e ?? `Pace firmata: ${nationName(w, tag)} è nostro protettorato.`); this.chatWith = null; this.afterStateChange(); } }, 'Imporre il protettorato') : null),
+          war ? h('button', { onclick: () => { const x = s.wars.find((y) => (y.attackers.includes(me) && y.defenders.includes(tag)) || (y.defenders.includes(me) && y.attackers.includes(tag))); if (x) { this.peace.open(x.id); this.chatWith = null; this.setTab('peace'); } } }, 'Conferenza di pace') : null),
       ),
     );
   }
@@ -822,6 +856,10 @@ export class App {
         h('button', { onclick: () => this.testKey() }, 'Prova la connessione'),
       ),
       h('p', { class: 'sub' }, `Uso in questa sessione: ${usage.calls} chiamate, ${fmtK(usage.promptTokens)} token in ingresso (${fmtK(usage.cachedTokens)} dalla cache), ${fmtK(usage.completionTokens)} in uscita.`),
+      h('h3', null, 'Pace'),
+      h('div', { class: 'seg' }, ...([['engine', 'Il motore'], ['own', 'Io, nelle mie guerre'], ['all', 'Io, in tutte le guerre']] as const).map(([v, l]) => h('button', { class: (st.peaceMode ?? 'engine') === v ? 'on' : '', onclick: async () => { st.peaceMode = v; this.game.state.options = { ...(this.game.state.options ?? {}), peaceMode: v }; await saveSettings(st); this.render(); } }, l))),
+      h('p', { class: 'sub' }, (st.peaceMode ?? 'engine') === 'engine' ? 'Il motore decide se le condizioni sono accettabili (punteggio di guerra) e detta le paci fra le altre nazioni.' : (st.peaceMode === 'own') ? 'Nelle tue guerre imponi le condizioni anche oltre il punteggio; le paci altrui le detta il motore.' : 'Imponi le tue condizioni e detti anche le paci fra le altre nazioni (Diplomazia → Guerre e conferenze di pace; dopo due settimane decide il motore).'),
+      h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.antiGore ?? true, onchange: async (e: Event) => { st.antiGore = (e.target as HTMLInputElement).checked; this.game.state.options = { ...(this.game.state.options ?? {}), antiGore: st.antiGore }; await saveSettings(st); } }), ' Regole contro i confini assurdi (raggiungibilità, niente exclavi né corridoi)'),
       h('h3', null, 'Aggiornamenti'),
       this.updateBox(),
       h('h3', null, 'Partite'),

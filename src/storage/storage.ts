@@ -8,7 +8,13 @@ import type { GameState } from '../engine/types';
 
 const KEY = 'regnum.settings.v1';
 
-export interface Settings extends LLMConfig { animate: boolean }
+export interface Settings extends LLMConfig {
+  animate: boolean;
+  /** chi detta la pace: il motore, il giocatore nelle sue guerre, il giocatore in tutte */
+  peaceMode?: 'engine' | 'own' | 'all';
+  /** regole contro il border gore attive */
+  antiGore?: boolean;
+}
 
 export async function loadSettings(): Promise<Settings> {
   try {

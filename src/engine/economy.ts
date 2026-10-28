@@ -1,3 +1,4 @@
+import { reparationsOf } from './peace';
 import { ethnicStability } from './ethnic';
 import { researchCost, techEffects } from './research';
 import { ROMAN, UNIT_LABEL } from './setup';
@@ -78,7 +79,8 @@ export function budget(w: World, tag: Tag): Budget {
   const r = (v: number) => Math.round(v * 100) / 100;
   const tradeNet = res.earn - res.pay;
   const tribute = tributeOf(w, tag);
-  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), works: r(works), upkeep: r(upkeep), administration: r(administration), civil: r(civil), maintenance: r(maintenance), research: r(researchSpend), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute - upkeep - administration - civil - maintenance - researchSpend - interest - infrastructure), manpowerGain };
+  const repar = reparationsOf(w, tag);
+  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), reparations: r(repar), works: r(works), upkeep: r(upkeep), administration: r(administration), civil: r(civil), maintenance: r(maintenance), research: r(researchSpend), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute + repar - upkeep - administration - civil - maintenance - researchSpend - interest - infrastructure), manpowerGain };
 }
 
 export function stabilityTarget(w: World, tag: Tag): number {

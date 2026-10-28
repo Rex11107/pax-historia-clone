@@ -261,3 +261,12 @@ button.back { display: inline-block; margin: 0 0 10px; padding: 4px 10px 4px 6px
 .eth-row .bar { grid-column: 1 / -1; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
 .eth-row .bar i { display: block; height: 100%; }
 .eth-row small { color: var(--muted); }
+
+/* conferenza di pace */
+.peace-head .score { display: flex; justify-content: space-between; height: 10px; background: var(--rule); border-radius: 5px; overflow: hidden; margin: 6px 0 2px; }
+.peace-head .score i { display: block; height: 100%; }
+.peace-head .score .a { background: var(--wax); }
+.peace-head .score .d { background: var(--ink-2); }
+.peace-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; }
+.peace-add select { max-width: 100%; }
+label.check { display: flex; gap: 6px; align-items: center; margin: 6px 0; }
