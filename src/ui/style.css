@@ -254,3 +254,10 @@ table.parties th { font-weight: 500; color: var(--muted); font-size: 0.85rem; }
 .gov-card .gc { font-size: 1.5rem; color: var(--muted); flex: none; }
 .gov-card.alert { border-left: 3px solid var(--wax); }
 button.back { display: inline-block; margin: 0 0 10px; padding: 4px 10px 4px 6px; border: 1px solid var(--ink); border-radius: 14px; background: var(--paper); font: 600 0.9rem var(--sans); cursor: pointer; }
+
+.map-chip.chip-4 { top: calc(var(--top) + var(--safe-t) + 140px); }
+.eth-bars { margin: 4px 0 8px; }
+.eth-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; margin: 4px 0; font-size: 0.9rem; }
+.eth-row .bar { grid-column: 1 / -1; height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.eth-row .bar i { display: block; height: 100%; }
+.eth-row small { color: var(--muted); }

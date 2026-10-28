@@ -9,6 +9,8 @@ import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industry
 import { annex, annexRefusal, declareIndependence, imposeProtectorate, LEVEL_INFO, libertyTarget, loosen, protectorateRefusal, subjectOf, subjects, tighten } from '../engine/vassals';
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { ResearchView } from './research-view';
+import { ethLabel, ethnicTable, ETHNICITIES, foreignness } from '../engine/ethnic';
+import { CLAIM_LABEL, claimsOn } from '../engine/claims';
 import { projectsOf, researchSlots, tech } from '../engine/research';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
@@ -84,6 +86,11 @@ export class App {
     $('#res-btn').addEventListener('click', (e) => {
       this.map.showResources = !this.map.showResources;
       (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showResources));
+      this.map.invalidate();
+    });
+    $('#eth-btn').addEventListener('click', (e) => {
+      this.map.showEthnic = !this.map.showEthnic;
+      (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showEthnic));
       this.map.invalidate();
     });
     $('#works-btn').addEventListener('click', (e) => {
@@ -354,9 +361,32 @@ export class App {
       !p.impassable && owner === '' ? h('p', { class: 'muted' }, 'Terra di nessuno: la prima nazione che vi porta le sue truppe la occupa.') : null,
       units.length ? h('div', null, h('h3', null, 'Truppe presenti'), h('ul', { class: 'list' }, ...units.map((u) => h('li', { onclick: () => this.selectUnit(u.id) }, h('div', { class: 'row' }, h('span', null, u.name), h('span', { class: 'num' }, fmtK(u.strength))))))) : h('p', { class: 'muted' }, 'Nessuna truppa nella provincia.'),
       owner && owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi ${al(w, owner)}`)) : null,
+      this.viewPeoples(id),
       this.viewWorks(id),
       canRecruit ? h('div', null, h('h3', null, 'Arruolamento'), h('div', { class: 'buttons' }, ...(Object.keys(RECRUIT) as UnitType[]).map((t) => h('button', { onclick: () => this.doRecruit(t, id) }, `${RECRUIT[t].label} · ${RECRUIT[t].cost} M`)))) : null,
     );
+  }
+
+  private viewPeoples(id: number): Node | null {
+    const w = this.game.world, s = w.state;
+    const p = w.map.provinces[id];
+    if (p.impassable) return null;
+    const t = ethnicTable(w)[id];
+    const comp = [...t.comp].sort((a, b) => b.share - a.share);
+    const owner = s.owner[id];
+    const status = (eth: string) => {
+      const info = ETHNICITIES[eth];
+      if (eth === 'altri') return '';
+      const f = owner ? foreignness(owner, eth) : 1;
+      const st = info?.state ? (s.nations[info.state]?.alive ? `nazione: ${w.profiles[info.state]?.short[1] ?? info.state}` : 'il suo Stato non esiste più') : 'nazione senza Stato';
+      return `${st}${owner ? ` · per ${w.profiles[owner]?.short[1] ?? owner}: ${f === 0 ? 'popolo proprio' : f === 0.5 ? 'popolo regionale' : 'minoranza'}` : ''}`;
+    };
+    return h('div', null, h('h3', null, 'Popolazione'),
+      h('div', { class: 'eth-bars' }, ...comp.map((c) => h('div', { class: 'eth-row' },
+        h('span', null, h('b', null, ethLabel(c.eth)), ' ', h('small', null, status(c.eth))), h('span', { class: 'num' }, `${c.share}%`),
+        h('div', { class: 'bar' }, h('i', { style: `width:${c.share}%;background:${ETHNICITIES[c.eth]?.color ?? '#999'}` }))))),
+      (() => { const cl = claimsOn(w, id); return cl.length ? h('p', null, h('b', null, 'Rivendicata da: '), cl.map((c) => `${w.profiles[c.nation]?.short[1] ?? c.nation} — ${CLAIM_LABEL[c.strength]} (${c.reason})`).join('; ')) : null; })(),
+      h('p', { class: 'sub' }, `${t.estimate ? 'Stima storica (non esiste un censimento affidabile dell\'epoca per questa zona).' : 'Dai censimenti dell\'epoca (austriaco e ungherese 1880, prussiano 1890, russo 1897), arrotondati.'} Il pulsante "Etnie" sulla mappa colora le province secondo la maggioranza.`));
   }
 
   private viewWorks(id: number): Node | null {

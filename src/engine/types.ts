@@ -43,6 +43,14 @@ export interface ProvinceData {
   region?: string;
   /** oasi: transitabile, raggiunta dalle piste carovaniere */
   oasis?: boolean;
+  /** suddivisione moderna prevalente (ISO 3166-2), per etnie e rivendicazioni */
+  iso?: string;
+  /** unità amministrativa d'epoca prevalente (Kronland, governatorato, Regierungsbezirk…) */
+  hreg?: string;
+  /** area linguistica separata dalla mappa (de, pl, hu, it, ca, sco…) */
+  lang?: string;
+  /** regione storica */
+  hist?: string;
 }
 
 /** Profilo statico di una nazione (dati di scenario, non ricalcolati). Scala 0-100. */
@@ -258,6 +266,10 @@ export interface GameState {
   subjects?: import('./vassals').Subject[];
   /** ricerca: conoscenze e progetti in corso */
   research?: import('./research').ResearchState;
+  /** quota di popolazione estranea per Stato nel 1881 (riferimento per la stabilità) */
+  ethnicBase?: Record<Tag, number>;
+  /** rivendicazioni nate in partita: province perse in una pace */
+  lostClaims?: import('./claims').LostClaim[];
   situations: Situation[];
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];

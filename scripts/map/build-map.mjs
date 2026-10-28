@@ -1118,7 +1118,10 @@ async function main() {
       regArea.set(rg, (regArea.get(rg) || 0) + m.area);
     }
     const region = [...regArea.entries()].sort((a, b) => b[1] - a[1])[0][0];
-    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList, byTown, lockName, desert, oasis };
+    // per etnie e rivendicazioni: suddivisione moderna (ISO 3166-2), unità d'epoca e area linguistica prevalenti
+    const top = (key, empty = false) => { const m = new Map(); for (const x of mem) { const v = key(x) || ''; if (v || empty) m.set(v, (m.get(v) || 0) + x.area); } return [...m.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || ''; };
+    const iso = top((x) => x.iso), hreg = top((x) => (x.reg ? String(x.reg).replace(/^[A-Z]:/, '') : '')), lang = top((x) => x.langKey, true);
+    return { name, owner: mem[0].owner, modern: mem[0].modern, area: gArea[r], region, prot: prot || null, byNameList, byTown, lockName, desert, oasis, iso, hreg, lang };
   });
   {
     // confronto senza accenti e caratteri invisibili: "Málaga" e "Malaga" sono lo stesso nome
@@ -1452,6 +1455,10 @@ async function main() {
       ...(p.info.oasis ? { oasis: true } : {}),
       ...(tiny.has(p.k) ? { tiny: true } : {}),
       _region: p.info.region,
+      ...(p.info.iso ? { iso: p.info.iso } : {}),
+      ...(p.info.hreg ? { hreg: p.info.hreg } : {}),
+      ...(p.info.lang ? { lang: p.info.lang } : {}),
+      ...(p.info.region && !String(p.info.region).startsWith('@') ? { hist: p.info.region } : {}),
     })),
     straits: strList,
     canals: canal ? canal.map((line) => ({ name: 'Canale di Suez', pts: flatArc(line) })) : [],

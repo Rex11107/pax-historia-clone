@@ -5,6 +5,7 @@ import { decodeArcs, provinceRings } from '../engine/map';
 import { unitPosition } from '../engine/orders';
 import { RESOURCES } from '../engine/resources';
 import { BUILDINGS, buildings, type BuildingId } from '../engine/construction';
+import { composition, ETHNICITIES } from '../engine/ethnic';
 import type { MapData, Unit } from '../engine/types';
 import type { World } from '../engine/world';
 
@@ -44,6 +45,8 @@ export class MapView {
   /** icone delle risorse sulle province */
   showResources = false;
   showWorks = false;
+  /** mappa etnica: le province prendono il colore della maggioranza (tratteggio se sotto il 50%) */
+  showEthnic = false;
   private phys: { relief: { cls: string; path: Path2D; bb: number[] }[]; rivers: { rank: number; path: Path2D; bb: number[] }[]; lakes: Path2D } | null = null;
   private mountainPattern: CanvasPattern | null = null;
   previewPath: number[] | null = null;
@@ -298,6 +301,19 @@ export class MapView {
       if (!visible(i)) continue;
       const owner = s.owner[i], ctrl = s.controller[i];
       const pv = this.world.map.provinces[i];
+      if (this.showEthnic && !pv.impassable) {
+        const comp = [...composition(this.world, i)].sort((a, b) => b.share - a.share);
+        ctx.fillStyle = ETHNICITIES[comp[0].eth]?.color ?? '#aaa';
+        ctx.fill(this.paths[i]);
+        if (comp[0].share < 50 && comp[1]) {
+          const pat = this.hatch(ETHNICITIES[comp[1].eth]?.color ?? '#777');
+          pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
+          ctx.fillStyle = pat;
+          ctx.fill(this.paths[i]);
+        }
+        if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(this.paths[i]); }
+        continue;
+      }
       ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
       ctx.fill(this.paths[i]);
       if (pv.impassable) {

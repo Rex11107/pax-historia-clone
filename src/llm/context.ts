@@ -11,6 +11,8 @@ import { cabinetSummary } from '../engine/ministers';
 import { BUILDINGS, buildings, industryOf, logistics, projects, type BuildingId } from '../engine/construction';
 import { subjects } from '../engine/vassals';
 import { researchSummary } from '../engine/research';
+import { compositionText } from '../engine/ethnic';
+import { claimsOn } from '../engine/claims';
 
 /** Stati soggetti che riguardano una nazione. */
 export function subjectSummary(w: World, tag: Tag): string {
@@ -154,7 +156,7 @@ export function provinceIndex(w: World): string {
     const tag = (t: string) => t || 'nessuno';
     const rs = w.map.resources[id];
     const piste = w.map.adj[id].filter((e) => e.route).map((e) => e.to);
-    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}${rs.length ? `; ${rs.map((r) => RESOURCES[r].label).join(', ')}` : ''}${works(w, id) ? `; opere: ${works(w, id)}` : ''}]`;
+    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}${rs.length ? `; ${rs.map((r) => RESOURCES[r].label).join(', ')}` : ''}${works(w, id) ? `; opere: ${works(w, id)}` : ''}${p.impassable ? '' : `; popolazione: ${compositionText(w, id)}`}${claimsOn(w, id).length ? `; rivendicata da ${claimsOn(w, id).map((c) => `${c.nation} (${c.strength})`).join(', ')}` : ''}]`;
   }).join('\n');
 }
 

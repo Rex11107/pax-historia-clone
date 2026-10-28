@@ -1,3 +1,4 @@
+import { ethnicStability } from './ethnic';
 import { researchCost, techEffects } from './research';
 import { ROMAN, UNIT_LABEL } from './setup';
 import type { Budget, GameEvent, Policies, Tag, UnitType } from './types';
@@ -83,7 +84,7 @@ export function budget(w: World, tag: Tag): Budget {
 export function stabilityTarget(w: World, tag: Tag): number {
   const n = w.state.nations[tag];
   const pol = n.policies;
-  return clamp(w.profiles[tag].cohesion * 0.6 + 30 + POLICY_EFFECTS.tax[pol.tax].stability + POLICY_EFFECTS.mobilization[pol.mobilization].stability + POLICY_EFFECTS.press[pol.press].stability + govEffects(w, tag).stability - n.warExhaustion * 0.4, 0, 100);
+  return clamp(w.profiles[tag].cohesion * 0.6 + 30 + POLICY_EFFECTS.tax[pol.tax].stability + POLICY_EFFECTS.mobilization[pol.mobilization].stability + POLICY_EFFECTS.press[pol.press].stability + govEffects(w, tag).stability + ethnicStability(w, tag) - n.warExhaustion * 0.4, 0, 100);
 }
 
 /** Aggiornamento economico settimanale (fine turno). */
