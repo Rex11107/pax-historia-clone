@@ -9,6 +9,7 @@ import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industry
 import { annex, annexRefusal, declareIndependence, imposeProtectorate, LEVEL_INFO, libertyTarget, loosen, protectorateRefusal, subjectOf, subjects, tighten } from '../engine/vassals';
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { ResearchView } from './research-view';
+import { projectsOf, researchSlots, tech } from '../engine/research';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
@@ -40,7 +41,7 @@ export class App {
   chatBusy = false;
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
-  govTab: 'budget' | 'trade' | 'politics' | 'build' | 'research' = 'budget';
+  govTab: 'home' | 'budget' | 'trade' | 'politics' | 'build' | 'research' = 'home';
   research = new ResearchView({
     get world() { return app.game.world; },
     toast: (m: string) => app.toast(m),
@@ -73,7 +74,9 @@ export class App {
   private bindChrome() {
     document.querySelectorAll<HTMLButtonElement>('.tabs button[data-tab]').forEach((b) => b.addEventListener('click', () => {
       const t = b.dataset.tab as Tab;
-      if (this.tab === t && this.sheetOpen) this.closeSheet(); else this.setTab(t);
+      if (this.tab === t && this.sheetOpen) { if (t === 'government' && this.govTab !== 'home') { this.govTab = 'home'; this.render(); } else this.closeSheet(); return; }
+      if (t === 'government' && this.tab !== 'government') this.govTab = 'home';
+      this.setTab(t);
     }));
     $('#settings-btn').addEventListener('click', () => this.setTab('settings'));
     $('#sheet-close').addEventListener('click', () => this.closeSheet());
@@ -125,7 +128,7 @@ export class App {
     const views: Record<Tab, () => [string, Node]> = {
       army: () => ['Esercito', this.viewArmy()],
       diplomacy: () => (this.chatWith ? [nationName(this.game.world, this.chatWith), this.viewChat(this.chatWith)] : ['Diplomazia', this.viewDiplomacy()]),
-      government: () => ['Governo', this.viewGovernment()],
+      government: () => [this.govTitle(), this.viewGovernment()],
       dispatches: () => ['Dispacci', this.viewDispatches()],
       province: () => [this.provinceId !== null ? this.game.world.map.provinces[this.provinceId].name : 'Provincia', this.viewProvince()],
       unit: () => { const u = this.unit(); return [u ? u.name : 'Unità', this.viewUnit()]; },
@@ -411,14 +414,45 @@ export class App {
     this.refreshTop(); this.map.invalidate(); this.render();
   }
 
+  private govTitle(): string {
+    return ({ home: 'Governo', budget: 'Bilancio e politiche', politics: 'Politica', trade: 'Commercio', build: 'Costruzione', research: 'Ricerca' } as const)[this.govTab];
+  }
+
   private viewGovernment(): Node {
-    const nav = h('div', { class: 'seg subnav' },
-      h('button', { class: this.govTab === 'budget' ? 'on' : '', onclick: () => { this.govTab = 'budget'; this.render(); } }, 'Bilancio e politiche'),
-      h('button', { class: this.govTab === 'politics' ? 'on' : '', onclick: () => { this.govTab = 'politics'; this.render(); } }, politicsOf(this.game.world, this.game.state.player)?.crisis ? 'Politica ⚠' : 'Politica'),
-      h('button', { class: this.govTab === 'trade' ? 'on' : '', onclick: () => { this.govTab = 'trade'; this.render(); } }, 'Commercio'),
-      h('button', { class: this.govTab === 'build' ? 'on' : '', onclick: () => { this.govTab = 'build'; this.render(); } }, 'Costruzione'),
-      h('button', { class: this.govTab === 'research' ? 'on' : '', onclick: () => { this.govTab = 'research'; this.render(); } }, 'Ricerca'));
-    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.govTab === 'research' ? this.research.view() : this.viewBudget());
+    if (this.govTab === 'home') return this.viewGovHome();
+    const back = h('button', { class: 'back', onclick: () => { this.govTab = 'home'; this.render(); $('#sheet-body').scrollTop = 0; } }, '‹ Governo');
+    const body = this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.govTab === 'research' ? this.research.view() : this.viewBudget();
+    return h('div', null, back, body);
+  }
+
+  /** Schermata iniziale del Governo: una scheda per sezione, con lo stato in breve. */
+  private viewGovHome(): Node {
+    const w = this.game.world, s = w.state, me = s.player;
+    const n = s.nations[me];
+    const b = n.lastBudget ?? budget(w, me);
+    const ps = politicsOf(w, me);
+    const trades = contractsOf(s, me);
+    const works = projects(w).filter((x) => x.nation === me);
+    const res = this.researchCount();
+    const sign = (v: number) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1).replace('.', ',')}`;
+    const card = (tab: typeof this.govTab, icon: string, title: string, line: string, alert = false) =>
+      h('button', { class: `gov-card${alert ? ' alert' : ''}`, onclick: () => { this.govTab = tab; this.render(); $('#sheet-body').scrollTop = 0; } },
+        h('span', { class: 'gi' }, icon), h('span', { class: 'gt' }, h('b', null, title), h('small', null, line)), h('span', { class: 'gc' }, '›'));
+    return h('div', { class: 'gov-home' },
+      card('budget', '💰', 'Bilancio e politiche', `saldo ${sign(b.net)} M a settimana · tesoro ${Math.round(n.treasury)} M · imposte, esercito, ferrovie, stampa`),
+      card('politics', '🏛️', 'Politica', ps ? `${ps.head} · fiducia ${Math.round(ps.confidence)}${ps.crisis ? ' · CRISI DI GOVERNO' : ''}${ps.nextElection !== null ? ` · elezioni il ${formatDate(ps.nextElection)}` : ''}` : 'partiti, governo e ministri', !!ps?.crisis),
+      card('trade', '⚖️', 'Commercio', trades.length ? `${trades.length} contratti · saldo ${sign(b.trade ?? 0)} M` : 'nessun contratto · compra e vendi risorse'),
+      card('build', '🏗️', 'Costruzione', `${works.length} cantieri su ${slots(w, me)} · logistica ×${logistics(w, me).factor.toFixed(2).replace('.', ',')} · industria ${industryOf(w, me)}`),
+      card('research', '🔬', 'Ricerca', `${res.running} ricerche su ${res.slots}${res.next ? ` · ${res.next}` : ' · nessuna in corso'}`, res.running < res.slots),
+      s.situations.length ? h('div', null, h('h3', null, 'Questioni aperte'), ...s.situations.map((x) => h('p', null, h('b', null, x.title), ': ', x.summary))) : null,
+    );
+  }
+
+  private researchCount() {
+    const w = this.game.world, me = w.state.player;
+    const list = projectsOf(w, me);
+    const first = list[0];
+    return { running: list.length, slots: researchSlots(w, me), next: first ? `${tech(first.tech)!.name} ${Math.round((first.progress / first.total) * 100)}%` : '' };
   }
 
   private viewPolitics(): Node {
@@ -584,7 +618,6 @@ export class App {
           r.missing.length ? h('p', { class: 'sub' }, `Mancano ${r.missing.join(' e ')}: ${r.missing.includes('carbone') && w.profiles[me].industry >= 50 ? 'senza carbone le entrate calano del 5%' : ''}${r.missing.length === 2 && w.profiles[me].industry >= 50 ? '; ' : ''}${r.missing.includes('ferro') ? 'senza ferro l\'artiglieria costa il 30% in più' : ''}.`) : null);
       })(),
       policy('tax', 'Imposte'), policy('mobilization', 'Esercito'), policy('infrastructure', 'Ferrovie e opere'), policy('press', 'Stampa'),
-      s.situations.length ? h('div', null, h('h3', null, 'Questioni aperte'), ...s.situations.map((x) => h('p', null, h('b', null, x.title), ': ', x.summary))) : null,
     );
   }
 
