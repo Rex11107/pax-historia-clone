@@ -10,6 +10,7 @@ import { politicsSummary } from '../engine/politics';
 import { cabinetSummary } from '../engine/ministers';
 import { BUILDINGS, buildings, industryOf, logistics, projects, type BuildingId } from '../engine/construction';
 import { subjects } from '../engine/vassals';
+import { researchSummary } from '../engine/research';
 
 /** Stati soggetti che riguardano una nazione. */
 export function subjectSummary(w: World, tag: Tag): string {
@@ -97,6 +98,7 @@ export function worldDigest(w: World): string {
   lines.push(`RISORSE: ${resourceSummary(w, me)}.`);
   lines.push(`CONTRATTI COMMERCIALI: ${tradeSummary(w, me)}.`);
   { const L = logistics(w, me); const pr = projects(w).filter((x) => x.nation === me); lines.push(`INDUSTRIA E LOGISTICA: industria ${industryOf(w, me)}/100; capacità logistica ${L.capacity} mila uomini per ${L.men} mila in armi (fattore ${L.factor}); cantieri: ${pr.map((x) => `${BUILDINGS[x.type].label} ${x.level} a ${w.map.provinces[x.province].name}`).join(', ') || 'nessuno'}.`); }
+  lines.push(`RICERCA: ${researchSummary(w, me)}.`);
   lines.push(`STATI SOGGETTI: ${subjectSummary(w, me)}. ALTRI: ${subjects(w).filter((x) => x.overlord !== me && x.subject !== me).map((x) => `${x.subject} ${x.level} di ${x.overlord}`).join(', ') || 'nessuno'}.`);
   lines.push(`POLITICA INTERNA: ${politicsSummary(w, me)}.${cabinetSummary(w, me) ? ` Ministri: ${cabinetSummary(w, me)}.` : ''}`);
   const wars = s.wars;
@@ -171,6 +173,7 @@ export function bilateralView(w: World, tag: Tag): string {
     `LE TUE RISORSE: ${resourceSummary(w, tag)}. LE LORO: ${resourceSummary(w, me)}.`,
     `I TUOI CONTRATTI COMMERCIALI: ${tradeSummary(w, tag)}.`,
     `STATI SOGGETTI: tuoi: ${subjectSummary(w, tag)}; loro: ${subjectSummary(w, me)}.`,
+    `RICERCA: tua: ${researchSummary(w, tag)}; loro: ${researchSummary(w, me)}.`,
     `LA TUA POLITICA INTERNA: ${politicsSummary(w, tag)}.${cabinetSummary(w, tag) ? ` Ministri: ${cabinetSummary(w, tag)}.` : ''} LA LORO: ${politicsSummary(w, me)}.${cabinetSummary(w, me) ? ` Ministri: ${cabinetSummary(w, me)}.` : ''}`,
     `TRATTATI FRA VOI: ${treaties.length ? treaties.map((t) => TREATY_LABEL[t.type]).join(', ') : 'nessuno'}.`,
     `I TUOI ALTRI TRATTATI: ${theirTreaties.length ? theirTreaties.map((t) => `${TREATY_LABEL[t.type]} con ${nationName(w, t.a === tag ? t.b : t.a)}`).join('; ') : 'nessuno'}.`,

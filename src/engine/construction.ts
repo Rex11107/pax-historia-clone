@@ -1,3 +1,5 @@
+import { reserveOf } from './economy';
+import { maxLevel, siteLots, techEffects, unlockTech } from './research';
 // Costruzione: opere per provincia (ferrovie, porti, fortezze, campi, industrie, arsenali, miniere),
 // cantieri con costo e durata, industria effettiva e capacità logistica dell'esercito.
 
@@ -148,22 +150,24 @@ export function industryOf(w: World, tag: Tag): number {
   const base = w.profiles[tag]?.industry ?? 30;
   buildings(w);
   const start = w.state.industryBase?.[tag] ?? 0;
-  const bonus = Math.max(-30, Math.min(30, (industryPoints(w, tag) - start) * 1.5));
+  // l'industrializzazione è lenta: ogni livello di industria vale mezzo punto, ogni innovazione la metà del suo valore
+  const bonus = Math.max(-30, Math.min(30, (industryPoints(w, tag) - start) * 0.5 + techEffects(w, tag).industry * 0.5));
   return Math.max(0, Math.min(100, Math.round(base + bonus)));
 }
 
 /** Entrate settimanali delle opere civili (campi, industrie, porti). */
 export function buildingIncome(w: World, tag: Tag): number {
   const b = buildings(w);
+  const te = techEffects(w, tag);
   let inc = 0;
   for (let p = 0; p < b.length; p++) {
     if (!works(w, tag, p)) continue;
     const popM = w.map.provinces[p].pop / 1e6;
     const l = b[p];
-    if (l.agricoltura) inc += l.agricoltura * (0.04 + popM * 0.05);
-    if (l.tessile) inc += l.tessile * (0.1 + popM * 0.1) * inputEfficiency(w, tag, 'tessile');
-    if (l.chimica) inc += l.chimica * (0.12 + popM * 0.08) * inputEfficiency(w, tag, 'chimica');
-    if (l.siderurgia) inc += l.siderurgia * (0.15 + popM * 0.1) * inputEfficiency(w, tag, 'siderurgia');
+    if (l.agricoltura) inc += l.agricoltura * (0.04 + popM * 0.05) * te.agri;
+    if (l.tessile) inc += l.tessile * (0.1 + popM * 0.1) * inputEfficiency(w, tag, 'tessile') * te.industrialYield;
+    if (l.chimica) inc += l.chimica * (0.12 + popM * 0.08) * inputEfficiency(w, tag, 'chimica') * te.industrialYield;
+    if (l.siderurgia) inc += l.siderurgia * (0.15 + popM * 0.1) * inputEfficiency(w, tag, 'siderurgia') * te.industrialYield;
     if (l.porto) inc += l.porto * 0.08;
   }
   return Math.round(inc * 100) / 100;
@@ -176,6 +180,8 @@ export function extraLots(w: World, p: number): ResourceId[] {
   const res = w.map.resources[p];
   if (l.miniera) for (const r of res) if (MINERAL.has(r)) for (let i = 0; i < l.miniera; i++) out.push(r);
   if (l.agricoltura) { const crop = res.find((r) => !RESOURCES[r].strategic && !MINERAL.has(r)) ?? 'grano'; out.push(crop); }
+  // giacimenti resi sfruttabili dalla ricerca (minette, Kiruna, Grozny, Kirkuk…), con le miniere
+  for (const r of siteLots(w, p)) { out.push(r); for (let i = 0; i < (l.miniera ?? 0); i++) out.push(r); }
   return out;
 }
 
@@ -219,7 +225,7 @@ function computeLogistics(w: World, tag: Tag) {
   for (let i = 0; i < w.map.size; i++) if (s.owner[i] === tag && s.controller[i] === tag) popM += w.map.provinces[i].pop / 1e6;
   const bell = totalLevel(w, tag, 'bellica') * inputEfficiency(w, tag, 'bellica');
   const rail = totalLevel(w, tag, 'ferrovia'), port = totalLevel(w, tag, 'porto');
-  const capacity = Math.round(industryOf(w, tag) + 15 * bell + 4 * Math.max(0, lots) + 4 * popM + 0.5 * rail + 1 * port);
+  const capacity = Math.round(techEffects(w, tag).logistics * (industryOf(w, tag) + 15 * bell + 4 * Math.max(0, lots) + 4 * popM + 0.5 * rail + 1 * port));
   const men = s.units.filter((u) => u.nation === tag).reduce((a, u) => a + u.strength, 0) / 1000;
   const ratio = men > 0 ? capacity / men : 2;
   const factor = Math.max(0.75, Math.min(1.15, 0.75 + 0.25 * ratio));
@@ -261,9 +267,10 @@ export function buildRefusal(w: World, tag: Tag, p: number, b: BuildingId): stri
   const pending = projects(w).some((x) => x.province === p && x.type === b);
   if (pending) return 'c\'è già un cantiere';
   if (cur >= info.max) return 'livello massimo';
+  if (cur + 1 > maxLevel(w, tag, b)) { const t = unlockTech(b, cur + 1); return `serve la ricerca "${t?.name ?? '?'}"`; }
   if (b === 'porto' && !pv.coast) return 'serve la costa';
   if (b === 'agricoltura' && (pv.terrain === 'mountain' || pv.terrain === 'desert')) return 'terreno inadatto';
-  if (b === 'miniera' && !w.map.resources[p].some((r) => MINERAL.has(r))) return 'non ci sono risorse minerarie';
+  if (b === 'miniera' && ![...w.map.resources[p], ...siteLots(w, p)].some((r) => MINERAL.has(r))) return 'non ci sono risorse minerarie';
   if (projects(w).filter((x) => x.nation === tag).length >= slots(w, tag)) return `tutti i cantieri sono occupati (${slots(w, tag)})`;
   const cost = info.cost(cur + 1);
   if (w.state.nations[tag].treasury < cost) return `servono ${cost} M`;
@@ -321,7 +328,7 @@ function aiConstruction(w: World, sink: GameEvent[]) {
     const n = s.nations[tag];
     if (tag === s.player || !n.alive || w.profiles[tag]?.micro || tag === 'NUL') continue;
     // chi ha le casse piene costruisce di più
-    const rich = n.treasury > 300;
+    const rich = n.treasury > reserveOf(w, tag);
     if (n.treasury < 50 || projects(w).filter((x) => x.nation === tag).length >= Math.min(rich ? 4 : 2, slots(w, tag))) continue;
     if (rand(s.seed, 'cantiere', tag, s.day) > (rich ? 0.8 : 0.35)) continue;
     const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag && !p.impassable).sort((a, c) => c.pop - a.pop);
@@ -332,7 +339,7 @@ function aiConstruction(w: World, sink: GameEvent[]) {
     if (border.length) tries.push([border.sort((a, c) => c.pop - a.pop)[0].id, 'fortezza']);
     if (logistics(w, tag).ratio < 1) tries.push([own[0].id, 'bellica']);
     const ind = (['siderurgia', 'tessile', 'chimica'] as BuildingId[]).filter((k) => inputEfficiency(w, tag, k) === 1);
-    if (ind.length) tries.push([own[Math.floor(rand(s.seed, 'ind', tag, s.day) * Math.min(4, own.length))].id, ind[Math.floor(rand(s.seed, 'tipo', tag, s.day) * ind.length)]]);
+    if (ind.length && rand(s.seed, 'scelta-ind', tag, s.day) < 0.3) tries.push([own[Math.floor(rand(s.seed, 'ind', tag, s.day) * Math.min(4, own.length))].id, ind[Math.floor(rand(s.seed, 'tipo', tag, s.day) * ind.length)]]);
     const mine = own.find((p) => w.map.resources[p.id].some((r) => r === 'carbone' || r === 'ferro'));
     if (mine) tries.push([mine.id, 'miniera']);
     tries.push([own[Math.floor(rand(s.seed, 'fer', tag, s.day) * Math.min(8, own.length))].id, 'ferrovia']);
@@ -345,4 +352,13 @@ function aiConstruction(w: World, sink: GameEvent[]) {
       if (!startProject(w, tag, p, k, sink)) break;
     }
   }
+}
+
+/** Manutenzione settimanale delle opere (milioni): fortezze e porti costano di più. */
+export const UPKEEP: Record<BuildingId, number> = { ferrovia: 0.01, porto: 0.03, fortezza: 0.04, agricoltura: 0.005, tessile: 0.01, chimica: 0.01, siderurgia: 0.015, bellica: 0.02, miniera: 0.01 };
+export function maintenanceOf(w: World, tag: Tag): number {
+  const b = buildings(w);
+  let m = 0;
+  for (let p = 0; p < b.length; p++) if (w.state.owner[p] === tag) for (const [k, l] of Object.entries(b[p]) as [BuildingId, number][]) m += UPKEEP[k] * l;
+  return Math.round(m * 100) / 100;
 }

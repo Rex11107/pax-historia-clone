@@ -192,6 +192,12 @@ export interface Budget {
   works?: number;
   upkeep: number;
   administration: number;
+  /** spese civili (scuole, giustizia, sanità) */
+  civil?: number;
+  /** manutenzione delle opere */
+  maintenance?: number;
+  /** spesa per la ricerca */
+  research?: number;
   interest: number;
   infrastructure: number;
   net: number;
@@ -250,6 +256,8 @@ export interface GameState {
   projects?: import('./construction').Project[];
   /** stati soggetti (tributari, vassalli, protettorati) */
   subjects?: import('./vassals').Subject[];
+  /** ricerca: conoscenze e progetti in corso */
+  research?: import('./research').ResearchState;
   situations: Situation[];
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];

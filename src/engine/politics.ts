@@ -7,6 +7,7 @@
 
 import { dayOf, genericPolitics, POLITICS, type Program, type Regime } from '../scenario/politics1881';
 import { ministerEffects, reshuffleCabinet } from './ministers';
+import { techEffects } from './research';
 import type { GameEvent, Tag } from './types';
 import { clamp, emit, formatDate, rand, warsOf, type World } from './world';
 
@@ -113,6 +114,8 @@ export function govEffects(w: World, tag: Tag) {
   const me = ministerEffects(w, tag);
   out.income *= me.income; out.stability += me.stability; out.exhaustion *= me.exhaustion; out.upkeep *= me.upkeep; out.rail += me.rail;
   out.manpower *= me.manpower; out.interest *= me.interest; out.quality *= me.quality;
+  const te = techEffects(w, tag);
+  out.income *= te.income; out.stability += te.stability; out.exhaustion *= te.exhaustion; out.upkeep *= te.upkeep; out.manpower *= te.manpower; out.quality *= te.quality;
   const gov = ps.parties.filter((p) => ps.gov.includes(p.id));
   const tot = gov.reduce((a, p) => a + Math.max(1, p.seats), 0) || 1;
   for (const p of gov) {

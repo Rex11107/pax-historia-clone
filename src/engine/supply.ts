@@ -1,3 +1,4 @@
+import { techEffects } from './research';
 import type { GameEvent, Tag } from './types';
 import { industryOf, level, logistics, provinceCapacity } from './construction';
 import { allied, canEnter, clamp, emit, enemiesOf, presence, type World } from './world';
@@ -49,7 +50,7 @@ export function updateSupply(w: World, sink: GameEvent[]) {
     if (before >= 0.25 && u.supply < 0.25) emit(w, { type: 'out_of_supply', nations: [u.nation], province: u.location, text: `${u.name} è senza rifornimenti a ${w.map.provinces[u.location].name}.` }, sink);
     // attrito
     if (u.supply < 0.25) {
-      const loss = Math.round(u.strength * 0.012 * (1 - u.supply / 0.25 + 0.3));
+      const loss = Math.round(u.strength * 0.012 * (1 - u.supply / 0.25 + 0.3) * techEffects(w, u.nation).attrition);
       u.strength -= loss;
       u.morale = clamp(u.morale - 0.01, 0, 1);
       s.nations[u.nation].turnLosses += loss;

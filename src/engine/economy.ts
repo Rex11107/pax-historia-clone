@@ -1,9 +1,10 @@
+import { researchCost, techEffects } from './research';
 import { ROMAN, UNIT_LABEL } from './setup';
 import type { Budget, GameEvent, Policies, Tag, UnitType } from './types';
 import { clamp, emit, hostileUnitsAt, warsOf, type World } from './world';
 import { effectiveResources } from './trade';
 import { govEffects } from './politics';
-import { buildingIncome, industryOf, manpowerBonus, recruitDiscount } from './construction';
+import { buildingIncome, industryOf, maintenanceOf, manpowerBonus, recruitDiscount } from './construction';
 import { tributeOf } from './vassals';
 
 // Effetti meccanici delle politiche interne (il pannello "Interno" li mostra così come sono).
@@ -36,35 +37,47 @@ export const RECRUIT: Record<UnitType, { men: number; cost: number; label: strin
   artillery: { men: 8000, cost: 9, label: 'brigata d\'artiglieria' },
 };
 
+/** costo settimanale (milioni) di mille uomini in armi in tempo di pace */
+export const UPKEEP_PER_THOUSAND = 0.035;
+
 export function budget(w: World, tag: Tag): Budget {
   const s = w.state;
   const n = s.nations[tag];
   const pol = n.policies;
-  let popEff = 0;
+  let popEff = 0, popOwn = 0, provinces = 0, occupied = 0;
   for (let i = 0; i < s.owner.length; i++) {
     const p = w.map.provinces[i].pop;
+    if (s.owner[i] === tag) { popOwn += p; if (!w.map.provinces[i].impassable) provinces++; }
     if (s.owner[i] === tag && s.controller[i] === tag) popEff += p;
-    else if (s.controller[i] === tag) popEff += p * 0.25; // requisizioni nelle province occupate
+    else if (s.controller[i] === tag) { popEff += p * 0.25; occupied++; } // requisizioni nelle province occupate
   }
   const trade = s.treaties.filter((t) => t.type === 'trade' && !t.violated && (t.a === tag || t.b === tag)).length;
   const res = effectiveResources(w, tag);
   const gov = govEffects(w, tag);
   // senza carbone le nazioni industriali lo comprano all'estero: entrate ridotte del 5%
   const ind = industryOf(w, tag);
-  const coalMalus = ind >= 50 && res.missing.includes('carbone') ? 0.95 : 1;
+  // l'idroelettrico ("carbone bianco") lo attenua, se il paese ha montagne
+  const te = techEffects(w, tag);
+  const relief = te.coalRelief && w.map.provinces.filter((p) => s.owner[p.id] === tag && p.terrain === 'mountain').length >= 3 ? te.coalRelief : 0;
+  const coalMalus = ind >= 50 && res.missing.includes('carbone') ? 1 - 0.05 * (1 - relief) : 1;
   const works = buildingIncome(w, tag);
   const income = (popEff / 1e6) * (0.6 + (0.8 * ind) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income + works;
   const men = s.units.filter((u) => u.nation === tag).reduce((x, u) => x + u.strength, 0);
   const war = warsOf(s, tag).length > 0;
-  const upkeep = (men / 1000) * 0.023 * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
-  const administration = income * 0.3;
+  const upkeep = (men / 1000) * UPKEEP_PER_THOUSAND * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
+  // amministrazione: cresce con la dimensione dello Stato; governare territori occupati costa
+  const administration = income * (0.28 + Math.min(0.12, provinces * 0.0004)) + occupied * 0.05;
+  // spese civili (scuole, giustizia, sanità) per abitante; manutenzione delle opere
+  const civil = (popOwn / 1e6) * 0.1;
+  const maintenance = maintenanceOf(w, tag);
+  const researchSpend = researchCost(w, tag);
   const interest = ((n.debt * 0.045) / 52) * gov.interest;
   const infrastructure = income * POLICY_EFFECTS.infrastructure[pol.infrastructure].cost;
   const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower * gov.manpower * manpowerBonus(w, tag));
   const r = (v: number) => Math.round(v * 100) / 100;
   const tradeNet = res.earn - res.pay;
   const tribute = tributeOf(w, tag);
-  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), works: r(works), upkeep: r(upkeep), administration: r(administration), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute - upkeep - administration - interest - infrastructure), manpowerGain };
+  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), works: r(works), upkeep: r(upkeep), administration: r(administration), civil: r(civil), maintenance: r(maintenance), research: r(researchSpend), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute - upkeep - administration - civil - maintenance - researchSpend - interest - infrastructure), manpowerGain };
 }
 
 export function stabilityTarget(w: World, tag: Tag): number {
@@ -136,3 +149,20 @@ export function recruit(w: World, tag: Tag, type: UnitType, province: number, si
   return null;
 }
 
+
+/** Riserva che una nazione non giocante vuole tenere in cassa: 20 settimane di entrate. */
+export const reserveOf = (w: World, tag: Tag) => 20 * Math.max(1, w.state.nations[tag]?.lastBudget?.income ?? 10);
+
+/** Finanze delle nazioni non giocanti: oltre la riserva rimborsano il debito; in deficit alzano le imposte. */
+export function aiFinances(w: World, tag: Tag) {
+  const n = w.state.nations[tag];
+  const b = n.lastBudget;
+  if (!b) return;
+  const reserve = reserveOf(w, tag);
+  if (n.treasury > reserve && n.debt > 0) {
+    const pay = Math.min(n.debt, (n.treasury - reserve) * 0.25);
+    n.treasury -= pay; n.debt -= pay;
+  }
+  if (b.net < 0 && n.treasury < 4 * b.income) n.policies.tax = 'high';
+  else if (n.policies.tax === 'high' && b.net > 0.15 * b.income && n.stability < 60) n.policies.tax = 'normal';
+}

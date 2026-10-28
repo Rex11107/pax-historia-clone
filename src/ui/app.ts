@@ -8,6 +8,7 @@ import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, 
 import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, type BuildingId } from '../engine/construction';
 import { annex, annexRefusal, declareIndependence, imposeProtectorate, LEVEL_INFO, libertyTarget, loosen, protectorateRefusal, subjectOf, subjects, tighten } from '../engine/vassals';
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
+import { ResearchView } from './research-view';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
@@ -23,6 +24,9 @@ type Tab = 'army' | 'diplomacy' | 'government' | 'dispatches' | 'province' | 'un
 const UNIT_TYPE: Record<UnitType, string> = { infantry: 'fanteria', cavalry: 'cavalleria', artillery: 'artiglieria' };
 const PHASE: Record<Phase, string> = { traduzione: 'Lo Stato maggiore legge le direttive…', simulazione: 'Le truppe marciano: sette giorni di campagna…', dispaccio: 'I dispacci arrivano dalle capitali…', salvataggio: 'Archiviazione…' };
 
+// eslint-disable-next-line prefer-const
+let app: App;
+
 export class App {
   game!: Game;
   map!: MapView;
@@ -36,10 +40,16 @@ export class App {
   chatBusy = false;
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
-  govTab: 'budget' | 'trade' | 'politics' | 'build' = 'budget';
+  govTab: 'budget' | 'trade' | 'politics' | 'build' | 'research' = 'budget';
+  research = new ResearchView({
+    get world() { return app.game.world; },
+    toast: (m: string) => app.toast(m),
+    changed: () => app.afterStateChange(),
+    rerender: () => app.render(),
+  });
   trade: { mode: 'buy' | 'sell'; res: ResourceId; qty: number } = { mode: 'buy', res: 'carbone', qty: 1 };
 
-  constructor(private mapData: MapData, public settings: Settings) {}
+  constructor(private mapData: MapData, public settings: Settings) { app = this; }
 
   start(game: Game) {
     this.game = game;
@@ -126,7 +136,7 @@ export class App {
     body.replaceChildren(node);
     // la conversazione usa quasi tutto lo schermo e si apre sull'ultimo messaggio (letto dall'inizio)
     const inChat = this.tab === 'diplomacy' && !!this.chatWith;
-    $('#sheet').classList.toggle('tall', inChat);
+    $('#sheet').classList.toggle('tall', inChat || (this.tab === 'government' && this.govTab === 'research'));
     if (inChat) {
       const msgs = body.querySelectorAll('.msg');
       const last = msgs[msgs.length - 1] as HTMLElement | undefined;
@@ -406,8 +416,9 @@ export class App {
       h('button', { class: this.govTab === 'budget' ? 'on' : '', onclick: () => { this.govTab = 'budget'; this.render(); } }, 'Bilancio e politiche'),
       h('button', { class: this.govTab === 'politics' ? 'on' : '', onclick: () => { this.govTab = 'politics'; this.render(); } }, politicsOf(this.game.world, this.game.state.player)?.crisis ? 'Politica ⚠' : 'Politica'),
       h('button', { class: this.govTab === 'trade' ? 'on' : '', onclick: () => { this.govTab = 'trade'; this.render(); } }, 'Commercio'),
-      h('button', { class: this.govTab === 'build' ? 'on' : '', onclick: () => { this.govTab = 'build'; this.render(); } }, 'Costruzione'));
-    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.viewBudget());
+      h('button', { class: this.govTab === 'build' ? 'on' : '', onclick: () => { this.govTab = 'build'; this.render(); } }, 'Costruzione'),
+      h('button', { class: this.govTab === 'research' ? 'on' : '', onclick: () => { this.govTab = 'research'; this.render(); } }, 'Ricerca'));
+    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.govTab === 'research' ? this.research.view() : this.viewBudget());
   }
 
   private viewPolitics(): Node {
@@ -555,7 +566,7 @@ export class App {
     };
     return h('div', null,
       h('table', { class: 'budget' }, h('caption', null, 'Bilancio settimanale previsto (milioni)'),
-        row('Entrate fiscali', b.income - (b.resources ?? 0) - (b.works ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Campi, industrie e porti', b.works ?? 0, 1), row('Commercio (saldo)', b.trade ?? 0, (b.trade ?? 0) >= 0 ? 1 : -1), ...(b.tribute ? [row(b.tribute > 0 ? 'Tributi dei vassalli' : 'Tributo al signore', b.tribute, b.tribute > 0 ? 1 : -1)] : []), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
+        row('Entrate fiscali', b.income - (b.resources ?? 0) - (b.works ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Campi, industrie e porti', b.works ?? 0, 1), row('Commercio (saldo)', b.trade ?? 0, (b.trade ?? 0) >= 0 ? 1 : -1), ...(b.tribute ? [row(b.tribute > 0 ? 'Tributi dei vassalli' : 'Tributo al signore', b.tribute, b.tribute > 0 ? 1 : -1)] : []), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Spese civili', b.civil ?? 0), row('Manutenzione delle opere', b.maintenance ?? 0), row('Ricerca', b.research ?? 0), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
         h('tr', { class: 'total' }, h('td', null, 'Saldo'), h('td', { class: `num ${b.net >= 0 ? 'pos' : 'neg'}` }, `${b.net >= 0 ? '+' : '−'}${Math.abs(b.net).toFixed(1)}`))),
       h('dl', { class: 'facts' },
         h('dt', null, 'Debito pubblico'), h('dd', null, `${Math.round(n.debt).toLocaleString('it-IT')} M`),

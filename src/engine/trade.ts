@@ -1,3 +1,4 @@
+import { techEffects } from './research';
 // Commercio delle risorse: contratti fra due nazioni, gestiti interamente dal motore.
 //
 // Un contratto vende ogni settimana `qty` lotti di una risorsa (un lotto = la produzione
@@ -72,6 +73,8 @@ export function effectiveResources(w: World, tag: Tag) {
   let income = r.income;
   for (const [res, q] of Object.entries(f.exports) as [ResourceId, number][]) income -= resourceValue(res, ind) * Math.min(q, r.count[res] ?? 0);
   for (const [res, q] of Object.entries(f.imports) as [ResourceId, number][]) income += resourceValue(res, ind) * q * scarcity(r.count[res] ?? 0);
+  const oil = techEffects(w, tag).oilValue;
+  if (oil !== 1) income += resourceValue('petrolio', ind) * (r.count.petrolio ?? 0) * (oil - 1);
   const missing = (['carbone', 'ferro'] as ResourceId[]).filter((x) => !r.count[x] && !f.imports[x]);
   return { count: r.count, income: Math.round(income * 100) / 100, missing, ...f };
 }

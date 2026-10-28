@@ -1,5 +1,5 @@
 import { imposeProtectorate, protectorateRefusal } from './vassals';
-import { recruit } from './economy';
+import { aiFinances, recruit } from './economy';
 import { makePeace } from './diplomacy';
 import { moveCost } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
@@ -99,6 +99,7 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
   for (const tag of Object.keys(s.nations)) {
     if (tag === s.player || !s.nations[tag].alive) continue;
     const n = s.nations[tag];
+    aiFinances(w, tag);
     if (!warsOf(s, tag).length) continue;
     // arruolamento nella provincia più popolosa e sicura
     if (n.treasury > 30 && n.manpower > 20000) {
