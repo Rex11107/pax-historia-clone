@@ -5,11 +5,13 @@ import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } 
 import { TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
+import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, type BuildingId } from '../engine/construction';
+import { annex, annexRefusal, declareIndependence, imposeProtectorate, LEVEL_INFO, libertyTarget, loosen, protectorateRefusal, subjectOf, subjects, tighten } from '../engine/vassals';
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
 import { assignOrders, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
-import { al, atWar, di, enemiesOf, formatDate, nationName, opinion, treatyBetween } from '../engine/world';
+import { al, atWar, di, enemiesOf, formatDate, nationName, opinion, shortName, treatyBetween } from '../engine/world';
 import { declareWar } from '../engine/diplomacy';
 import { chatJSON, usage } from '../llm/client';
 import { deleteSave, listSaves, loadGame, saveSettings, type Settings } from '../storage/storage';
@@ -34,7 +36,7 @@ export class App {
   chatBusy = false;
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
-  govTab: 'budget' | 'trade' | 'politics' = 'budget';
+  govTab: 'budget' | 'trade' | 'politics' | 'build' = 'budget';
   trade: { mode: 'buy' | 'sell'; res: ResourceId; qty: number } = { mode: 'buy', res: 'carbone', qty: 1 };
 
   constructor(private mapData: MapData, public settings: Settings) {}
@@ -69,6 +71,11 @@ export class App {
     $('#res-btn').addEventListener('click', (e) => {
       this.map.showResources = !this.map.showResources;
       (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showResources));
+      this.map.invalidate();
+    });
+    $('#works-btn').addEventListener('click', (e) => {
+      this.map.showWorks = !this.map.showWorks;
+      (e.currentTarget as HTMLElement).setAttribute('aria-pressed', String(this.map.showWorks));
       this.map.invalidate();
     });
     $('#relief-btn').addEventListener('click', (e) => {
@@ -334,7 +341,57 @@ export class App {
       !p.impassable && owner === '' ? h('p', { class: 'muted' }, 'Terra di nessuno: la prima nazione che vi porta le sue truppe la occupa.') : null,
       units.length ? h('div', null, h('h3', null, 'Truppe presenti'), h('ul', { class: 'list' }, ...units.map((u) => h('li', { onclick: () => this.selectUnit(u.id) }, h('div', { class: 'row' }, h('span', null, u.name), h('span', { class: 'num' }, fmtK(u.strength))))))) : h('p', { class: 'muted' }, 'Nessuna truppa nella provincia.'),
       owner && owner !== s.player ? h('div', { class: 'buttons' }, h('button', { onclick: () => { this.chatWith = owner; this.setTab('diplomacy'); } }, `Scrivi ${al(w, owner)}`)) : null,
+      this.viewWorks(id),
       canRecruit ? h('div', null, h('h3', null, 'Arruolamento'), h('div', { class: 'buttons' }, ...(Object.keys(RECRUIT) as UnitType[]).map((t) => h('button', { onclick: () => this.doRecruit(t, id) }, `${RECRUIT[t].label} · ${RECRUIT[t].cost} M`)))) : null,
+    );
+  }
+
+  private viewWorks(id: number): Node | null {
+    const w = this.game.world, s = w.state, me = s.player;
+    const p = w.map.provinces[id];
+    if (p.impassable) return null;
+    const lv = buildings(w)[id];
+    const have = (Object.keys(BUILDINGS) as BuildingId[]).filter((b) => lv[b]);
+    const pend = projects(w).filter((x) => x.province === id);
+    const mine = canBuildIn(w, me, id);
+    return h('div', null, h('h3', null, 'Opere'),
+      h('p', null, have.length ? have.map((b) => `${BUILDINGS[b].icon} ${BUILDINGS[b].label} ${'●'.repeat(lv[b]!)}${'○'.repeat(BUILDINGS[b].max - lv[b]!)}`).join(' · ') : 'nessuna'),
+      h('p', { class: 'sub' }, `Capienza logistica: ${provinceCapacity(w, id)} mila uomini.`),
+      pend.length ? h('ul', { class: 'list plain' }, ...pend.map((x) => h('li', null, h('div', { class: 'row' }, h('span', null, `${BUILDINGS[x.type].icon} ${BUILDINGS[x.type].label} → livello ${x.level}`), h('span', { class: 'sub' }, `${Math.ceil(x.daysLeft / 7)} sett.`)), h('div', { class: 'meter' }, h('i', { style: `width:${Math.round((1 - x.daysLeft / x.total) * 100)}%` }))))) : null,
+      mine ? h('div', { class: 'build-grid' }, ...(Object.keys(BUILDINGS) as BuildingId[]).map((b) => {
+        const cur = lv[b] ?? 0;
+        const info = BUILDINGS[b];
+        const err = buildRefusal(w, me, id, b);
+        if (err === 'livello massimo' || err === 'serve la costa' || err === 'non ci sono risorse minerarie' || err === 'terreno inadatto') return null;
+        return h('button', { disabled: !!err, title: err ?? info.desc, onclick: () => { const e = startProject(w, me, id, b); this.toast(e ?? `Cantiere aperto: ${info.label}.`); this.afterStateChange(); } },
+          h('b', null, `${info.icon} ${info.label} ${cur + 1}`), h('small', null, err ?? `${info.cost(cur + 1)} M · ${info.weeks(cur + 1)} sett.${info.industrial && inputEfficiency(w, me, b) < 1 ? ` · senza materie prime rende ${Math.round(inputEfficiency(w, me, b) * 100)}%` : ''}`));
+      })) : null,
+    );
+  }
+
+  private viewBuild(): Node {
+    const w = this.game.world, s = w.state, me = s.player;
+    const L = logistics(w, me);
+    const mine = projects(w).filter((x) => x.nation === me);
+    const ind = industryOf(w, me), base = w.profiles[me].industry;
+    const eff = (b: BuildingId) => { const e = inputEfficiency(w, me, b); return e === 1 ? '' : ` (materie prime mancanti: rende ${Math.round(e * 100)}%)`; };
+    return h('div', null,
+      h('h3', null, 'Logistica dell\'esercito'),
+      h('div', { class: 'meter' }, h('i', { style: `width:${Math.min(100, L.ratio * 50)}%` }), h('b', { style: 'left:50%' })),
+      h('p', { class: 'sub' }, `Capacità ${L.capacity} mila uomini, in armi ${L.men} mila (rapporto ${L.ratio.toFixed(2).replace('.', ',')}): rifornimenti, portata fuori dai confini e rinforzi ×${L.factor.toFixed(2).replace('.', ',')}. La capacità cresce con l'industria, l'industria bellica, le risorse strategiche (carbone, ferro, petrolio, metalli, anche importati), la popolazione, le ferrovie e i porti; più eserciti la consumano.`),
+      h('dl', { class: 'facts' },
+        h('dt', null, 'Industria'), h('dd', null, `${ind}/100${ind !== base ? ` (nel 1881 ${base})` : ''}`),
+        h('dt', null, 'Cantieri'), h('dd', null, `${mine.length} di ${slots(w, me)} (uno in più ogni 15 M di entrate settimanali)`),
+        ...(Object.keys(BUILDINGS) as BuildingId[]).flatMap((b) => { const n = totalLevel(w, me, b); return n ? [h('dt', null, `${BUILDINGS[b].icon} ${BUILDINGS[b].label}`), h('dd', null, `${n} livelli${BUILDINGS[b].industrial ? eff(b) : ''}`)] : []; })),
+      h('h3', null, 'Cantieri aperti'),
+      mine.length ? h('ul', { class: 'list plain' }, ...mine.map((x) => h('li', null,
+        h('div', { class: 'row' }, h('span', null, `${BUILDINGS[x.type].icon} ${BUILDINGS[x.type].label} ${x.level} a `, h('button', { class: 'link', onclick: () => this.onProvince(x.province) }, w.map.provinces[x.province].name)),
+          h('button', { class: 'link', onclick: () => { cancelProject(w, x.id); this.toast('Cantiere chiuso: rientra metà della spesa.'); this.afterStateChange(); } }, 'Annulla')),
+        h('div', { class: 'meter' }, h('i', { style: `width:${Math.round((1 - x.daysLeft / x.total) * 100)}%` })),
+        h('div', { class: 'sub' }, `${Math.ceil(x.daysLeft / 7)} settimane${s.controller[x.province] !== s.owner[x.province] ? ' · fermo: provincia occupata' : ''}`)))) : h('p', { class: 'muted' }, 'Nessun cantiere. Tocca una provincia sulla mappa e scegli cosa costruire.'),
+      h('h3', null, 'Che cosa si costruisce'),
+      h('ul', { class: 'list plain' }, ...(Object.keys(BUILDINGS) as BuildingId[]).map((b) => h('li', null, h('b', null, `${BUILDINGS[b].icon} ${BUILDINGS[b].label}`), h('div', { class: 'sub' }, `${BUILDINGS[b].desc}. Livello 1: ${BUILDINGS[b].cost(1)} M, ${BUILDINGS[b].weeks(1)} settimane; massimo ${BUILDINGS[b].max}.`)))),
+      h('p', { class: 'muted' }, 'Si costruisce nelle proprie province non occupate, e nei vassalli e protettorati (l\'investimento abbassa il loro desiderio di indipendenza). Annullare un cantiere restituisce metà della spesa; in una provincia occupata i lavori si fermano.'),
     );
   }
 
@@ -348,8 +405,9 @@ export class App {
     const nav = h('div', { class: 'seg subnav' },
       h('button', { class: this.govTab === 'budget' ? 'on' : '', onclick: () => { this.govTab = 'budget'; this.render(); } }, 'Bilancio e politiche'),
       h('button', { class: this.govTab === 'politics' ? 'on' : '', onclick: () => { this.govTab = 'politics'; this.render(); } }, politicsOf(this.game.world, this.game.state.player)?.crisis ? 'Politica ⚠' : 'Politica'),
-      h('button', { class: this.govTab === 'trade' ? 'on' : '', onclick: () => { this.govTab = 'trade'; this.render(); } }, 'Commercio'));
-    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.viewBudget());
+      h('button', { class: this.govTab === 'trade' ? 'on' : '', onclick: () => { this.govTab = 'trade'; this.render(); } }, 'Commercio'),
+      h('button', { class: this.govTab === 'build' ? 'on' : '', onclick: () => { this.govTab = 'build'; this.render(); } }, 'Costruzione'));
+    return h('div', null, nav, this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.viewBudget());
   }
 
   private viewPolitics(): Node {
@@ -497,7 +555,7 @@ export class App {
     };
     return h('div', null,
       h('table', { class: 'budget' }, h('caption', null, 'Bilancio settimanale previsto (milioni)'),
-        row('Entrate fiscali', b.income - (b.resources ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Commercio (saldo)', b.trade ?? 0, (b.trade ?? 0) >= 0 ? 1 : -1), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
+        row('Entrate fiscali', b.income - (b.resources ?? 0) - (b.works ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Campi, industrie e porti', b.works ?? 0, 1), row('Commercio (saldo)', b.trade ?? 0, (b.trade ?? 0) >= 0 ? 1 : -1), ...(b.tribute ? [row(b.tribute > 0 ? 'Tributi dei vassalli' : 'Tributo al signore', b.tribute, b.tribute > 0 ? 1 : -1)] : []), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
         h('tr', { class: 'total' }, h('td', null, 'Saldo'), h('td', { class: `num ${b.net >= 0 ? 'pos' : 'neg'}` }, `${b.net >= 0 ? '+' : '−'}${Math.abs(b.net).toFixed(1)}`))),
       h('dl', { class: 'facts' },
         h('dt', null, 'Debito pubblico'), h('dd', null, `${Math.round(n.debt).toLocaleString('it-IT')} M`),
@@ -528,15 +586,42 @@ export class App {
     tags.sort((a, b) => rank(a) - rank(b) || w.profiles[a].name.localeCompare(w.profiles[b].name));
     return h('div', null,
       this.game.hasKey ? null : h('p', { class: 'notice' }, 'Per parlare con i governi serve la chiave API. ', h('button', { class: 'link', onclick: () => this.setTab('settings') }, 'Impostazioni')),
+      this.viewSubjects(),
       h('ul', { class: 'list nations' }, ...tags.map((t) => {
         const treaties = s.treaties.filter((x) => (x.a === t && x.b === me) || (x.b === t && x.a === me)).map((x) => TREATY_LABEL[x.type]);
         const unread = (s.chats[t]?.length ?? 0);
         return h('li', { onclick: () => { this.chatWith = t; this.render(); } },
           h('div', { class: 'row' }, h('span', null, h('i', { class: 'swatch', style: `background:${w.profiles[t].color}` }), h('b', null, w.profiles[t].name)), h('span', { class: `num ${opinion(s, t, me) < 0 ? 'neg' : 'pos'}` }, signed(opinion(s, t, me)))),
-          h('div', { class: 'sub' }, atWar(s, me, t) ? 'IN GUERRA con noi' : treaties.join(', ') || 'nessun trattato', unread ? ` · ${unread} messaggi` : ''),
+          h('div', { class: 'sub' }, atWar(s, me, t) ? 'IN GUERRA con noi' : treaties.join(', ') || 'nessun trattato', subjectOf(w, t) ? ` · ${subjectOf(w, t)!.level} ${di(w, subjectOf(w, t)!.overlord)}` : '', unread ? ` · ${unread} messaggi` : ''),
         );
       })),
       h('p', { class: 'muted' }, 'Il numero è il giudizio che quel governo ha di noi (da −100 a 100).'),
+    );
+  }
+
+  private viewSubjects(): Node | null {
+    const w = this.game.world, s = w.state, me = s.player;
+    const list = subjects(w).filter((x) => x.overlord === me || x.subject === me);
+    const others = subjects(w).filter((x) => x.overlord !== me && x.subject !== me);
+    const act = (label: string, fn: () => string | null, err: string | null = null) => h('button', { class: 'link', disabled: !!err, title: err ?? '', onclick: () => { const e = fn(); this.toast(e ?? label); this.afterStateChange(); } }, label);
+    return h('div', null,
+      list.length ? h('h3', null, 'Stati soggetti') : null,
+      ...list.map((x) => {
+        const lt = libertyTarget(w, x);
+        const asOverlord = x.overlord === me;
+        const other = asOverlord ? x.subject : x.overlord;
+        return h('div', { class: 'card' },
+          h('div', { class: 'row' }, h('b', null, asOverlord ? `${nationName(w, x.subject)}: ${x.level}` : `Siamo ${x.level} ${di(w, x.overlord)}`), h('span', { class: 'num' }, `${Math.round(x.liberty)}/100`)),
+          h('div', { class: 'meter' }, h('i', { style: `width:${x.liberty}%` }), h('b', { style: 'left:75%' })),
+          h('p', { class: 'sub' }, `Desiderio di indipendenza, tende a ${Math.round(lt.target)}: ${lt.parts.map(([k, v]) => `${k} ${v >= 0 ? '+' : ''}${v}`).join(', ')}. ${LEVEL_INFO[x.level].desc}${x.liberty >= 75 ? '; sopra 75 il tributo non arriva più' : ''}.`),
+          h('div', { class: 'buttons' }, ...(asOverlord ? [
+            x.level !== 'protettorato' ? act('Stringere il legame', () => tighten(w, me, x.subject), x.liberty >= 25 ? 'serve un desiderio di indipendenza sotto 25' : null) : null,
+            act(x.level === 'tributario' ? 'Riconoscere l\'indipendenza' : 'Allentare il legame', () => loosen(w, me, x.subject)),
+            x.level === 'protettorato' ? act('Annettere', () => annex(w, me, x.subject), annexRefusal(w, me, x.subject)) : null,
+            h('button', { class: 'link', onclick: () => { this.chatWith = other; this.render(); } }, 'Scrivi'),
+          ] : [act('Proclamare l\'indipendenza', () => declareIndependence(w, me), x.liberty < 75 ? 'serve un desiderio di indipendenza di almeno 75' : null)]).filter((n) => !!n)));
+      }),
+      others.length ? h('p', { class: 'sub' }, `Altri stati soggetti: ${others.map((x) => `${shortName(w, x.subject)} (${x.level} ${di(w, x.overlord)}, ${Math.round(x.liberty)})`).join('; ')}.`) : null,
     );
   }
 
@@ -560,7 +645,8 @@ export class App {
       h('div', { class: 'compose' },
         this.offerPicker(tag),
         input,
-        h('div', { class: 'buttons' }, send, war ? null : h('button', { class: 'danger', onclick: () => this.confirmWar(tag) }, 'Dichiara guerra')),
+        h('div', { class: 'buttons' }, send, war ? null : h('button', { class: 'danger', onclick: () => this.confirmWar(tag) }, 'Dichiara guerra'),
+          war && !protectorateRefusal(w, me, tag) ? h('button', { onclick: () => { const e = imposeProtectorate(w, me, tag); this.toast(e ?? `Pace firmata: ${nationName(w, tag)} è nostro protettorato.`); this.chatWith = null; this.afterStateChange(); } }, 'Imporre il protettorato') : null),
       ),
     );
   }

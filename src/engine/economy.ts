@@ -3,6 +3,8 @@ import type { Budget, GameEvent, Policies, Tag, UnitType } from './types';
 import { clamp, emit, hostileUnitsAt, warsOf, type World } from './world';
 import { effectiveResources } from './trade';
 import { govEffects } from './politics';
+import { buildingIncome, industryOf, manpowerBonus, recruitDiscount } from './construction';
+import { tributeOf } from './vassals';
 
 // Effetti meccanici delle politiche interne (il pannello "Interno" li mostra così come sono).
 export const POLICY_EFFECTS = {
@@ -37,7 +39,6 @@ export const RECRUIT: Record<UnitType, { men: number; cost: number; label: strin
 export function budget(w: World, tag: Tag): Budget {
   const s = w.state;
   const n = s.nations[tag];
-  const pr = w.profiles[tag];
   const pol = n.policies;
   let popEff = 0;
   for (let i = 0; i < s.owner.length; i++) {
@@ -49,18 +50,21 @@ export function budget(w: World, tag: Tag): Budget {
   const res = effectiveResources(w, tag);
   const gov = govEffects(w, tag);
   // senza carbone le nazioni industriali lo comprano all'estero: entrate ridotte del 5%
-  const coalMalus = pr.industry >= 50 && res.missing.includes('carbone') ? 0.95 : 1;
-  const income = (popEff / 1e6) * (0.6 + (0.8 * pr.industry) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income;
+  const ind = industryOf(w, tag);
+  const coalMalus = ind >= 50 && res.missing.includes('carbone') ? 0.95 : 1;
+  const works = buildingIncome(w, tag);
+  const income = (popEff / 1e6) * (0.6 + (0.8 * ind) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income + works;
   const men = s.units.filter((u) => u.nation === tag).reduce((x, u) => x + u.strength, 0);
   const war = warsOf(s, tag).length > 0;
   const upkeep = (men / 1000) * 0.023 * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
   const administration = income * 0.3;
   const interest = ((n.debt * 0.045) / 52) * gov.interest;
   const infrastructure = income * POLICY_EFFECTS.infrastructure[pol.infrastructure].cost;
-  const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower * gov.manpower);
+  const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower * gov.manpower * manpowerBonus(w, tag));
   const r = (v: number) => Math.round(v * 100) / 100;
   const tradeNet = res.earn - res.pay;
-  return { income: r(income), resources: r(res.income), trade: r(tradeNet), upkeep: r(upkeep), administration: r(administration), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet - upkeep - administration - interest - infrastructure), manpowerGain };
+  const tribute = tributeOf(w, tag);
+  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), works: r(works), upkeep: r(upkeep), administration: r(administration), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute - upkeep - administration - interest - infrastructure), manpowerGain };
 }
 
 export function stabilityTarget(w: World, tag: Tag): number {
@@ -114,7 +118,8 @@ export function recruit(w: World, tag: Tag, type: UnitType, province: number, si
   if (!w.map.passable(province)) return 'nel deserto non si arruola';
   if (hostileUnitsAt(s, tag, province).length) return 'la provincia è contesa';
   // l'artiglieria senza ferro proprio costa il 30% in più (cannoni comprati all'estero)
-  const cost = type === 'artillery' && effectiveResources(w, tag).missing.includes('ferro') ? Math.round(spec.cost * 1.3) : spec.cost;
+  const base = (type === 'artillery' && effectiveResources(w, tag).missing.includes('ferro') ? spec.cost * 1.3 : spec.cost) * recruitDiscount(w, tag);
+  const cost = Math.round(base * 10) / 10;
   if (n.treasury < cost) return `fondi insufficienti (servono ${cost} M)`;
   if (n.manpower < spec.men * 0.25) return 'riserva di uomini insufficiente';
   n.treasury -= cost;

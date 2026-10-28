@@ -378,3 +378,70 @@ describe('ministri', () => {
     expect(M.minister(ita.posts.interno)?.party ?? null).not.toBe('sinistra');
   });
 });
+
+describe('costruzione', () => {
+  it('opere del 1881, cantieri, ferrovie, fortezze e logistica', async () => {
+    const C = await import('../src/engine/construction');
+    const w = newGame(MAP);
+    const at = (lon: number, lat: number) => w.map.locate(lon, lat)!;
+    expect(C.level(w, at(6.18, 49.12), 'fortezza')).toBe(3); // Metz
+    expect(C.level(w, at(8.93, 44.41), 'porto')).toBe(3); // Genova
+    expect(C.level(w, at(7.01, 51.45), 'bellica')).toBe(3); // Krupp
+    expect(C.level(w, at(-2.24, 53.48), 'ferrovia')).toBeGreaterThan(1); // Lancashire
+    expect(C.industryOf(w, 'GER')).toBe(w.profiles.GER.industry); // nel 1881 nessun bonus
+    // un cantiere: costa, occupa uno slot, finisce dopo le settimane previste
+    const milano = at(9.19, 45.46);
+    const t0 = w.state.nations.ITA.treasury;
+    const cur = C.level(w, milano, 'ferrovia');
+    expect(C.startProject(w, 'ITA', milano, 'ferrovia')).toBeNull();
+    expect(w.state.nations.ITA.treasury).toBe(t0 - C.BUILDINGS.ferrovia.cost(cur + 1));
+    expect(C.startProject(w, 'ITA', milano, 'ferrovia')).toMatch(/cantiere/);
+    expect(C.startProject(w, 'ITA', at(2.35, 48.86), 'fortezza')).not.toBeNull(); // Parigi non è nostra
+    for (let i = 0; i < C.BUILDINGS.ferrovia.weeks(cur + 1); i++) C.weeklyConstruction(w, []);
+    expect(C.level(w, milano, 'ferrovia')).toBe(cur + 1);
+    // l'industria cresce con le industrie costruite (se ci sono le materie prime)
+    const b = C.buildings(w);
+    b[milano].siderurgia = 3; C.touchBuildings();
+    expect(C.industryOf(w, 'ITA')).toBeGreaterThan(w.profiles.ITA.industry);
+    // logistica: più eserciti, rapporto più basso
+    const l0 = C.logistics(w, 'ITA');
+    w.state.units.push(...w.state.units.filter((u) => u.nation === 'ITA').map((u, i) => ({ ...u, id: `${u.id}-x${i}` })));
+    C.touchBuildings();
+    expect(C.logistics(w, 'ITA').ratio).toBeLessThan(l0.ratio);
+    expect(C.provinceCapacity(w, milano)).toBeGreaterThan(30);
+  });
+});
+
+describe('vassalli', () => {
+  it('tributari del 1881, tributo, desiderio di indipendenza, protettorato', async () => {
+    const V = await import('../src/engine/vassals');
+    const w = newGame(MAP);
+    expect(V.subjectOf(w, 'EGY')?.overlord).toBe('TUR');
+    expect(V.subjectOf(w, 'BUL')?.level).toBe('tributario');
+    runTurn(w);
+    expect(budget(w, 'TUR').tribute).toBeGreaterThan(0);
+    expect(budget(w, 'EGY').tribute).toBeLessThan(0);
+    // protettorato: la Francia occupa Tunisi
+    declareWar(w, 'FRA', 'TUN', 'Krumiri');
+    expect(V.protectorateRefusal(w, 'FRA', 'TUN')).toMatch(/capitale/);
+    const cap = w.state.nations.TUN.capital;
+    w.state.controller[cap] = 'FRA';
+    expect(V.imposeProtectorate(w, 'FRA', 'TUN')).toBeNull();
+    const x = V.subjectOf(w, 'TUN')!;
+    expect(x.overlord).toBe('FRA');
+    expect(x.level).toBe('protettorato');
+    expect(atWar(w.state, 'FRA', 'TUN')).toBe(false);
+    // un protettorato non firma trattati da solo e non dichiara guerra
+    expect(checkProposal(w, 'ITA', 'TUN', { type: 'trade' })).toMatch(/protettorato/);
+    expect(declareWar(w, 'TUN', 'ITA', 'prova')).toMatch(/protettorato/);
+    // il desiderio di indipendenza va verso l'obiettivo
+    x.liberty = 100;
+    V.weeklySubjects(w, []);
+    expect(x.liberty).toBeLessThan(100);
+    // annessione: non prima di due anni e con desiderio basso
+    expect(V.annexRefusal(w, 'FRA', 'TUN')).not.toBeNull();
+    x.liberty = 10; x.since = -800;
+    expect(V.annex(w, 'FRA', 'TUN')).toBeNull();
+    expect(w.state.owner[cap]).toBe('FRA');
+  });
+});

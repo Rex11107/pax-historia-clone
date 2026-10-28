@@ -4,6 +4,7 @@
 import { decodeArcs, provinceRings } from '../engine/map';
 import { unitPosition } from '../engine/orders';
 import { RESOURCES } from '../engine/resources';
+import { BUILDINGS, buildings, type BuildingId } from '../engine/construction';
 import type { MapData, Unit } from '../engine/types';
 import type { World } from '../engine/world';
 
@@ -42,6 +43,7 @@ export class MapView {
   showRelief = false;
   /** icone delle risorse sulle province */
   showResources = false;
+  showWorks = false;
   private phys: { relief: { cls: string; path: Path2D; bb: number[] }[]; rivers: { rank: number; path: Path2D; bb: number[] }[]; lakes: Path2D } | null = null;
   private mountainPattern: CanvasPattern | null = null;
   previewPath: number[] | null = null;
@@ -478,6 +480,29 @@ export class MapView {
         if (!list.length) continue;
         const [x, y] = this.worldToScreen(p.c[0], -p.c[1]);
         const txt = list.map((r) => RESOURCES[r].icon).join('');
+        const tw = ctx.measureText(txt).width;
+        ctx.fillStyle = 'rgba(247,244,234,0.85)';
+        ctx.beginPath(); ctx.roundRect(x - tw / 2 - 3, y - size / 2 - 6, tw + 6, size + 6, 4); ctx.fill();
+        ctx.fillStyle = '#000';
+        ctx.fillText(txt, x, y - 2);
+      }
+    }
+    if (this.showWorks) {
+      const b = buildings(this.world);
+      const size = k < 0.35 ? 11 : k < 0.8 ? 13 : 16;
+      ctx.font = `${size}px sans-serif`;
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const major: BuildingId[] = ['fortezza', 'porto', 'siderurgia', 'bellica', 'tessile', 'chimica', 'miniera', 'agricoltura'];
+      for (const p of this.world.map.provinces) {
+        if (!visible(p.id)) continue;
+        const l = b[p.id];
+        const rail = l.ferrovia ?? 0;
+        const [x, y0] = this.worldToScreen(p.c[0], -p.c[1]);
+        const y = y0 + (this.showResources ? size + 10 : 0); // sotto le icone delle risorse
+        if (rail && k >= 0.3) { ctx.fillStyle = ['', 'rgba(60,60,60,0.35)', 'rgba(60,60,60,0.6)', 'rgba(30,30,30,0.85)'][rail]; ctx.fillRect(x - 9, y + size / 2 + 2, 18 * rail / 3, 3); }
+        const list = major.filter((m) => l[m] && (k >= 0.55 || m === 'fortezza' || m === 'porto' || m === 'siderurgia' || m === 'bellica'));
+        if (!list.length) continue;
+        const txt = list.map((m) => BUILDINGS[m].icon).join('');
         const tw = ctx.measureText(txt).width;
         ctx.fillStyle = 'rgba(247,244,234,0.85)';
         ctx.beginPath(); ctx.roundRect(x - tw / 2 - 3, y - size / 2 - 6, tw + 6, size + 6, 4); ctx.fill();

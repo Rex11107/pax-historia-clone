@@ -187,3 +187,9 @@ details summary { cursor: pointer; font: italic 600 1rem var(--serif); margin-to
 .meter b { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--wax); }
 table.parties tr.gov td:first-child b::after { content: ' ●'; color: var(--brass); }
 table.parties th { font-weight: 500; color: var(--muted); font-size: 0.85rem; }
+
+.map-chip.chip-3 { top: calc(var(--top) + var(--safe-t) + 96px); }
+.build-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin: 8px 0; }
+.build-grid button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 7px 9px; border: 1px solid var(--ink); background: var(--paper); border-radius: 3px; text-align: left; }
+.build-grid button small { color: var(--muted); font-size: 0.78rem; }
+.build-grid button:disabled { opacity: 0.5; border-color: var(--rule); }

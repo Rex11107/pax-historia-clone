@@ -133,13 +133,13 @@ export function resourceValue(r: ResourceId, industry: number): number {
 }
 
 /** Riepilogo per nazione: quante province per risorsa e valore settimanale. */
-export function nationResources(map: GameMap, res: ResourceId[][], controller: Tag[], owner: Tag[], tag: Tag, industry: number) {
+export function nationResources(map: GameMap, res: ResourceId[][], controller: Tag[], owner: Tag[], tag: Tag, industry: number, extra?: (i: number) => ResourceId[]) {
   const count: Partial<Record<ResourceId, number>> = {};
   let income = 0;
   for (let i = 0; i < res.length; i++) {
     if (controller[i] !== tag) continue;
     const occupied = owner[i] !== tag;
-    for (const r of res[i]) {
+    for (const r of extra ? [...res[i], ...extra(i)] : res[i]) {
       count[r] = (count[r] ?? 0) + 1;
       income += resourceValue(r, industry) * (occupied ? 0.5 : 1);
     }

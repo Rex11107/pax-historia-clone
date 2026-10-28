@@ -87,7 +87,11 @@ export function treatyBetween(s: GameState, a: Tag, b: Tag, type?: Treaty['type'
   return s.treaties.find((t) => !t.violated && (type ? t.type === type : true) && ((t.a === a && t.b === b) || (t.a === b && t.b === a)));
 }
 
-export function allied(s: GameState, a: Tag, b: Tag) { return a === b || !!treatyBetween(s, a, b, 'alliance'); }
+export function allied(s: GameState, a: Tag, b: Tag) {
+  if (a === b || treatyBetween(s, a, b, 'alliance')) return true;
+  // un protettorato combatte e si rifornisce col suo signore
+  return (s.subjects ?? []).some((x) => x.level === 'protettorato' && ((x.overlord === a && x.subject === b) || (x.overlord === b && x.subject === a)));
+}
 
 /** Una nazione può entrare in una provincia? (propria, alleata in guerra comune, nemica, accesso militare) */
 export function canEnter(s: GameState, nation: Tag, province: number): boolean {

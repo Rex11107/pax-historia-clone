@@ -1,0 +1,62 @@
+// Opere esistenti al 1881: porti, fortezze, distretti industriali, arsenali e miniere.
+// [tipo, livello 1-3, lon, lat, nome]. Le ferrovie si ricavano dalla rete nazionale e dalla densità.
+
+export type BuildingId = 'ferrovia' | 'porto' | 'fortezza' | 'agricoltura' | 'tessile' | 'chimica' | 'siderurgia' | 'bellica' | 'miniera';
+
+export const BUILDINGS_1881: [BuildingId, number, number, number, string][] = [
+  // porti principali
+  ['porto', 3, -0.1, 51.5, 'Londra'], ['porto', 3, -3.0, 53.41, 'Liverpool'], ['porto', 3, -4.25, 55.86, 'Glasgow'], ['porto', 2, -1.09, 50.8, 'Portsmouth'],
+  ['porto', 2, -1.6, 54.97, 'Newcastle'], ['porto', 2, -3.18, 51.48, 'Cardiff'], ['porto', 2, -2.6, 51.45, 'Bristol'], ['porto', 2, -6.26, 53.35, 'Dublino'],
+  ['porto', 2, -0.33, 53.74, 'Hull'], ['porto', 3, 9.99, 53.55, 'Amburgo'], ['porto', 2, 8.8, 53.08, 'Brema'], ['porto', 2, 10.14, 54.32, 'Kiel'],
+  ['porto', 2, 18.65, 54.35, 'Danzica'], ['porto', 2, 14.55, 53.43, 'Stettino'], ['porto', 1, 20.5, 54.7, 'Königsberg'],
+  ['porto', 3, 4.48, 51.92, 'Rotterdam'], ['porto', 2, 4.9, 52.37, 'Amsterdam'], ['porto', 3, 4.4, 51.22, 'Anversa'], ['porto', 2, 12.57, 55.68, 'Copenaghen'],
+  ['porto', 2, 18.07, 59.33, 'Stoccolma'], ['porto', 2, 11.97, 57.7, 'Göteborg'], ['porto', 1, 10.75, 59.91, 'Cristiania'],
+  ['porto', 3, 5.37, 43.3, 'Marsiglia'], ['porto', 3, 5.93, 43.12, 'Tolone'], ['porto', 2, -4.49, 48.39, 'Brest'], ['porto', 2, 0.1, 49.49, 'Le Havre'],
+  ['porto', 2, -0.57, 44.84, 'Bordeaux'], ['porto', 2, -1.62, 49.64, 'Cherbourg'], ['porto', 1, -1.55, 47.22, 'Nantes'], ['porto', 2, 3.06, 36.75, 'Algeri'], ['porto', 1, -0.64, 35.7, 'Orano'],
+  ['porto', 3, 8.93, 44.41, 'Genova'], ['porto', 2, 14.25, 40.84, 'Napoli'], ['porto', 2, 12.33, 45.44, 'Venezia'], ['porto', 2, 9.82, 44.1, 'La Spezia'],
+  ['porto', 1, 17.23, 40.47, 'Taranto'], ['porto', 1, 13.36, 38.12, 'Palermo'], ['porto', 1, 15.55, 38.19, 'Messina'], ['porto', 1, 16.87, 41.13, 'Bari'], ['porto', 1, 10.31, 43.55, 'Livorno'],
+  ['porto', 3, 13.77, 45.65, 'Trieste'], ['porto', 2, 13.85, 44.87, 'Pola'], ['porto', 1, 14.44, 45.33, 'Fiume'],
+  ['porto', 2, 2.17, 41.38, 'Barcellona'], ['porto', 2, -6.29, 36.53, 'Cadice'], ['porto', 2, -0.98, 37.6, 'Cartagena'], ['porto', 1, -8.4, 43.37, 'La Coruña'], ['porto', 1, -2.93, 43.26, 'Bilbao'],
+  ['porto', 2, -9.14, 38.72, 'Lisbona'], ['porto', 1, -8.61, 41.15, 'Porto'],
+  ['porto', 3, 29.98, 59.95, 'Pietroburgo e Kronstadt'], ['porto', 2, 30.73, 46.48, 'Odessa'], ['porto', 2, 33.52, 44.6, 'Sebastopoli'], ['porto', 2, 24.1, 56.95, 'Riga'],
+  ['porto', 1, 24.94, 60.17, 'Helsingfors'], ['porto', 1, 41.67, 41.65, 'Batum'], ['porto', 1, 47.5, 42.98, 'Petrovsk'], ['porto', 1, 49.87, 40.4, 'Baku'],
+  ['porto', 3, 28.98, 41.01, 'Costantinopoli'], ['porto', 2, 27.14, 38.42, 'Smirne'], ['porto', 2, 22.94, 40.64, 'Salonicco'], ['porto', 1, 35.5, 33.9, 'Beirut'], ['porto', 1, 13.19, 32.9, 'Tripoli'],
+  ['porto', 2, 23.64, 37.94, 'Pireo'], ['porto', 3, 29.92, 31.2, 'Alessandria'], ['porto', 2, 32.3, 31.26, 'Porto Said'], ['porto', 1, 10.3, 36.8, 'Tunisi'], ['porto', 1, 27.9, 43.2, 'Varna'],
+  ['porto', 1, 28.0, 45.43, 'Galați'], ['porto', 2, -5.35, 36.14, 'Gibilterra'],
+  // fortezze e campi trincerati
+  ['fortezza', 3, 6.18, 49.12, 'Metz'], ['fortezza', 3, 7.75, 48.58, 'Strasburgo'], ['fortezza', 2, 8.27, 50.0, 'Magonza'], ['fortezza', 2, 7.6, 50.36, 'Coblenza'],
+  ['fortezza', 2, 6.96, 50.94, 'Colonia'], ['fortezza', 2, 20.5, 54.7, 'Königsberg'], ['fortezza', 2, 16.93, 52.41, 'Posen'], ['fortezza', 2, 18.6, 53.01, 'Thorn'],
+  ['fortezza', 1, 13.2, 52.53, 'Spandau'], ['fortezza', 1, 10.0, 48.4, 'Ulma'],
+  ['fortezza', 3, 2.35, 48.86, 'Parigi'], ['fortezza', 3, 6.86, 47.64, 'Belfort'], ['fortezza', 2, 5.39, 49.16, 'Verdun'], ['fortezza', 2, 5.89, 48.68, 'Toul'], ['fortezza', 2, 6.45, 48.17, 'Épinal'],
+  ['fortezza', 2, 4.83, 45.76, 'Lione'], ['fortezza', 1, 3.06, 50.63, 'Lilla'],
+  ['fortezza', 3, 10.99, 45.44, 'Verona (Quadrilatero)'], ['fortezza', 2, 10.79, 45.16, 'Mantova'], ['fortezza', 2, 8.61, 44.91, 'Alessandria'], ['fortezza', 2, 12.5, 41.9, 'Roma'],
+  ['fortezza', 1, 8.93, 44.41, 'Genova'], ['fortezza', 1, 9.82, 44.1, 'La Spezia'],
+  ['fortezza', 3, 22.77, 49.78, 'Przemyśl'], ['fortezza', 2, 19.94, 50.06, 'Cracovia'], ['fortezza', 2, 18.13, 47.76, 'Komárom'], ['fortezza', 2, 13.85, 44.87, 'Pola'],
+  ['fortezza', 1, 11.4, 47.27, 'Innsbruck e Tirolo meridionale'], ['fortezza', 1, 15.3, 50.4, 'Josefstadt'],
+  ['fortezza', 3, 20.62, 52.43, 'Novogeorgievsk'], ['fortezza', 2, 21.01, 52.25, 'Varsavia'], ['fortezza', 2, 23.65, 52.08, 'Brest-Litovsk'], ['fortezza', 2, 21.32, 51.38, 'Ivangorod'],
+  ['fortezza', 3, 29.77, 60.0, 'Kronstadt'], ['fortezza', 2, 33.52, 44.6, 'Sebastopoli'], ['fortezza', 2, 43.1, 40.6, 'Kars'],
+  ['fortezza', 3, 28.98, 41.01, 'Costantinopoli e Çatalca'], ['fortezza', 2, 26.56, 41.68, 'Adrianopoli'], ['fortezza', 2, 41.27, 39.9, 'Erzurum'], ['fortezza', 2, 26.4, 40.15, 'Dardanelli'],
+  ['fortezza', 3, 4.4, 51.22, 'Anversa'], ['fortezza', 1, 5.57, 50.63, 'Liegi'], ['fortezza', 2, 12.57, 55.68, 'Copenaghen'], ['fortezza', 3, -5.35, 36.14, 'Gibilterra'],
+  ['fortezza', 1, 20.46, 44.82, 'Belgrado'], ['fortezza', 1, -9.14, 38.72, 'Lisbona'], ['fortezza', 1, 7.45, 46.95, 'Berna'],
+  // distretti industriali
+  ['tessile', 3, -2.24, 53.48, 'Manchester'], ['tessile', 2, -1.55, 53.8, 'Leeds e Bradford'], ['tessile', 2, -4.25, 55.86, 'Glasgow e Paisley'], ['tessile', 2, -5.93, 54.6, 'Belfast'],
+  ['tessile', 2, 3.17, 50.69, 'Roubaix e Lilla'], ['tessile', 2, 4.83, 45.76, 'Lione (seta)'], ['tessile', 1, 1.1, 49.44, 'Rouen'], ['tessile', 2, 7.34, 47.75, 'Mulhouse'],
+  ['tessile', 2, 12.92, 50.83, 'Chemnitz'], ['tessile', 1, 7.15, 51.26, 'Elberfeld e Barmen'], ['tessile', 2, 19.46, 51.76, 'Łódź'], ['tessile', 2, 37.62, 55.75, 'Mosca'],
+  ['tessile', 1, 40.97, 57.0, 'Ivanovo'], ['tessile', 2, 2.17, 41.38, 'Barcellona'], ['tessile', 2, 9.19, 45.46, 'Milano e Como (seta)'], ['tessile', 1, 7.68, 45.07, 'Biella e Torino'],
+  ['tessile', 1, 3.72, 51.05, 'Gand'], ['tessile', 1, 16.6, 49.2, 'Brno'], ['tessile', 1, 14.42, 50.08, 'Boemia settentrionale'], ['tessile', 1, 8.54, 47.37, 'Zurigo'], ['tessile', 1, 29.92, 31.2, 'Alessandria (cotone)'],
+  ['siderurgia', 3, 7.01, 51.45, 'Essen e Ruhr'], ['siderurgia', 3, -1.47, 53.38, 'Sheffield'], ['siderurgia', 2, -1.9, 52.48, 'Birmingham e Black Country'], ['siderurgia', 2, -1.23, 54.57, 'Middlesbrough'],
+  ['siderurgia', 2, -3.38, 51.75, 'Merthyr Tydfil'], ['siderurgia', 2, -4.0, 55.8, 'Lanarkshire'], ['siderurgia', 2, 4.43, 46.8, 'Le Creusot'], ['siderurgia', 1, 6.1, 49.25, 'Lorena (Hayange)'],
+  ['siderurgia', 2, 5.5, 50.6, 'Liegi e Seraing'], ['siderurgia', 1, 4.44, 50.41, 'Charleroi'], ['siderurgia', 2, 18.9, 50.3, 'Alta Slesia'], ['siderurgia', 1, 7.0, 49.3, 'Saar'],
+  ['siderurgia', 2, 18.27, 49.82, 'Vítkovice'], ['siderurgia', 1, 14.9, 47.4, 'Stiria'], ['siderurgia', 1, 37.8, 48.0, 'Juzovka (Donbass)'], ['siderurgia', 1, 60.6, 56.84, 'Urali'],
+  ['siderurgia', 1, 30.3, 59.93, 'Pietroburgo (Putilov)'],
+  ['chimica', 2, 8.44, 49.48, 'Ludwigshafen'], ['chimica', 1, 8.6, 50.1, 'Höchst'], ['chimica', 1, 7.15, 51.26, 'Elberfeld (Bayer)'], ['chimica', 2, -2.73, 53.36, 'Widnes e St Helens'],
+  ['chimica', 1, -1.6, 54.97, 'Tyneside'], ['chimica', 1, 7.59, 47.56, 'Basilea'], ['chimica', 1, 4.83, 45.76, 'Lione'], ['chimica', 1, 4.36, 50.85, 'Bruxelles'],
+  ['bellica', 3, 7.01, 51.45, 'Krupp (Essen)'], ['bellica', 2, 0.07, 51.49, 'Woolwich'], ['bellica', 2, -1.65, 54.97, 'Armstrong (Elswick)'], ['bellica', 1, -1.8, 52.48, 'Birmingham Small Arms'],
+  ['bellica', 2, 4.39, 45.43, 'Saint-Étienne'], ['bellica', 1, 13.2, 52.53, 'Spandau'], ['bellica', 2, 14.42, 48.04, 'Steyr'], ['bellica', 1, 13.38, 49.75, 'Pilsen'],
+  ['bellica', 2, 37.62, 54.19, 'Tula'], ['bellica', 1, 53.2, 56.85, 'Iževsk'], ['bellica', 1, 30.3, 59.93, 'Obuchov (Pietroburgo)'], ['bellica', 1, 7.68, 45.07, 'Arsenale di Torino'],
+  ['bellica', 1, 10.22, 45.54, 'Brescia'], ['bellica', 1, 14.25, 40.84, 'Napoli'], ['bellica', 1, -5.95, 43.38, 'Trubia e Oviedo'], ['bellica', 1, -4.03, 39.86, 'Toledo'],
+  ['bellica', 1, 28.98, 41.01, 'Tophane'], ['bellica', 1, 5.57, 50.63, 'Liegi'],
+  // miniere già sfruttate
+  ['miniera', 2, 7.2, 51.5, 'Ruhr'], ['miniera', 2, -3.4, 51.7, 'Galles meridionale'], ['miniera', 2, -1.6, 54.8, 'Durham'], ['miniera', 1, 18.9, 50.3, 'Alta Slesia'],
+  ['miniera', 1, 3.6, 50.4, 'Borinage'], ['miniera', 1, 6.1, 49.25, 'Lorena'], ['miniera', 1, -6.6, 37.7, 'Rio Tinto'], ['miniera', 1, 13.9, 37.5, 'Zolfare di Sicilia'], ['miniera', 1, 49.87, 40.4, 'Baku'],
+];

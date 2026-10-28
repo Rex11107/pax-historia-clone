@@ -1231,13 +1231,14 @@ async function main() {
     return t.total - Object.entries(t).filter(([k]) => k !== 'total').reduce((s, [, v]) => s + v, 0);
   };
   const byPool = new Map();
-  // Nord Africa: peso dalle località di GeoNames (anche i villaggi, la popolazione del 1881 era soprattutto rurale);
-  // nel deserto la superficie non porta abitanti
+  // Nord Africa, Impero russo, Impero ottomano, Persia e Arabia: peso dalle località di GeoNames (anche i villaggi,
+  // la popolazione del 1881 era soprattutto rurale); dove la terra è vuota (deserto, tundra, steppa) la superficie
+  // non porta abitanti. Altrove, con la sola superficie, Mezen o Tabuk risultavano popolose come una capitale.
   {
-    const af = provinces.filter((p) => AFRICA_MODERN.has(p.info.modern));
+    const GSUM_OWNERS = new Set(['RUS', 'TUR', 'PER', 'ARA']);
+    const af = provinces.filter((p) => AFRICA_MODERN.has(p.info.modern) || GSUM_OWNERS.has(p.info.owner));
     for (const p of af) p.gsum = 0;
     for (const c of geoCities()) {
-      if (c.lat > 37.6 || c.lon > 35.5) continue;
       for (const p of af) {
         const bb = p.bb || (p.bb = turf.bbox(p.f));
         if (c.lon < bb[0] || c.lon > bb[2] || c.lat < bb[1] || c.lat > bb[3]) continue;

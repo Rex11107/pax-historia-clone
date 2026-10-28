@@ -186,6 +186,10 @@ export interface Budget {
   resources?: number;
   /** saldo dei contratti commerciali: incassi meno pagamenti (non compreso in income) */
   trade?: number;
+  /** tributi: incassati dai soggetti (+) o versati al signore (−), non compresi in income */
+  tribute?: number;
+  /** entrate delle opere (campi, industrie, porti), già comprese in income */
+  works?: number;
   upkeep: number;
   administration: number;
   interest: number;
@@ -238,6 +242,14 @@ export interface GameState {
   politics?: Record<Tag, import('./politics').PoliticsState>;
   /** ministri in carica (solo nazioni con personaggi storici) */
   cabinets?: Record<Tag, import('./ministers').CabinetState>;
+  /** livelli delle opere per provincia (ferrovie, porti, fortezze, industrie…) */
+  buildings?: Partial<Record<import('./construction').BuildingId, number>>[];
+  /** punti industriali del 1881 per nazione (base dell'industria effettiva) */
+  industryBase?: Record<Tag, number>;
+  /** cantieri aperti */
+  projects?: import('./construction').Project[];
+  /** stati soggetti (tributari, vassalli, protettorati) */
+  subjects?: import('./vassals').Subject[];
   situations: Situation[];
   events: GameEvent[]; // ultimi eventi (potati)
   memory: { turn: number; text: string }[];

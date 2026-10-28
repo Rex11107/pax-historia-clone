@@ -1,3 +1,4 @@
+import { level } from './construction';
 import { govEffects } from './politics';
 import { TERRAIN_DEFENSE } from './map';
 import { UNIT_STATS } from './orders';
@@ -11,7 +12,7 @@ export const RETREAT_MORALE = 0.25;
 export const RIVER_PENALTY = 0.75;
 export const RETREAT_STRENGTH = 0.3;
 
-function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean): number {
+function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean, enemyArtillery = false): number {
   const pr = w.profiles[u.nation];
   const st = UNIT_STATS[u.type];
   const terrain = w.map.provinces[u.location].terrain;
@@ -25,6 +26,8 @@ function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean):
   if (u.type === 'cavalry' && (terrain === 'mountain' || terrain === 'forest' || terrain === 'marsh')) p *= 0.6;
   if (u.type === 'artillery' && !sideHasInfantry) p *= 0.6;
   if (defending) p *= TERRAIN_DEFENSE[terrain] * (1 + 0.5 * u.entrench);
+  // fortezza: vale per chi tiene la provincia; l'artiglieria nemica ne dimezza l'effetto
+  if (defending && allied(w.state, u.nation, w.state.controller[u.location])) { const f = level(w, u.location, 'fortezza'); if (f) p *= 1 + 0.3 * f * (enemyArtillery ? 0.5 : 1); }
   // attaccare dopo aver attraversato un fiume costa caro
   if (!defending && u.from !== undefined && w.map.river(u.from, u.location)) p *= RIVER_PENALTY;
   return p;
@@ -63,7 +66,8 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
     [...att, ...def].forEach((u) => (u.inBattle = true));
     const infA = att.some((u) => u.type === 'infantry'), infD = def.some((u) => u.type === 'infantry');
     const pA = att.reduce((x, u) => x + power(w, u, false, infA), 0);
-    const pD = def.reduce((x, u) => x + power(w, u, true, infD), 0);
+    const artA = att.some((u) => u.type === 'artillery');
+    const pD = def.reduce((x, u) => x + power(w, u, true, infD, artA), 0);
     const noise = (k: string) => 0.85 + 0.3 * rand(s.seed, s.day, prov, k);
     const lossA = pD * LOSS_FACTOR * noise('a');
     const lossD = pA * LOSS_FACTOR * noise('d');

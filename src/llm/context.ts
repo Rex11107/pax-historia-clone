@@ -8,6 +8,15 @@ import { RESOURCES, type ResourceId } from '../engine/resources';
 import { contractsOf, effectiveResources } from '../engine/trade';
 import { politicsSummary } from '../engine/politics';
 import { cabinetSummary } from '../engine/ministers';
+import { BUILDINGS, buildings, industryOf, logistics, projects, type BuildingId } from '../engine/construction';
+import { subjects } from '../engine/vassals';
+
+/** Stati soggetti che riguardano una nazione. */
+export function subjectSummary(w: World, tag: Tag): string {
+  const l = subjects(w).filter((x) => x.overlord === tag || x.subject === tag);
+  return l.length ? l.map((x) => x.overlord === tag ? `${x.subject} è nostro ${x.level} (desiderio di indipendenza ${Math.round(x.liberty)})` : `siamo ${x.level} di ${x.overlord} (desiderio di indipendenza ${Math.round(x.liberty)})`).join('; ') : 'nessuno';
+}
+const works = (w: World, id: number) => { const l = buildings(w)[id]; return (Object.keys(l) as BuildingId[]).filter((b) => l[b]).map((b) => `${BUILDINGS[b].label} ${l[b]}`).join(', '); };
 import type { Tag } from '../engine/types';
 import { atWar, enemiesOf, formatDate, nationName, opinion, warsOf, type World } from '../engine/world';
 
@@ -87,6 +96,8 @@ export function worldDigest(w: World): string {
   lines.push(`POLITICHE: ${POLICY_EFFECTS.tax[pol.tax].label}; ${POLICY_EFFECTS.mobilization[pol.mobilization].label}; ${POLICY_EFFECTS.infrastructure[pol.infrastructure].label}; ${POLICY_EFFECTS.press[pol.press].label}.`);
   lines.push(`RISORSE: ${resourceSummary(w, me)}.`);
   lines.push(`CONTRATTI COMMERCIALI: ${tradeSummary(w, me)}.`);
+  { const L = logistics(w, me); const pr = projects(w).filter((x) => x.nation === me); lines.push(`INDUSTRIA E LOGISTICA: industria ${industryOf(w, me)}/100; capacità logistica ${L.capacity} mila uomini per ${L.men} mila in armi (fattore ${L.factor}); cantieri: ${pr.map((x) => `${BUILDINGS[x.type].label} ${x.level} a ${w.map.provinces[x.province].name}`).join(', ') || 'nessuno'}.`); }
+  lines.push(`STATI SOGGETTI: ${subjectSummary(w, me)}. ALTRI: ${subjects(w).filter((x) => x.overlord !== me && x.subject !== me).map((x) => `${x.subject} ${x.level} di ${x.overlord}`).join(', ') || 'nessuno'}.`);
   lines.push(`POLITICA INTERNA: ${politicsSummary(w, me)}.${cabinetSummary(w, me) ? ` Ministri: ${cabinetSummary(w, me)}.` : ''}`);
   const wars = s.wars;
   lines.push(`GUERRE IN CORSO: ${wars.length ? wars.map((x) => `${x.name} [${x.attackers.join(',')} vs ${x.defenders.join(',')}] dal ${formatDate(x.startDay)}`).join('; ') : 'nessuna'}.`);
@@ -141,7 +152,7 @@ export function provinceIndex(w: World): string {
     const tag = (t: string) => t || 'nessuno';
     const rs = w.map.resources[id];
     const piste = w.map.adj[id].filter((e) => e.route).map((e) => e.to);
-    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}${rs.length ? `; ${rs.map((r) => RESOURCES[r].label).join(', ')}` : ''}]`;
+    return `${id} ${p.name} [${tag(s.controller[id])}${s.owner[id] !== s.controller[id] ? `, di ${tag(s.owner[id])}` : ''}; ${p.impassable ? `deserto intransitabile (${p.region})` : TERRAIN_NAME[p.terrain]}${p.oasis ? ', oasi' : ''}${p.coast ? ', costa' : ''}${piste.length ? `; piste verso ${piste.join(', ')}` : ''}${rs.length ? `; ${rs.map((r) => RESOURCES[r].label).join(', ')}` : ''}${works(w, id) ? `; opere: ${works(w, id)}` : ''}]`;
   }).join('\n');
 }
 
@@ -159,6 +170,7 @@ export function bilateralView(w: World, tag: Tag): string {
     `IL TUO GIUDIZIO SU ${nationName(w, me).toUpperCase()}: ${opinion(s, tag, me)}/100 (loro verso di te: ${opinion(s, me, tag)}). Esercito ${k(men(me))} uomini.`,
     `LE TUE RISORSE: ${resourceSummary(w, tag)}. LE LORO: ${resourceSummary(w, me)}.`,
     `I TUOI CONTRATTI COMMERCIALI: ${tradeSummary(w, tag)}.`,
+    `STATI SOGGETTI: tuoi: ${subjectSummary(w, tag)}; loro: ${subjectSummary(w, me)}.`,
     `LA TUA POLITICA INTERNA: ${politicsSummary(w, tag)}.${cabinetSummary(w, tag) ? ` Ministri: ${cabinetSummary(w, tag)}.` : ''} LA LORO: ${politicsSummary(w, me)}.${cabinetSummary(w, me) ? ` Ministri: ${cabinetSummary(w, me)}.` : ''}`,
     `TRATTATI FRA VOI: ${treaties.length ? treaties.map((t) => TREATY_LABEL[t.type]).join(', ') : 'nessuno'}.`,
     `I TUOI ALTRI TRATTATI: ${theirTreaties.length ? theirTreaties.map((t) => `${TREATY_LABEL[t.type]} con ${nationName(w, t.a === tag ? t.b : t.a)}`).join('; ') : 'nessuno'}.`,

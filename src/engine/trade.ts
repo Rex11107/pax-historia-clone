@@ -8,6 +8,7 @@
 // migliora un poco le relazioni, in proporzione al peso che ha per l'economia di ciascuno.
 
 import { addTreaty, checkProposal } from './diplomacy';
+import { extraLots, industryOf } from './construction';
 import { nationResources, RESOURCES, resourceValue, type ResourceId } from './resources';
 import type { GameEvent, GameState, Tag } from './types';
 import { atWar, changeOpinion, emit, nationName, newId, opinion, treatyBetween, type World } from './world';
@@ -39,12 +40,12 @@ export function contracts(s: GameState): TradeContract[] { return (s.trades ??= 
 
 export function contractsOf(s: GameState, tag: Tag) { return contracts(s).filter((c) => c.seller === tag || c.buyer === tag); }
 
-const industry = (w: World, t: Tag) => w.profiles[t]?.industry ?? 30;
+const industry = (w: World, t: Tag) => industryOf(w, t);
 
 /** Lotti propri (province controllate) di una risorsa. */
 function ownLots(w: World, tag: Tag) {
   const s = w.state;
-  return nationResources(w.map, w.map.resources, s.controller, s.owner, tag, industry(w, tag));
+  return nationResources(w.map, w.map.resources, s.controller, s.owner, tag, industry(w, tag), (i) => extraLots(w, i));
 }
 
 function flows(s: GameState, tag: Tag) {

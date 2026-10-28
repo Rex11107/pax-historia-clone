@@ -1,3 +1,4 @@
+import { followers, subjectOf, warBlock } from './vassals';
 import type { GameEvent, Tag, TreatyType } from './types';
 import { al, allied, atWar, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
 
@@ -26,6 +27,8 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
   if (a === b || !s.nations[a] || !s.nations[b]) return 'nazioni non valide';
   if (!s.nations[a].alive || !s.nations[b].alive) return 'nazione non più esistente';
   if (atWar(s, a, b)) return 'già in guerra';
+  const blocked = warBlock(w, a, b);
+  if (blocked) return blocked;
   if (allied(s, a, b) && treatyBetween(s, a, b, 'alliance')) {
     // dichiarare guerra a un alleato rompe l'alleanza
     treatyBetween(s, a, b, 'alliance')!.violated = true;
@@ -43,7 +46,11 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
       defenders.push(other); callers.push(other);
     }
   }
-  const war = { id: newId(s, 'w'), name: `Guerra fra ${shortName(w, a)} e ${shortName(w, b)}`, attackers: [a], defenders, startDay: s.day, casualties: {} };
+  // vassalli e protettorati seguono il signore
+  for (const d of [...defenders]) for (const f of followers(w, d)) if (f !== a && !defenders.includes(f) && !atWar(s, f, a)) { defenders.push(f); callers.push(f); }
+  const attackers = [a];
+  for (const f of followers(w, a)) if (f !== b && !defenders.includes(f) && !atWar(s, f, b)) attackers.push(f);
+  const war = { id: newId(s, 'w'), name: `Guerra fra ${shortName(w, a)} e ${shortName(w, b)}`, attackers, defenders, startDay: s.day, casualties: {} };
   s.wars.push(war);
   changeOpinion(s, b, a, -50);
   for (const n of Object.keys(s.nations)) if (n !== a && n !== b) changeOpinion(s, n, a, pact ? -15 : -4);
@@ -148,6 +155,7 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
     case 'military_access':
     case 'guarantee':
       if (atWar(s, from, to)) return 'le due nazioni sono in guerra: prima serve la pace';
+      for (const t of [from, to]) { const x = subjectOf(w, t); if (x?.level === 'protettorato' && x.overlord !== (t === from ? to : from)) return `${The(w, t)} è un protettorato: i trattati li firma ${the(w, x.overlord)}`; }
       if (treatyBetween(s, from, to, p.type)) return `esiste già un ${TREATY_LABEL[p.type]}`;
       return null;
     case 'peace': {

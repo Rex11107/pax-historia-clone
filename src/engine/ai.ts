@@ -1,3 +1,4 @@
+import { imposeProtectorate, protectorateRefusal } from './vassals';
 import { recruit } from './economy';
 import { makePeace } from './diplomacy';
 import { moveCost } from './orders';
@@ -115,6 +116,8 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     if (Math.max(weA, weD) < 55 && !(long && Math.max(weA, weD) > 35)) continue;
     const loser = weA >= weD ? a : d;
     const winner = loser === a ? d : a;
+    // capitale di uno stato minore occupata: protettorato invece delle cessioni
+    if (!protectorateRefusal(w, winner, loser)) { imposeProtectorate(w, winner, loser, sink); continue; }
     const occupied = w.map.provinces.filter((p) => s.owner[p.id] === loser && s.controller[p.id] === winner && p.id !== s.nations[loser].capital).map((p) => p.id).slice(0, 3);
     makePeace(w, a, d, { cedeTo: winner, provinces: occupied }, sink);
   }

@@ -1,4 +1,5 @@
 import type { GameEvent, Tag } from './types';
+import { industryOf, level, logistics, provinceCapacity } from './construction';
 import { allied, canEnter, clamp, emit, enemiesOf, presence, type World } from './world';
 
 /** Livello di rifornimento (0-1) per ogni provincia, dal punto di vista di una nazione. */
@@ -14,28 +15,34 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   const cap = s.nations[tag].capital;
   if (s.controller[cap] === tag) seeds.push(cap);
   // rifornimento via mare: porti propri se la marina è adeguata
-  if ((w.profiles[tag].naval ?? 0) >= 30) {
-    for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && s.owner[p] === tag) seeds.push(p);
-  }
+  // senza marina adeguata servono porti grandi (livello 2+) per rifornirsi via mare
+  const naval = w.profiles[tag].naval ?? 0;
+  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && s.owner[p] === tag && level(w, p, 'porto') >= (naval >= 30 ? 1 : 2)) seeds.push(p);
   if (!seeds.length) for (let p = 0; p < n; p++) if (s.controller[p] === tag && s.owner[p] === tag) { seeds.push(p); break; }
   const core = w.map.hops(seeds, friendly, 200);
-  const level = new Float32Array(n);
+  const lv = new Float32Array(n);
   const connected: number[] = [];
-  for (let p = 0; p < n; p++) if (core[p] >= 0) { level[p] = 1 - Math.min(0.25, core[p] * 0.01); connected.push(p); }
+  const L = logistics(w, tag).factor;
+  for (let p = 0; p < n; p++) if (core[p] >= 0) { lv[p] = Math.min(1, (1 - Math.min(0.25, core[p] * 0.01 / L)) * Math.min(1, L + 0.1)); connected.push(p); }
   // fuori dal territorio amico il rifornimento cala a ogni provincia di distanza
   const out = w.map.hops(connected, (p) => w.map.passable(p) && canEnter(s, tag, p), 8);
-  const reach = 0.12 + 0.08 * (1 - w.profiles[tag].industry / 100);
-  for (let p = 0; p < n; p++) if (core[p] < 0 && out[p] > 0) level[p] = Math.max(0, 1 - reach * out[p] - 0.1);
-  return level;
+  const reach = (0.12 + 0.08 * (1 - industryOf(w, tag) / 100)) / L;
+  for (let p = 0; p < n; p++) if (core[p] < 0 && out[p] > 0) lv[p] = Math.max(0, 1 - reach * out[p] - 0.1);
+  return lv;
 }
 
 export function updateSupply(w: World, sink: GameEvent[]) {
   const s = w.state;
   const cache = new Map<Tag, Float32Array>();
+  // troppi uomini in una provincia: la capienza (ferrovie, porti, fortezze, città) non basta
+  const crowd = new Map<string, number>();
+  for (const u of s.units) crowd.set(`${u.nation}:${u.location}`, (crowd.get(`${u.nation}:${u.location}`) ?? 0) + u.strength);
   for (const u of s.units) {
     let m = cache.get(u.nation);
     if (!m) { m = supplyMap(w, u.nation); cache.set(u.nation, m); }
-    const target = m[u.location];
+    const men = (crowd.get(`${u.nation}:${u.location}`) ?? 0) / 1000;
+    const capK = provinceCapacity(w, u.location);
+    const target = m[u.location] * (men > capK ? Math.max(0.5, capK / men) : 1);
     const before = u.supply;
     if (target > u.supply) u.supply = Math.min(target, u.supply + 0.25);
     else u.supply = Math.max(target, u.supply - (u.inBattle ? 0.06 : 0.04));
@@ -56,7 +63,7 @@ export function updateSupply(w: World, sink: GameEvent[]) {
     // rinforzi dalla riserva nazionale
     if (!u.inBattle && u.supply >= 0.6 && u.strength < u.maxStrength) {
       const nat = s.nations[u.nation];
-      const add = Math.min(u.maxStrength - u.strength, Math.round(u.maxStrength * 0.015), nat.manpower);
+      const add = Math.min(u.maxStrength - u.strength, Math.round(u.maxStrength * 0.015 * logistics(w, u.nation).factor), nat.manpower);
       u.strength += add;
       nat.manpower -= add;
     }

@@ -6,6 +6,8 @@ import { weeklyEconomy } from './economy';
 import { weeklyTrade } from './trade';
 import { weeklyPolitics } from './politics';
 import { weeklyMinisters } from './ministers';
+import { weeklyConstruction } from './construction';
+import { weeklySubjects } from './vassals';
 import { processUnit, unitPosition } from './orders';
 import { updateSupply } from './supply';
 import type { GameEvent, TurnReport } from './types';
@@ -46,6 +48,8 @@ export function runTurn(w: World): TurnReport {
   weeklyEconomy(w, sink);
   weeklyPolitics(w, sink);
   weeklyMinisters(w, sink);
+  weeklyConstruction(w, sink);
+  weeklySubjects(w, sink);
   aiEndOfTurn(w, sink);
   expireTreaties(w, sink);
   updateDeserts(w, sink);

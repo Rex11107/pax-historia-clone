@@ -111,7 +111,7 @@ export const NATION_POP_1881 = {
   AUH: { total: 39_400_000, BIH: 1_160_000 },
   GBR: { total: 35_100_000, IRL: 4_900_000, CYP: 186_000, CYN: 0, MLT: 150_000 },
   RUS: { total: 84_000_000, POL: 7_300_000, FIN: 2_060_000, GEO: 1_100_000, ARM: 600_000, AZE: 1_200_000 },
-  TUR: { total: 24_000_000, TUR: 11_500_000, LBY: 1_000_000, IRQ: 1_400_000, SYR: 1_600_000, LBN: 400_000, ISR: 300_000, PSX: 200_000, JOR: 200_000, SAU: 600_000 },
+  TUR: { total: 23_550_000, TUR: 11_500_000, LBY: 1_000_000, IRQ: 1_400_000, SYR: 1_600_000, LBN: 400_000, ISR: 300_000, PSX: 200_000, JOR: 200_000, SAU: 150_000 }, // SAU: solo Tabuk, Al-Jawf e al-Hasa sono in mappa (Mecca e Medina no)
   EGY: { total: 6_800_000 },
   SPA: { total: 16_600_000 },
   POR: { total: 4_550_000 },

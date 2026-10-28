@@ -1,3 +1,4 @@
+import { level } from './construction';
 import { TERRAIN_SPEED, type Edge } from './map';
 import type { Condition, GameEvent, Order, Unit, UnitType } from './types';
 import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, NOBODY, The, type World } from './world';
@@ -23,8 +24,10 @@ export function legDays(w: World, u: Unit, from: number, e: Edge): number {
   const friendly = (p: number) => allied(s, u.nation, s.controller[p]) && !hostilePresent(w, u.nation, p);
   if (e.route) speed *= ROUTE_SPEED;
   else if (!e.strait && friendly(from) && friendly(e.to)) {
-    const rail = Math.min(s.nations[s.controller[from]]?.rail ?? 0, s.nations[s.controller[e.to]]?.rail ?? 0);
-    speed *= 1 + (5 * rail) / 100;
+    // ferrovia della provincia (0-3), resa dalla qualità della rete nazionale (materiale rotabile)
+    const lines = Math.min(level(w, from, 'ferrovia'), level(w, e.to, 'ferrovia'));
+    const net = Math.min(s.nations[s.controller[from]]?.rail ?? 0, s.nations[s.controller[e.to]]?.rail ?? 0);
+    if (lines) speed *= 1 + 1.6 * lines * (0.6 + 0.4 * net / 100);
   }
   return Math.max(0.5, e.km / speed + (e.strait ? STRAIT_DAYS : 0));
 }
