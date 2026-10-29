@@ -4,6 +4,7 @@ import { moveCost, planPath } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
 import { allied, emit, enemiesOf, NOBODY, rand, The, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
+import { hasProgram } from './colonial';
 
 // Riflessi deterministici delle nazioni non giocanti (zero chiamate AI):
 // difendono, liberano le province occupate, attaccano dove hanno superiorità locale,
@@ -92,11 +93,9 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
   }
 }
 
-// --- espansione nelle terre di nessuno ---
-// Le potenze coloniali mandano una spedizione alla volta (anche per mare, sbarcando dove vogliono); gli stati
-// africani e arabi si allargano via terra sulle terre di nessuno confinanti. Una spedizione è un'unità che
-// entra nella provincia e la annette; resta lì e dalla nuova base sceglie l'obiettivo seguente.
-const COLONIAL = new Set(['GBR', 'FRA', 'POR', 'SPA', 'ITA', 'GER', 'BEL']);
+// --- espansione nelle terre di nessuno degli stati locali ---
+// Le potenze coloniali seguono i loro interessi (colonial.ts). Gli stati africani e arabi si allargano di rado,
+// via terra, sulle terre di nessuno confinanti dello stesso paese di oggi (niente salti oltre i confini naturali).
 
 function colonyValue(w: World, p: number): number {
   const pv = w.map.provinces[p];
@@ -112,8 +111,8 @@ export function aiColonize(w: World, sink: GameEvent[]) {
   const nullSet = new Set(nullius);
   for (const tag of Object.keys(s.nations)) {
     const pr = w.profiles[tag];
-    if (tag === s.player || !s.nations[tag].alive || !pr || pr.micro || tag === 'NUL' || warsOf(s, tag).length) continue;
-    const colonial = COLONIAL.has(tag);
+    if (tag === s.player || !s.nations[tag].alive || !pr || pr.micro || tag === 'NUL' || warsOf(s, tag).length || hasProgram(tag)) continue;
+    const colonial = false;
     const units = s.units.filter((u) => u.nation === tag);
     if (!units.length) continue;
     // una spedizione alla volta
@@ -121,11 +120,12 @@ export function aiColonize(w: World, sink: GameEvent[]) {
     const mine = new Set<number>();
     for (let p = 0; p < w.map.size; p++) if (s.owner[p] === tag) mine.add(p);
     // obiettivi: terre di nessuno confinanti con le proprie; per le potenze coloniali anche le coste lontane
-    const near = nullius.filter((p) => w.map.adj[p].some((e) => mine.has(e.to) && !e.strait));
+    const mods = new Set([...mine].map((p) => w.map.provinces[p].modern));
+    const near = nullius.filter((p) => mods.has(w.map.provinces[p].modern) && w.map.adj[p].some((e) => mine.has(e.to) && !e.strait));
     const far = colonial ? nullius.filter((p) => w.map.provinces[p].coast && !near.includes(p)) : [];
     if (!near.length && !far.length) continue;
     // ritmo: le potenze una spedizione ogni quattro mesi circa, gli stati locali più di rado (e solo con un esercito che possa uscire)
-    if (rand(s.seed, 'colonia', tag, s.turn) > (colonial ? 0.06 : 0.012)) continue;
+    if (rand(s.seed, 'colonia', tag, s.turn) > (colonial ? 0.06 : 0.006)) continue;
     const idle = units.filter((u) => !u.inBattle && !u.recovering && !u.orders.length && !u.move);
     if (!idle.length) continue;
     // chi parte: un'unità già oltremare (vicina alle terre di nessuno) o, se non c'è, la più piccola non nella capitale

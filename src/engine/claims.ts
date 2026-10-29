@@ -3,6 +3,7 @@
 
 import { CLAIMS_1881, type ClaimStrength } from '../scenario/claims1881';
 import { ETHNICITIES, STATE_PEOPLES } from '../scenario/ethnic1881';
+import { colonialClaims } from './colonial';
 import { composition, foreignness } from './ethnic';
 import type { ProvinceData, Tag } from './types';
 import { dateOf, type World } from './world';
@@ -67,6 +68,7 @@ export function claimsOn(w: World, p: number): Claim[] {
       for (const [st, sp] of Object.entries(STATE_PEOPLES)) if (sp.own.includes(top.eth) && !w.profiles[st]?.micro && near(w, st)[p] >= 0) add({ nation: st, strength: 'nucleo', reason: `maggioranza ${ETHNICITIES[top.eth].label} (${top.share}%)` });
   }
   for (const c of historical(w)[p]) add(c);
+  if (!w.map.provinces[p].impassable) for (const c of colonialClaims(w, p)) add({ nation: c.nation, strength: 'pretesa', reason: `interesse coloniale: ${c.name}` });
   const y = dateOf(s.day).getUTCFullYear();
   for (const l of s.lostClaims ?? []) if (l.province === p) {
     const age = y - dateOf(l.since).getUTCFullYear();

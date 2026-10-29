@@ -10,6 +10,8 @@ import { annex, annexRefusal, declareIndependence, LEVEL_INFO, libertyTarget, lo
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { ResearchView } from './research-view';
 import { PeaceView } from './peace-view';
+import { ColonialView } from './colonial-view';
+import { available as colonialAvailable, colonial, interestsOf } from '../engine/colonial';
 import { warScore } from '../engine/peace';
 import { ethLabel, ethnicTable, ETHNICITIES, foreignness } from '../engine/ethnic';
 import { CLAIM_LABEL, claimsOn } from '../engine/claims';
@@ -45,7 +47,7 @@ export class App {
   chatBusy = false;
   draftOffer: Proposal | null = null;
   lastOffer: Record<Tag, Proposal | null> = {};
-  govTab: 'home' | 'budget' | 'trade' | 'politics' | 'build' | 'research' = 'home';
+  govTab: 'home' | 'budget' | 'trade' | 'politics' | 'build' | 'research' | 'colonies' = 'home';
   peace = new PeaceView({
     get world() { return app.game.world; },
     mode: () => app.settings.peaceMode ?? 'engine',
@@ -56,6 +58,14 @@ export class App {
     highlight: (ids: Set<number> | null) => { app.map.highlight = ids && ids.size ? ids : null; app.map.invalidate(); },
     center: (p: number) => app.map.focusBetween(p, p),
     close: () => { app.map.highlight = null; app.map.invalidate(); app.setTab('diplomacy'); },
+  });
+  colonies = new ColonialView({
+    get world() { return app.game.world; },
+    toast: (m: string) => app.toast(m),
+    changed: () => app.afterStateChange(),
+    rerender: () => app.render(),
+    highlight: (ids: Set<number> | null) => { app.map.highlight = ids && ids.size ? ids : null; app.map.invalidate(); },
+    center: (p: number) => app.map.focusBetween(p, p),
   });
   research = new ResearchView({
     get world() { return app.game.world; },
@@ -69,7 +79,7 @@ export class App {
 
   start(game: Game) {
     this.game = game;
-    game.state.options = { peaceMode: this.settings.peaceMode ?? 'engine', antiGore: this.settings.antiGore ?? true };
+    game.state.options = { peaceMode: this.settings.peaceMode ?? 'engine', antiGore: this.settings.antiGore ?? true, colonialMode: this.settings.colonialMode ?? 'storico' };
     show($('#start'), false);
     show($('#game'), true);
     const canvas = $<HTMLCanvasElement>('#map');
@@ -135,7 +145,7 @@ export class App {
   }
 
   setTab(t: Tab, open = true) {
-    if (t !== 'peace' && this.tab === 'peace' && this.map) { this.map.highlight = null; this.map.invalidate(); }
+    if (this.map && ((t !== 'peace' && this.tab === 'peace') || (t !== 'government' && this.tab === 'government' && this.govTab === 'colonies'))) { this.map.highlight = null; this.map.invalidate(); }
     this.tab = t;
     document.querySelectorAll<HTMLButtonElement>('.tabs button[data-tab]').forEach((b) => b.classList.toggle('active', b.dataset.tab === t));
     if (open) this.openSheet();
@@ -463,13 +473,13 @@ export class App {
   }
 
   private govTitle(): string {
-    return ({ home: 'Governo', budget: 'Bilancio e politiche', politics: 'Politica', trade: 'Commercio', build: 'Costruzione', research: 'Ricerca' } as const)[this.govTab];
+    return ({ home: 'Governo', budget: 'Bilancio e politiche', politics: 'Politica', trade: 'Commercio', build: 'Costruzione', research: 'Ricerca', colonies: 'Colonie' } as const)[this.govTab];
   }
 
   private viewGovernment(): Node {
     if (this.govTab === 'home') return this.viewGovHome();
     const back = h('button', { class: 'back', onclick: () => { this.govTab = 'home'; this.render(); $('#sheet-body').scrollTop = 0; } }, '‹ Governo');
-    const body = this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.govTab === 'research' ? this.research.view() : this.viewBudget();
+    const body = this.govTab === 'trade' ? this.viewTrade() : this.govTab === 'politics' ? this.viewPolitics() : this.govTab === 'build' ? this.viewBuild() : this.govTab === 'research' ? this.research.view() : this.govTab === 'colonies' ? this.colonies.view() : this.viewBudget();
     return h('div', null, back, body);
   }
 
@@ -492,8 +502,21 @@ export class App {
       card('trade', '⚖️', 'Commercio', trades.length ? `${trades.length} contratti · saldo ${sign(b.trade ?? 0)} M` : 'nessun contratto · compra e vendi risorse'),
       card('build', '🏗️', 'Costruzione', `${works.length} cantieri su ${slots(w, me)} · logistica ×${logistics(w, me).factor.toFixed(2).replace('.', ',')} · industria ${industryOf(w, me)}`),
       card('research', '🔬', 'Ricerca', `${res.running} ricerche su ${res.slots}${res.next ? ` · ${res.next}` : ' · nessuna in corso'}`, res.running < res.slots),
+      this.colonialCard(card),
       s.situations.length ? h('div', null, h('h3', null, 'Questioni aperte'), ...s.situations.map((x) => h('p', null, h('b', null, x.title), ': ', x.summary))) : null,
     );
+  }
+
+  private colonialCard(card: (tab: typeof this.govTab, icon: string, title: string, line: string, alert?: boolean) => Node): Node | null {
+    const w = this.game.world, me = w.state.player;
+    const list = interestsOf(me);
+    if (!list.length) return null;
+    const c = colonial(w);
+    const done = list.filter((x) => c.done[x.id] !== undefined).length;
+    const av = colonialAvailable(w, me).length;
+    const pending = !!c.pending[me];
+    const revolt = list.some((x) => (c.admin[x.id]?.resistance ?? 0) >= 70);
+    return card('colonies', '🌍', 'Colonie', `${done} obiettivi su ${list.length} · ${av} disponibili${pending ? ' · DECISIONE DA PRENDERE' : ''}${revolt ? ' · rischio di rivolta' : ''}${c.liquidating ? ' · liquidazione egiziana' : ''}`, pending || revolt);
   }
 
   private researchCount() {
@@ -860,6 +883,9 @@ export class App {
       h('h3', null, 'Pace'),
       h('div', { class: 'seg' }, ...([['engine', 'Il motore'], ['own', 'Io, nelle mie guerre'], ['all', 'Io, in tutte le guerre']] as const).map(([v, l]) => h('button', { class: (st.peaceMode ?? 'engine') === v ? 'on' : '', onclick: async () => { st.peaceMode = v; this.game.state.options = { ...(this.game.state.options ?? {}), peaceMode: v }; await saveSettings(st); this.render(); } }, l))),
       h('p', { class: 'sub' }, (st.peaceMode ?? 'engine') === 'engine' ? 'Il motore decide se le condizioni sono accettabili (punteggio di guerra) e detta le paci fra le altre nazioni.' : (st.peaceMode === 'own') ? 'Nelle tue guerre imponi le condizioni anche oltre il punteggio; le paci altrui le detta il motore.' : 'Imponi le tue condizioni e detti anche le paci fra le altre nazioni (Diplomazia → Guerre e conferenze di pace; dopo due settimane decide il motore).'),
+      h('h3', null, 'Colonie'),
+      h('div', { class: 'seg' }, ...([['storico', 'Storico guidato'], ['libero', 'Libero']] as const).map(([v, l]) => h('button', { class: (st.colonialMode ?? 'storico') === v ? 'on' : '', onclick: async () => { st.colonialMode = v; this.game.state.options = { ...(this.game.state.options ?? {}), colonialMode: v }; await saveSettings(st); this.render(); } }, l))),
+      h('p', { class: 'sub' }, (st.colonialMode ?? 'storico') === 'storico' ? 'Gli interessi coloniali hanno date e prerequisiti leggeri; le altre potenze li perseguono soprattutto nella loro epoca.' : 'Niente date né prerequisiti: ogni interesse dei primi due stadi è aperto da subito (il terzo resta legato alla decisione politica).'),
       h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: st.antiGore ?? true, onchange: async (e: Event) => { st.antiGore = (e.target as HTMLInputElement).checked; this.game.state.options = { ...(this.game.state.options ?? {}), antiGore: st.antiGore }; await saveSettings(st); } }), ' Regole contro i confini assurdi (raggiungibilità, niente exclavi né corridoi)'),
       h('h3', null, 'Aggiornamenti'),
       this.updateBox(),

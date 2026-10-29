@@ -22,6 +22,11 @@ export const AFRICA_NATIONS: Record<string, P> = {
   // Africa orientale
   ZAN: base({ name: 'Sultanato di Zanzibar', short: ['', 'Zanzibar'], adjective: 'zanzibarino', color: '#b3473f', capital: [39.19, -6.16], government: 'sultanato', leader: 'Sultano Barghash bin Said',
     finance: 25, naval: 5, armyPeace: 5000, temperament: 'mercantile, legato al console britannico Kirk', goals: ['controllo delle carovane dell\'interno'], friends: ['GBR'], rivals: ['MIR'] }),
+  // nascono in partita: la rivolta del Mahdi (1881-85) e il ritiro egiziano dall'Harar (1885)
+  MAH: base({ name: 'Stato mahdista', short: ['lo ', 'Stato mahdista'], adjective: 'mahdista', color: '#5a4a2a', capital: [30.22, 13.18], government: 'teocrazia guerriera', leader: 'il Mahdi Muhammad Ahmad',
+    spawned: true, militaryQuality: 45, cohesion: 65, finance: 3, armyPeace: 45000, temperament: 'guerra santa contro gli egiziani e gli infedeli', goals: ['cacciare gli egiziani dal Sudan', 'portare la guerra santa in Egitto e in Etiopia'], rivals: ['EGY', 'ETH', 'GBR'] }),
+  HAR: base({ name: 'Emirato di Harar', short: ["l'", 'Harar'], adjective: 'hararino', color: '#9a6a9a', capital: [42.12, 9.31], government: 'emirato', leader: 'Emiro Abdullahi',
+    spawned: true, cohesion: 45, finance: 6, armyPeace: 3000, temperament: 'città santa e mercato del caffè, stretta fra Scioa e Somali', goals: ['preservare l\'indipendenza'], rivals: ['ETH'] }),
   // sultanati del Corno: piccoli, si legano a una potenza con un trattato di protettorato più che con la guerra
   OBB: base({ name: 'Sultanato di Obbia', short: ['il ', 'Sultanato di Obbia'], adjective: 'obbiese', color: '#8e4fc4', capital: [48.53, 5.35], government: 'sultanato', leader: 'Sultano Yusuf Ali Kenadid',
     cohesion: 45, finance: 4, naval: 1, armyPeace: 2500, temperament: 'fondatore ambizioso, in cerca di un protettore contro i rivali', goals: ['tenere la costa da Obbia a El Dher'], rivals: ['MIG', 'ZAN'] }),

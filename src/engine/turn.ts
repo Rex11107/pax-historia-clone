@@ -10,6 +10,7 @@ import { weeklyConstruction } from './construction';
 import { weeklySubjects } from './vassals';
 import { weeklyResearch } from './research';
 import { weeklyReparations } from './peace';
+import { weeklyColonial } from './colonial';
 import { processUnit, unitPosition } from './orders';
 import { updateSupply } from './supply';
 import type { GameEvent, TurnReport } from './types';
@@ -55,6 +56,7 @@ export function runTurn(w: World): TurnReport {
   weeklySubjects(w, sink);
   weeklyResearch(w, sink);
   aiEndOfTurn(w, sink);
+  weeklyColonial(w, sink);
   aiColonize(w, sink);
   expireTreaties(w, sink);
   updateDeserts(w, sink);

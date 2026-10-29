@@ -53,9 +53,9 @@ export function nationName(w: World, tag: Tag) { return tag === NOBODY ? 'Terra 
 
 // Nomi brevi con articolo e preposizioni articolate: "l'Italia", "della Francia", "al Regno Unito".
 const PREP: Record<string, Record<string, string>> = {
-  di: { "l'": "dell'", 'la ': 'della ', 'il ': 'del ', 'i ': 'dei ', 'le ': 'delle ', '': 'di ' },
-  a: { "l'": "all'", 'la ': 'alla ', 'il ': 'al ', 'i ': 'ai ', 'le ': 'alle ', '': 'a ' },
-  da: { "l'": "dall'", 'la ': 'dalla ', 'il ': 'dal ', 'i ': 'dai ', 'le ': 'dalle ', '': 'da ' },
+  di: { "l'": "dell'", 'la ': 'della ', 'il ': 'del ', 'lo ': 'dello ', 'i ': 'dei ', 'gli ': 'degli ', 'le ': 'delle ', '': 'di ' },
+  a: { "l'": "all'", 'la ': 'alla ', 'il ': 'al ', 'lo ': 'allo ', 'i ': 'ai ', 'gli ': 'agli ', 'le ': 'alle ', '': 'a ' },
+  da: { "l'": "dall'", 'la ': 'dalla ', 'il ': 'dal ', 'lo ': 'dallo ', 'i ': 'dai ', 'gli ': 'dagli ', 'le ': 'dalle ', '': 'da ' },
 };
 const sh = (w: World, tag: Tag): [string, string] => w.profiles[tag]?.short ?? ['', tag];
 export const the = (w: World, tag: Tag) => sh(w, tag).join('');

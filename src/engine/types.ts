@@ -83,6 +83,8 @@ export interface NationProfile {
   micro?: boolean;
   /** nazione senza Stato nel 1881: nasce solo se una pace libera questo popolo */
   releasable?: string;
+  /** nasce in partita da un evento (Stato mahdista, emirato di Harar): non si sceglie all'inizio */
+  spawned?: boolean;
 }
 
 export type UnitType = 'infantry' | 'cavalry' | 'artillery';
@@ -281,7 +283,9 @@ export interface GameState {
   /** confini smilitarizzati da una pace: niente fortezze fino alla scadenza */
   demilitarized?: { nation: Tag; provinces: number[]; until: number }[];
   /** opzioni della partita (dalle impostazioni) */
-  options?: { peaceMode?: import('./peace').PeaceMode; antiGore?: boolean };
+  options?: { peaceMode?: import('./peace').PeaceMode; antiGore?: boolean; colonialMode?: import('./colonial').ColonialMode };
+  /** interessi coloniali, decisioni, colonie e crisi egiziana (assente nei salvataggi vecchi) */
+  colonial?: import('./colonial').ColonialState;
   /** guerre fra nazioni non giocanti in attesa che il giocatore detti la pace (modalità "tutte") */
   pendingPeace?: { war: string; since: number }[];
   situations: Situation[];

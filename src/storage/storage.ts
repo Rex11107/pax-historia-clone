@@ -14,6 +14,8 @@ export interface Settings extends LLMConfig {
   peaceMode?: 'engine' | 'own' | 'all';
   /** regole contro il border gore attive */
   antiGore?: boolean;
+  /** interessi coloniali: con date e prerequisiti, o liberi */
+  colonialMode?: 'storico' | 'libero';
 }
 
 export async function loadSettings(): Promise<Settings> {

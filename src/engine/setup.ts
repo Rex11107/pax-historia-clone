@@ -77,7 +77,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   return w;
 }
 
-function placeArmies(w: World, tag: Tag) {
+export function placeArmies(w: World, tag: Tag) {
   const pr = w.profiles[tag];
   const s = w.state;
   if (!pr.armyPeace) return;
