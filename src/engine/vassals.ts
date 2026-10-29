@@ -36,6 +36,12 @@ const INITIAL: Subject[] = [
   { subject: 'EGY', overlord: 'TUR', level: 'tributario', liberty: 70, since: -3650 },
   { subject: 'TUN', overlord: 'TUR', level: 'tributario', liberty: 60, since: -3650 },
   { subject: 'BUL', overlord: 'TUR', level: 'tributario', liberty: 78, since: -900 },
+  // Africa e Arabia
+  { subject: 'TRU', overlord: 'GBR', level: 'protettorato', liberty: 60, since: -10000 }, // tregua perpetua del 1853
+  { subject: 'BHR', overlord: 'GBR', level: 'protettorato', liberty: 65, since: -400 }, // trattato del 1880
+  { subject: 'ZUL', overlord: 'GBR', level: 'tributario', liberty: 50, since: -500 }, // assetto di Wolseley dopo il 1879
+  { subject: 'DMG', overlord: 'BOR', level: 'tributario', liberty: 70, since: -10000 },
+  { subject: 'KGO', overlord: 'POR', level: 'tributario', liberty: 80, since: -8000 },
 ];
 
 export function subjects(w: World): Subject[] {

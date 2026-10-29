@@ -97,12 +97,26 @@ const works = (w: World, tag: Tag, p: number) => w.state.owner[p] === tag && w.s
 // Cache per nazione, rinnovata quando cambia il giorno, un id (contratti, cantieri) o un'opera finita.
 let version = 0;
 export const touchBuildings = () => { version++; };
-const memo = new WeakMap<object, { key: string; per: Map<Tag, { res?: Set<ResourceId>; points?: number; logistics?: ReturnType<typeof computeLogistics> }> }>();
-function cache(w: World, tag: Tag) {
+const memo = new WeakMap<object, { key: string; per: Map<Tag, { res?: Set<ResourceId>; points?: number; logistics?: ReturnType<typeof computeLogistics> }>; ctrl?: Map<Tag, number[]> }>();
+function memoOf(w: World) {
   const s = w.state;
   const key = `${s.day}:${s.nextId}:${version}:${(s.trades ?? []).length}`;
   let m = memo.get(s);
   if (!m || m.key !== key) { m = { key, per: new Map() }; memo.set(s, m); }
+  return m;
+}
+/** Province controllate da una nazione (indice rifatto una volta per chiave di cache, non a ogni nazione). */
+function controlled(w: World, tag: Tag): number[] {
+  const m = memoOf(w);
+  if (!m.ctrl) {
+    m.ctrl = new Map();
+    const c = w.state.controller;
+    for (let i = 0; i < c.length; i++) { let a = m.ctrl.get(c[i]); if (!a) m.ctrl.set(c[i], (a = [])); a.push(i); }
+  }
+  return m.ctrl.get(tag) ?? [];
+}
+function cache(w: World, tag: Tag) {
+  const m = memoOf(w);
   let c = m.per.get(tag);
   if (!c) m.per.set(tag, (c = {}));
   return c;
@@ -160,7 +174,7 @@ export function buildingIncome(w: World, tag: Tag): number {
   const b = buildings(w);
   const te = techEffects(w, tag);
   let inc = 0;
-  for (let p = 0; p < b.length; p++) {
+  for (const p of controlled(w, tag)) {
     if (!works(w, tag, p)) continue;
     const popM = w.map.provinces[p].pop / 1e6;
     const l = b[p];
@@ -200,7 +214,7 @@ export function recruitDiscount(w: World, tag: Tag): number {
 export function totalLevel(w: World, tag: Tag, k: BuildingId): number {
   const b = buildings(w);
   let x = 0;
-  for (let p = 0; p < b.length; p++) if (works(w, tag, p)) x += b[p][k] ?? 0;
+  for (const p of controlled(w, tag)) if (works(w, tag, p)) x += b[p][k] ?? 0;
   return x;
 }
 
@@ -216,13 +230,14 @@ export function logistics(w: World, tag: Tag) {
 function computeLogistics(w: World, tag: Tag) {
   const s = w.state;
   let lots = 0;
-  for (let i = 0; i < w.map.size; i++) if (s.controller[i] === tag) {
+  const mine = controlled(w, tag);
+  for (const i of mine) {
     for (const r of [...w.map.resources[i], ...extraLots(w, i)]) if (r === 'carbone' || r === 'ferro' || r === 'petrolio' || r === 'metalli') lots++;
   }
   for (const c of s.trades ?? []) if (c.buyer === tag && ['carbone', 'ferro', 'petrolio', 'metalli'].includes(c.res)) lots += c.qty;
   for (const c of s.trades ?? []) if (c.seller === tag && ['carbone', 'ferro', 'petrolio', 'metalli'].includes(c.res)) lots -= c.qty;
   let popM = 0;
-  for (let i = 0; i < w.map.size; i++) if (s.owner[i] === tag && s.controller[i] === tag) popM += w.map.provinces[i].pop / 1e6;
+  for (const i of mine) if (s.owner[i] === tag) popM += w.map.provinces[i].pop / 1e6;
   const bell = totalLevel(w, tag, 'bellica') * inputEfficiency(w, tag, 'bellica');
   const rail = totalLevel(w, tag, 'ferrovia'), port = totalLevel(w, tag, 'porto');
   const capacity = Math.round(techEffects(w, tag).logistics * (industryOf(w, tag) + 15 * bell + 4 * Math.max(0, lots) + 4 * popM + 0.5 * rail + 1 * port));

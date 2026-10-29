@@ -11,6 +11,56 @@ export const UNIT_STATS: Record<UnitType, { speed: number; attack: number; defen
 };
 
 const STRAIT_DAYS = 2;
+
+// --- trasporto per mare (sbarco) ---
+// Una nazione imbarca truppe in una sua provincia costiera con un porto (o in qualsiasi sua costa se ha una
+// grande marina) e le sbarca su qualsiasi costa in cui può entrare: terra di nessuno, territorio proprio o
+// alleato, nemico in guerra. Così le potenze arrivano in Africa senza un porto vicino (Assab, il Camerun).
+const SEA_KMDAY = 450; // piroscafi da trasporto, carico e scarico compresi
+const SEA_BASE = 3;
+const MIN_NAVAL = 10;
+
+/** Si può imbarcare qui? */
+export function canEmbark(w: World, tag: string, p: number): boolean {
+  const pv = w.map.provinces[p];
+  if (!pv.coast || w.state.controller[p] !== tag) return false;
+  const naval = w.profiles[tag]?.naval ?? 0;
+  if (naval < MIN_NAVAL) return false;
+  return naval >= 30 || level(w, p, 'porto') >= 1;
+}
+
+/** Giorni di navigazione fra due province costiere (rotta stimata: 1,25 volte la linea d'aria). */
+export function seaDays(w: World, a: number, b: number): number {
+  const [x1, y1] = w.map.provinces[a].c, [x2, y2] = w.map.provinces[b].c;
+  return Math.round((SEA_BASE + (Math.hypot(x2 - x1, y2 - y1) * 1.25) / SEA_KMDAY) * 10) / 10;
+}
+
+/** Percorso con un tratto per mare: terra fino al porto, nave, terra fino all'obiettivo. */
+function seaPlan(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number; sea: { from: number; to: number; days: number } } | null {
+  const s = w.state;
+  if ((w.profiles[u.nation]?.naval ?? 0) < MIN_NAVAL) return null;
+  const cost = moveCost(w, u, attack, target);
+  const dFrom = w.map.distancesFrom(u.location, cost, 40);
+  const ports: number[] = [];
+  for (let p = 0; p < w.map.size; p++) if (isFinite(dFrom[p]) && canEmbark(w, u.nation, p)) ports.push(p);
+  if (!ports.length) return null;
+  const dTo = w.map.distancesFrom(target, cost, 40);
+  let best: { e: number; l: number; days: number; sea: number } | null = null;
+  for (let l = 0; l < w.map.size; l++) {
+    if (!isFinite(dTo[l]) || !w.map.provinces[l].coast || !w.map.passable(l) || !canEnter(s, u.nation, l)) continue;
+    for (const e of ports) {
+      if (e === l) continue;
+      const sd = seaDays(w, e, l);
+      const tot = dFrom[e] + sd + dTo[l];
+      if (!best || tot < best.days) best = { e, l, days: tot, sea: sd };
+    }
+  }
+  if (!best) return null;
+  const a = best.e === u.location ? { path: [] as number[] } : w.map.shortestPath(u.location, best.e, cost);
+  const b = best.l === target ? { path: [] as number[] } : w.map.shortestPath(best.l, target, cost);
+  if (!a || !b) return null;
+  return { path: [...a.path, best.l, ...b.path], days: Math.round(best.days * 10) / 10, sea: { from: best.e, to: best.l, days: best.sea } };
+}
 /** sulle piste carovaniere si marcia a meno della metà della velocità (acqua, foraggio, guide) */
 const ROUTE_SPEED = 0.4;
 
@@ -44,10 +94,15 @@ export function moveCost(w: World, u: Unit, attack: boolean, target = -1) {
 }
 
 /** Percorso per un ordine di movimento. `attack` consente di attraversare province con nemici. */
-export function planPath(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number } | null {
+export function planPath(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number; sea?: { from: number; to: number; days: number } } | null {
   if (target < 0 || target >= w.map.size) return null;
   const res = w.map.shortestPath(u.location, target, moveCost(w, u, attack, target));
-  return res ? { path: res.path, days: res.cost } : null;
+  const land = res ? { path: res.path, days: res.cost } : null;
+  // per mare solo se la terra non basta o è molto più lenta
+  if (land && land.days <= 15) return land;
+  const sea = seaPlan(w, u, target, attack);
+  if (sea && (!land || sea.days < land.days * 0.85)) return sea;
+  return land;
 }
 
 export function evalCondition(w: World, u: Unit, c: Condition | undefined, order: Order): boolean {
@@ -102,6 +157,8 @@ export function assignOrders(w: World, unitId: string, orders: Order[], mode: 'r
 function startLeg(w: World, u: Unit) {
   if (!u.move || !u.move.path.length) return;
   const e = w.map.edge(u.location, u.move.path[0]);
+  const sea = u.move.sea;
+  if (sea && sea.from === u.location && sea.to === u.move.path[0]) { u.move.legDays = sea.days; u.move.progress = 0; return; }
   if (!e) { u.move = null; return; }
   u.move.legDays = legDays(w, u, u.location, e);
   u.move.progress = 0;
@@ -154,7 +211,8 @@ export function processUnit(w: World, u: Unit, sink: GameEvent[]) {
         emit(w, { type: 'order_failed', nations: [u.nation], province: u.location, text: `${u.name}: ${w.map.provinces[target].name} non è più raggiungibile, ordine annullato.` }, sink);
         u.orders.shift(); u.move = null; continue;
       }
-      u.move = { path: plan.path, progress: 0, legDays: 1 };
+      u.move = { path: plan.path, progress: 0, legDays: 1, ...(plan.sea ? { sea: plan.sea } : {}) };
+      if (plan.sea && u.nation === w.state.player) emit(w, { type: 'embark', nations: [u.nation], province: plan.sea.from, text: `${u.name} si imbarca a ${w.map.provinces[plan.sea.from].name} per ${w.map.provinces[plan.sea.to].name} (${Math.round(plan.sea.days)} giorni di mare).` }, sink);
       startLeg(w, u);
     }
     advance(w, u, o, sink);
@@ -184,6 +242,7 @@ function advance(w: World, u: Unit, o: Order, sink: GameEvent[]) {
     u.entrench = 0;
     if (hostile.length) { u.move.path = []; u.move = null; return; } // si combatte qui
     capture(w, u, next, sink);
+    if (u.move.sea && u.move.sea.to === next) delete u.move.sea; // sbarcati
     if (u.move.path.length) startLeg(w, u); else u.move = null;
   }
 }

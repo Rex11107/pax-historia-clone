@@ -15,10 +15,11 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   const seeds: number[] = [];
   const cap = s.nations[tag].capital;
   if (s.controller[cap] === tag) seeds.push(cap);
-  // rifornimento via mare: porti propri se la marina è adeguata
-  // senza marina adeguata servono porti grandi (livello 2+) per rifornirsi via mare
+  // rifornimento via mare: una grande marina rifornisce ogni costa propria (anche le colonie oltremare),
+  // una marina media i porti, senza marina servono porti grandi (livello 2+)
   const naval = w.profiles[tag].naval ?? 0;
-  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && s.owner[p] === tag && level(w, p, 'porto') >= (naval >= 30 ? 1 : 2)) seeds.push(p);
+  const need = naval >= 30 ? 0 : naval >= 15 ? 1 : 2;
+  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && s.owner[p] === tag && level(w, p, 'porto') >= need) seeds.push(p);
   if (!seeds.length) for (let p = 0; p < n; p++) if (s.controller[p] === tag && s.owner[p] === tag) { seeds.push(p); break; }
   const core = w.map.hops(seeds, friendly, 200);
   const lv = new Float32Array(n);
@@ -32,15 +33,26 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   return lv;
 }
 
+// in pace la mappa dei rifornimenti cambia solo con i confini e le opere: si ricalcola una volta a turno
+const peaceCache = new WeakMap<object, { key: string; maps: Map<Tag, Float32Array> }>();
+
 export function updateSupply(w: World, sink: GameEvent[]) {
   const s = w.state;
   const cache = new Map<Tag, Float32Array>();
+  const key = `${s.turn}:${s.wars.length}`;
+  let pc = peaceCache.get(s);
+  if (!pc || pc.key !== key) { pc = { key, maps: new Map() }; peaceCache.set(s, pc); }
+  const atPeace = (t: Tag) => !s.wars.some((x) => x.attackers.includes(t) || x.defenders.includes(t));
   // troppi uomini in una provincia: la capienza (ferrovie, porti, fortezze, città) non basta
   const crowd = new Map<string, number>();
   for (const u of s.units) crowd.set(`${u.nation}:${u.location}`, (crowd.get(`${u.nation}:${u.location}`) ?? 0) + u.strength);
   for (const u of s.units) {
     let m = cache.get(u.nation);
-    if (!m) { m = supplyMap(w, u.nation); cache.set(u.nation, m); }
+    if (!m) {
+      if (atPeace(u.nation)) { m = pc.maps.get(u.nation); if (!m) { m = supplyMap(w, u.nation); pc.maps.set(u.nation, m); } }
+      else m = supplyMap(w, u.nation);
+      cache.set(u.nation, m);
+    }
     const men = (crowd.get(`${u.nation}:${u.location}`) ?? 0) / 1000;
     const capK = provinceCapacity(w, u.location);
     const target = m[u.location] * (men > capK ? Math.max(0.5, capK / men) : 1);

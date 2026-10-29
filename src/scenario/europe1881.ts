@@ -1,4 +1,5 @@
 import type { NationProfile } from '../engine/types';
+import { AFRICA_NATIONS, AFRICA_OPINIONS } from './africa1881';
 
 // Profili statici delle nazioni al 1° gennaio 1881. Scala 0-100.
 // Numeri approssimati da fonti storiche generali (eserciti di pace, debito pubblico);
@@ -104,7 +105,7 @@ export const NATIONS: Record<string, P> = {
   MOR: base({ name: 'Sultanato del Marocco', short: ['il ', 'Marocco'], adjective: 'marocchino', color: '#8b4b3b', capital: [-6.84, 34.02], government: 'sultanato', leader: 'Sultano Hassan I', industry: 5, finance: 15, cohesion: 35, armyPeace: 30000, debt: 30, goals: ['indipendenza'] }),
   TUN: base({ name: 'Beilicato di Tunisi', short: ['', 'Tunisi'], adjective: 'tunisino', color: '#b2805c', capital: [10.17, 36.8], government: 'beilicato (vassallo ottomano)', leader: 'Bey Muhammad III as-Sadiq', industry: 5, finance: 5, cohesion: 35, armyPeace: 8000, debt: 150, temperament: 'indebitato, conteso fra Francia e Italia', goals: ['sopravvivere fra Francia e Italia'] }),
   PER: base({ name: 'Persia', short: ['la ', 'Persia'], adjective: 'persiano', color: '#7e9f8c', capital: [51.39, 35.69], government: 'scià', leader: 'Scià Naser al-Din', industry: 5, finance: 15, cohesion: 40, armyPeace: 30000, debt: 10 }),
-  ARA: base({ name: 'Emirati d\'Arabia', short: ["l'", 'Arabia'], adjective: 'arabo', color: '#c4b483', capital: [43.0, 26.0], government: 'emirati tribali', leader: 'Emiro di Ha\'il', industry: 2, finance: 5, cohesion: 30, armyPeace: 10000, debt: 0 }),
+  ARA: base({ name: 'Emirati d\'Arabia', short: ["l'", 'Arabia'], adjective: 'arabo', color: '#c4b483', capital: [41.69, 27.52], government: 'emirati tribali', leader: 'Emiro di Ha\'il', industry: 2, finance: 5, cohesion: 30, armyPeace: 10000, debt: 0 }),
   // microstati: non giocabili, senza esercito, protetti dai vicini
   SMR: base({ name: 'Repubblica di San Marino', short: ['', 'San Marino'], adjective: 'sammarinese', color: '#7fb3c9', capital: [12.45, 43.94], government: 'repubblica', leader: 'Capitani reggenti', micro: true, industry: 5, finance: 30, cohesion: 80, armyPeace: 0, debt: 0, temperament: 'neutrale, legato all\'Italia dal trattato di amicizia del 1862', goals: ['indipendenza'], friends: ['ITA'] }),
   MCO: base({ name: 'Principato di Monaco', short: ['', 'Monaco'], adjective: 'monegasco', color: '#d06a6a', capital: [7.42, 43.74], government: 'principato', leader: 'Principe Carlo III', micro: true, industry: 10, finance: 70, cohesion: 70, armyPeace: 0, debt: 0, temperament: 'neutrale, sotto la protezione francese', goals: ['indipendenza', 'prosperità del casinò'], friends: ['FRA'] }),
@@ -129,6 +130,8 @@ export const NATIONS: Record<string, P> = {
   KUR: base({ name: 'Kurdistan', short: ['il ', 'Kurdistan'], adjective: 'curdo', color: '#7a9a4a', capital: [40.23, 37.91], releasable: 'curdi', industry: 3, government: 'emirato' }),
   MAC: base({ name: 'Macedonia', short: ['la ', 'Macedonia'], adjective: 'macedone', color: '#c96f3a', capital: [21.43, 42.0], releasable: 'macedoni', industry: 5 }),
   BOS: base({ name: 'Bosnia', short: ['la ', 'Bosnia'], adjective: 'bosniaco', color: '#4b9a6a', capital: [18.41, 43.86], releasable: 'bosgnacchi', industry: 5 }),
+  // Africa e Arabia (estensione della mappa, fase 1)
+  ...AFRICA_NATIONS,
 };
 
 /** Trattati in vigore al 1° gennaio 1881. */
@@ -161,6 +164,7 @@ export const INITIAL_OPINIONS: [string, string, number][] = [
   ['TUN', 'FRA', -20], ['TUN', 'ITA', 5],
   ['DEN', 'GER', -40], ['ROM', 'RUS', -30],
   ['GBR', 'TUR', 15], ['TUR', 'GBR', 20],
+  ...AFRICA_OPINIONS,
 ];
 
 export const SCENARIO_START = { year: 1881, month: 1, day: 1 };

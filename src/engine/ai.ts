@@ -1,8 +1,8 @@
 import { concludePeace, engineTerms } from './peace';
 import { aiFinances, recruit } from './economy';
-import { moveCost } from './orders';
+import { moveCost, planPath } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
-import { allied, emit, enemiesOf, warsOf, type World } from './world';
+import { allied, emit, enemiesOf, NOBODY, rand, The, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
 
 // Riflessi deterministici delle nazioni non giocanti (zero chiamate AI):
@@ -89,6 +89,67 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       u.orders = [{ type: 'move', target: best.p, status: 'pending', label: 'al fronte' }, { type: 'entrench', status: 'pending' }];
       assigned.set(best.p, (assigned.get(best.p) ?? 0) + u.strength);
     }
+  }
+}
+
+// --- espansione nelle terre di nessuno ---
+// Le potenze coloniali mandano una spedizione alla volta (anche per mare, sbarcando dove vogliono); gli stati
+// africani e arabi si allargano via terra sulle terre di nessuno confinanti. Una spedizione è un'unità che
+// entra nella provincia e la annette; resta lì e dalla nuova base sceglie l'obiettivo seguente.
+const COLONIAL = new Set(['GBR', 'FRA', 'POR', 'SPA', 'ITA', 'GER', 'BEL']);
+
+function colonyValue(w: World, p: number): number {
+  const pv = w.map.provinces[p];
+  const res = w.map.resources[p].reduce((x, r) => x + (RESOURCES[r].strategic ? 1.5 : 0.5), 0);
+  return (1 + Math.log10(pv.pop + 1000) / 2) * (1 + res) * (pv.coast ? 1.3 : 1);
+}
+
+export function aiColonize(w: World, sink: GameEvent[]) {
+  const s = w.state;
+  const nullius: number[] = [];
+  for (let p = 0; p < w.map.size; p++) if (s.controller[p] === NOBODY && s.owner[p] === NOBODY && w.map.passable(p)) nullius.push(p);
+  if (!nullius.length) return;
+  const nullSet = new Set(nullius);
+  for (const tag of Object.keys(s.nations)) {
+    const pr = w.profiles[tag];
+    if (tag === s.player || !s.nations[tag].alive || !pr || pr.micro || tag === 'NUL' || warsOf(s, tag).length) continue;
+    const colonial = COLONIAL.has(tag);
+    const units = s.units.filter((u) => u.nation === tag);
+    if (!units.length) continue;
+    // una spedizione alla volta
+    if (units.some((u) => u.orders.some((o) => o.label === 'spedizione'))) continue;
+    const mine = new Set<number>();
+    for (let p = 0; p < w.map.size; p++) if (s.owner[p] === tag) mine.add(p);
+    // obiettivi: terre di nessuno confinanti con le proprie; per le potenze coloniali anche le coste lontane
+    const near = nullius.filter((p) => w.map.adj[p].some((e) => mine.has(e.to) && !e.strait));
+    const far = colonial ? nullius.filter((p) => w.map.provinces[p].coast && !near.includes(p)) : [];
+    if (!near.length && !far.length) continue;
+    // ritmo: le potenze una spedizione ogni quattro mesi circa, gli stati locali più di rado (e solo con un esercito che possa uscire)
+    if (rand(s.seed, 'colonia', tag, s.turn) > (colonial ? 0.06 : 0.012)) continue;
+    const idle = units.filter((u) => !u.inBattle && !u.recovering && !u.orders.length && !u.move);
+    if (!idle.length) continue;
+    // chi parte: un'unità già oltremare (vicina alle terre di nessuno) o, se non c'è, la più piccola non nella capitale
+    const cap = s.nations[tag].capital;
+    const abroad = idle.filter((u) => w.map.adj[u.location].some((e) => nullSet.has(e.to)) || nullSet.has(u.location));
+    const pool = abroad.length ? abroad : colonial ? idle.filter((u) => u.location !== cap || idle.length === 1) : idle.filter((u) => w.map.adj[u.location].some((e) => near.includes(e.to)));
+    const unit = [...pool].sort((a, b) => a.strength - b.strength)[0];
+    if (!unit) continue;
+    // candidati: i migliori per valore e vicinanza in linea d'aria, poi il percorso vero per i primi
+    const [ux, uy] = w.map.provinces[unit.location].c;
+    const cand = [...near.map((p) => ({ p, k: 1 })), ...far.map((p) => ({ p, k: 0.6 }))]
+      .map(({ p, k }) => { const [x, y] = w.map.provinces[p].c; return { p, sc: (colonyValue(w, p) * k) / (1 + Math.hypot(x - ux, y - uy) / 800) }; })
+      .sort((a, b) => b.sc - a.sc).slice(0, 4);
+    let best: { p: number; v: number } | null = null;
+    for (const c of cand) {
+      const plan = planPath(w, unit, c.p, false);
+      if (!plan || plan.days > (colonial ? 70 : 30)) continue;
+      const v = colonyValue(w, c.p) / (1 + plan.days / 20);
+      if (!best || v > best.v) best = { p: c.p, v };
+    }
+    if (!best) continue;
+    unit.orders = [{ type: 'move', target: best.p, status: 'pending', label: 'spedizione' }];
+    // le potenze annunciano la partenza; l'occupazione è annunciata da capture()
+    if (colonial) emit(w, { type: 'expedition', nations: [tag], province: best.p, text: `${The(w, tag)} manda una spedizione verso ${w.map.provinces[best.p].name}.` }, sink);
   }
 }
 

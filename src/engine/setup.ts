@@ -62,6 +62,15 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
     summary: 'Le potenze hanno promesso alla Grecia rettifiche di confine a spese dell\'Impero ottomano dopo il Congresso di Berlino; la trattativa è ancora aperta.',
   });
 
+  state.situations.push({
+    id: 'boer', title: 'La rivolta del Transvaal', startDay: 0, nations: ['TRA', 'GBR', 'OFS'],
+    summary: 'Il 16 dicembre 1880 i boeri hanno proclamato di nuovo la Repubblica Sudafricana, annessa dalla Gran Bretagna nel 1877: le guarnigioni britanniche sono assediate e il generale Colley raccoglie truppe nel Natal.',
+  });
+  state.situations.push({
+    id: 'scramble', title: 'La corsa all\'Africa', startDay: 0, nations: ['GBR', 'FRA', 'POR', 'GER', 'ITA', 'BEL'],
+    summary: 'Brazza e Stanley si contendono il bacino del Congo; la Francia avanza dal Senegal verso il Niger; il Portogallo rivendica le terre fra Angola e Mozambico; la compagnia genovese Rubattino tiene la baia di Assab per conto dell\'Italia.',
+  });
+
   const w: World = { map, profiles, state };
   updateDeserts(w); // il deserto circondato da un solo stato è suo fin dall'inizio
   for (const tag of present) placeArmies(w, tag);

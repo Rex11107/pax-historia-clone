@@ -243,6 +243,7 @@ export class App {
     this.openSheet();
     this.render();
     if (!plan) this.toast(`${this.game.world.map.provinces[id].name} non è raggiungibile: territorio neutrale o nessun collegamento.`);
+    else if (plan.sea) { const pv = this.game.world.map.provinces; this.toast(`Via mare: imbarco a ${pv[plan.sea.from].name}, sbarco a ${pv[plan.sea.to].name} (${Math.round(plan.sea.days)} giorni di navigazione).`); }
   }
 
   // --- viste ---

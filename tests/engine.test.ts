@@ -212,7 +212,7 @@ describe('deserto, oasi e piste carovaniere', () => {
   it('nessun deserto passa a chi ne tocca solo il bordo da un altro paese (Gadames e il deserto algerino)', () => {
     const w = newGame(MAP, 'ITA', 'gore');
     for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'TUR') expect(p.modern).toBe('LBY');
-    for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'EGY') expect(p.modern).toBe('EGY');
+    for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'EGY') expect(['EGY', 'SDN', 'SDS', 'ERI']).toContain(p.modern); // il Sudan egiziano
   });
   it('il Sangiaccato di Novi Pazar è ottomano, il Sinai separato dal canale', () => {
     const w = newGame(MAP);
@@ -563,4 +563,49 @@ describe('pace', () => {
     expect(w.state.nations.ALB?.alive).toBe(true);
     expect(w.state.owner[alb[0]]).toBe('ALB');
   });
+});
+
+describe('Africa e Arabia', () => {
+  const byName = (n: string) => MAP.provinces.find((p) => p.name === n)!;
+  it('stati e colonie del 1881 al loro posto', () => {
+    const exp: [string, string][] = [['Città del Capo', 'GBR'], ['Khartum', 'EGY'], ['La Mecca', 'TUR'], ['Medina', 'TUR'], ['Zanzibar', 'ZAN'], ['Kumasi', 'ASA'], ['Sokoto', 'SOK'],
+      ['Tananarive', 'MAD'], ['Pretoria', 'TRA'], ['Aden', 'GBR'], ['Mascate', 'OMA'], ['Saint-Louis', 'FRA'], ['Luanda', 'POR'], ['Monrovia', 'LIB'], ['Debre Tabor', 'ETH']];
+    for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
+  });
+  it('le province europee del 27° parallelo confinano con quelle africane, senza coste finte', () => {
+    const eu = MAP.provinces.slice(0, 1375).filter((p) => p.lonlat[1] < 27.6 && p.lonlat[0] > 0 && p.lonlat[0] < 32);
+    expect(eu.length).toBeGreaterThanOrEqual(4);
+    for (const p of eu) expect(p.n.some((j) => j >= 1375), p.name).toBe(true);
+  });
+  it('ogni nazione presente ha un profilo e un esercito', () => {
+    const w = newGame(MAP, 'ITA', 'af');
+    for (const t of ['ETH', 'SOK', 'TRA', 'MAD', 'ZAN']) expect(w.state.units.some((u) => u.nation === t), t).toBe(true);
+  });
+  it('sbarco: l\'Italia porta un corpo d\'armata su una costa di nessuno in Somalia e la annette', () => {
+    const w = newGame(MAP, 'ITA', 'sbarco');
+    const target = w.map.provinces.find((p) => p.coast && !p.impassable && w.state.owner[p.id] === '' && p.lonlat[0] > 44 && p.lonlat[1] > 3 && p.lonlat[1] < 12)!;
+    expect(target).toBeTruthy();
+    const u = w.state.units.find((x) => x.nation === 'ITA')!;
+    const plan = planPath(w, u, target.id, false)!;
+    expect(plan.sea).toBeTruthy();
+    expect(plan.days).toBeLessThan(40);
+    u.orders = [{ type: 'move', target: target.id, status: 'pending' }];
+    for (let i = 0; i < 8 && w.state.owner[target.id] !== 'ITA'; i++) runTurn(w);
+    expect(w.state.owner[target.id]).toBe('ITA');
+  });
+  it('senza marina non si sbarca', () => {
+    const w = newGame(MAP, 'ETH', 'nomar');
+    const u = w.state.units.find((x) => x.nation === 'ETH')!;
+    const far = w.map.provinces.find((p) => p.name === 'Città del Capo')!;
+    expect(planPath(w, u, far.id, false)?.sea).toBeFalsy();
+  });
+  it('le potenze coloniali si espandono nelle terre di nessuno, con ritmo', () => {
+    const w = newGame(MAP, 'SWI', 'colonie');
+    const free = () => w.map.provinces.filter((p) => !p.impassable && w.state.owner[p.id] === '').length;
+    const f0 = free();
+    for (let i = 0; i < 52; i++) runTurn(w);
+    const taken = f0 - free();
+    expect(taken).toBeGreaterThan(5);
+    expect(taken).toBeLessThan(60);
+  }, 60000);
 });

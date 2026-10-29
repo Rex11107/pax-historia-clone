@@ -15,7 +15,7 @@ const SEA_DEEP = '#b5c7c9';
 const BRASS = '#b08d3c';
 const WAX = '#8e2430';
 const SAND = '#ead9ad';      // deserto di nessuno
-const NOMANS = '#c9b48a';    // oasi e terre di nessuno transitabili
+const NOMANS = '#d5d0c3';    // oasi e terre di nessuno transitabili (grigio chiaro, distinto dall'Egitto)
 
 interface Camera { x: number; y: number; scale: number } // centro in km, pixel per km
 

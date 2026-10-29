@@ -1,4 +1,4 @@
-import { aiEndOfTurn, aiPlan } from './ai';
+import { aiColonize, aiEndOfTurn, aiPlan } from './ai';
 import { resolveBattles } from './combat';
 import { updateDeserts } from './desert';
 import { expireTreaties } from './diplomacy';
@@ -55,6 +55,7 @@ export function runTurn(w: World): TurnReport {
   weeklySubjects(w, sink);
   weeklyResearch(w, sink);
   aiEndOfTurn(w, sink);
+  aiColonize(w, sink);
   expireTreaties(w, sink);
   updateDeserts(w, sink);
   s.turn++;

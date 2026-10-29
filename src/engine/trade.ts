@@ -38,7 +38,7 @@ export const MAX_LOTS = 5;
 /** oltre questa opinione il commercio non migliora più i rapporti */
 export const TRADE_OPINION_CAP = 50;
 
-const LUXURY = new Set<ResourceId>(['vino', 'seta', 'tabacco', 'cotone', 'olio', 'sale']);
+const LUXURY = new Set<ResourceId>(['vino', 'seta', 'tabacco', 'cotone', 'olio', 'sale', 'diamanti', 'avorio', 'caffe', 'spezie', 'zucchero', 'perle', 'gomma', 'palma']);
 export const tradeWeight = (r: ResourceId) => (RESOURCES[r].strategic ? 1 : LUXURY.has(r) ? 0.7 : 0.5);
 
 export function contracts(s: GameState): TradeContract[] { return (s.trades ??= []); }

@@ -30,6 +30,8 @@ import { OASES, CARAVAN_ROUTES } from './map-config.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED, POLISH_AREAS, ANACHRONISTIC } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
+import { buildAfrica } from './africa.mjs';
+import { AF_POP, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
 import { AFRICA_MODERN, atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -450,6 +452,41 @@ function terrainOf(lon, lat, owner) {
   return 'plain';
 }
 
+// Cucitura sul bordo della mappa europea (27° N, e 11° O sopra il 27° per il Capo Juby): i pezzi europei e quelli
+// africani devono avere gli stessi vertici lungo il bordo, così mapshaper ne fa archi condivisi (vicini veri,
+// niente coste finte). Si allineano i vertici a meno di 100 m dal bordo e si inseriscono in ogni segmento del
+// bordo i vertici dell'altro lato: le forme non cambiano (punti sulla stessa retta).
+function stitchSeam(features) {
+  const [x0, y0, x1] = BBOX, EPS = 1e-3, Y_TOP = y0 + 4;
+  const xs = new Set(), ys = new Set();
+  const ringsOf = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []).flat();
+  let snapped = 0;
+  for (const f of features) for (const ring of ringsOf(f.geometry)) for (let i = 0; i < ring.length; i++) {
+    const pt = ring[i];
+    if (Math.abs(pt[1] - y0) < EPS && pt[0] >= x0 - EPS && pt[0] <= x1 + EPS) { if (pt[1] !== y0) { ring[i] = [pt[0], y0]; snapped++; } xs.add(ring[i][0]); }
+    if (Math.abs(pt[0] - x0) < EPS && pt[1] >= y0 - EPS && pt[1] <= Y_TOP) { if (ring[i][0] !== x0) { ring[i] = [x0, ring[i][1]]; snapped++; } ys.add(ring[i][1]); }
+  }
+  const sx = [...xs].sort((a, b) => a - b), sy = [...ys].sort((a, b) => a - b);
+  const between = (arr, a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); const out = arr.filter((v) => v > lo && v < hi); return a < b ? out : out.reverse(); };
+  let added = 0;
+  for (const f of features) {
+    const g = f.geometry;
+    const polys = g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
+    for (const poly of polys) for (let r = 0; r < poly.length; r++) {
+      const ring = poly[r], out = [];
+      for (let i = 0; i < ring.length; i++) {
+        const a = ring[i]; out.push(a);
+        const b = ring[i + 1];
+        if (!b) continue;
+        if (a[1] === y0 && b[1] === y0) for (const x of between(sx, a[0], b[0])) { out.push([x, y0]); added++; }
+        else if (a[0] === x0 && b[0] === x0 && a[1] <= Y_TOP && b[1] <= Y_TOP) for (const y of between(sy, a[1], b[1])) { out.push([x0, y]); added++; }
+      }
+      poly[r] = out;
+    }
+  }
+  log(`cucitura Europa-Africa: ${snapped} vertici allineati, ${added} vertici aggiunti sul bordo`);
+}
+
 async function main() {
   await download();
 
@@ -466,10 +503,23 @@ async function main() {
     '-clip', `bbox=${BBOX}`, '-o', path.join(TMP, 'rivers.geojson'));
   ms(path.join(RAW, 'ne_10m_geography_regions_polys.geojson'), '-filter', "['Range/mtn','Plateau','Desert','Wetlands','Foothills'].includes(FEATURECLA)",
     '-each', 'cls=FEATURECLA, name=NAME', '-filter-fields', 'cls,name', '-clip', `bbox=${BBOX}`, '-o', path.join(TMP, 'phys.geojson'));
-  ms(path.join(TMP, 'phys.geojson'), '-filter', "cls == 'Range/mtn' || cls == 'Plateau'", '-simplify', 'interval=4000', 'keep-shapes', '-o', path.join(TMP, 'phys_draw.geojson'));
-  ms(path.join(TMP, 'rivers.geojson'), '-filter', 'rank <= 10', '-simplify', 'interval=2500', '-o', path.join(TMP, 'rivers_draw.geojson'));
-  ms(path.join(RAW, 'ne_10m_lakes.geojson'), '-clip', `bbox=${BBOX}`, '-filter', 'scalerank <= 7', '-each', 'name=name_it || name_en || name', '-filter-fields', 'name',
-    '-simplify', 'interval=2000', 'keep-shapes', '-o', path.join(TMP, 'lakes.geojson'));
+  // Africa e Arabia: rilievi per il terreno delle nuove province
+  ms(path.join(RAW, 'ne_10m_geography_regions_polys.geojson'), '-filter', "['Range/mtn','Plateau','Desert','Wetlands','Foothills'].includes(FEATURECLA)",
+    '-each', 'cls=FEATURECLA, name=NAME', '-filter-fields', 'cls,name', '-clip', `bbox=${AF_CLIP}`, '-o', path.join(TMP, 'phys_af.geojson'));
+  // livelli da disegnare: Europa e Mediterraneo (il rettangolo) più Africa, Arabia e isole atlantiche
+  const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], AF_CLIP[2], BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], AF_CLIP[3]]];
+  const drawLayer = (out, src, pre, post) => {
+    const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', `bbox=${b}`, '-o', o); return o; });
+    ms('-i', ...parts, 'combine-files', '-merge-layers', 'force', ...post, '-o', path.join(TMP, out));
+  };
+  drawLayer('phys_draw.geojson', [path.join(RAW, 'ne_10m_geography_regions_polys.geojson')], ['-filter', "['Range/mtn','Plateau'].includes(FEATURECLA)", '-each', 'cls=FEATURECLA, name=NAME', '-filter-fields', 'cls,name'],
+    ['-simplify', 'interval=4000', 'keep-shapes']);
+  drawLayer('rivers_wide.geojson', ['-i', path.join(RAW, 'ne_10m_rivers_lake_centerlines.geojson'), path.join(RAW, 'ne_10m_rivers_europe.geojson'), 'combine-files', '-merge-layers', 'force', 'name=rivers'],
+    ['-filter', "scalerank <= 12 && featurecla != 'Lake Centerline (Intermittent)'", '-each', 'rank=scalerank, name=name_it || name_en || name', '-filter-fields', 'name,rank'], []);
+  ms(path.join(TMP, 'rivers_wide.geojson'), '-filter', 'rank <= 10', '-simplify', 'interval=2500', '-o', path.join(TMP, 'rivers_draw.geojson'));
+  // laghi naturali: i bacini artificiali del Novecento (Nasser, Volta, Kariba…) nel 1881 non c'erano
+  drawLayer('lakes.geojson', [path.join(RAW, 'ne_10m_lakes.geojson')], ['-filter', "scalerank <= 7 && !['Lake Nasser', 'Lake Volta', 'Lake Kariba', 'Kainji Reservoir', 'Lake Kossou', 'Cahora Bassa'].includes(name)", '-each', 'name=name_it || name_en || name', '-filter-fields', 'name'],
+    ['-simplify', 'interval=2000', 'keep-shapes']);
   const placesAll0 = readJSON(path.join(RAW, 'ne_places.geojson')).features;
   // province grandi: spartiacque di HydroBASINS se disponibile, altrimenti fiumi di Natural Earth
   const hydroOk = fs.existsSync(path.join(RAW, 'hydro', 'hybas_eu_lev07_v1c.shp'));
@@ -1176,12 +1226,21 @@ async function main() {
     for (const [r, m] of mix) if (new Set([...m.keys()].map((k) => k.split(':')[0])).size > 1) console.log('MIX', gInfo[gid.get(r)].name, JSON.stringify([...m]));
   }
   for (const p of P) p.feat.properties = { g: gid.get(find(p.i)) };
-  fs.writeFileSync(path.join(TMP, 'grouped.geojson'), JSON.stringify(turf.featureCollection(P.map((p) => p.feat))));
-  log(`${roots.length} province di gioco`);
+  // Africa e Arabia (fase 1: province storiche e regni), cucite al bordo meridionale della mappa europea
+  const af = buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities });
+  const afOff = gInfo.length;
+  for (const g of af.infos) gInfo.push(g);
+  const afFeats = af.pieces.map((f) => ({ type: 'Feature', geometry: f.geometry, properties: { g: f.properties.g + afOff } }));
+  const allFeats = [...P.map((p) => p.feat), ...afFeats];
+  stitchSeam(allFeats);
+  fs.writeFileSync(path.join(TMP, 'grouped.geojson'), JSON.stringify(turf.featureCollection(allFeats)));
+  log(`${roots.length} province di gioco in Europa e Mediterraneo, ${af.infos.length} in Africa e Arabia`);
 
   // 4. dissolve + semplificazione per la visualizzazione
+  // quantizzazione fine: con l'Africa il riquadro dei dati è molto più grande e la griglia predefinita (65.536 passi)
+  // sposterebbe di 150 m i confini europei
   ms(path.join(TMP, 'grouped.geojson'), '-dissolve2', 'g', '-simplify', 'interval=3500', 'keep-shapes', '-filter-slivers', 'min-area=40km2',
-    '-o', 'format=topojson', path.join(TMP, 'final.topo.json'));
+    '-o', 'format=topojson', 'quantization=400000', path.join(TMP, 'final.topo.json'));
 
   // 5. tabella delle province
   const ft = readJSON(path.join(TMP, 'final.topo.json'));
@@ -1199,7 +1258,8 @@ async function main() {
   const arcUse = arcs.map(() => []);
   const walkArcs = (g, cb) => { const rec = (a) => (typeof a === 'number' ? cb(a) : a.forEach(rec)); rec(g.arcs); };
   fgeoms.forEach((g, k) => walkArcs(g, (a) => arcUse[a < 0 ? ~a : a].push(k)));
-  const onClip = (arc) => arc.every(([x, y]) => Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02 || Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02);
+  // bordo della mappa: solo i lati del rettangolo europeo (le coste africane vicine al 50° E o al 27° N restano coste)
+  const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
 
   const provinces = fgeoms.map((g, k) => {
     const info = gInfo[g.properties.g];
@@ -1217,19 +1277,42 @@ async function main() {
     return { k, info, f, pt, coast: coastLen > 15, modernPop: 0 };
   });
 
+  // in quale provincia cade un punto (forme finali, semplificate)
+  const provinceAt = (lon, lat, among) => {
+    for (const p of among) {
+      const bb = p.bb || (p.bb = turf.bbox(p.f));
+      if (lon < bb[0] || lon > bb[2] || lat < bb[1] || lat > bb[3]) continue;
+      if (turf.booleanPointInPolygon([lon, lat], p.f)) return p;
+    }
+    return null;
+  };
+  // una città che dà il nome a una provincia confinante resta sua anche se la semplificazione la sposta di là dal confine
+  const byNameProv = new Map();
+  for (const p of provinces) if (!p.info.af) byNameProv.set(p.info.lockName || p.info.name, p);
+  const namesake = (name, lon, lat, p) => {
+    const q = byNameProv.get(exo(name));
+    if (!q || q === p || !q.f) return p;
+    return turf.pointToPolygonDistance(turf.point([lon, lat]), q.f, { units: 'kilometers' }) < 4 ? q : p;
+  };
   // popolazione: peso = popolazione moderna delle località (radice per smorzare le metropoli) + area
   for (const pl of places) {
     const c = pl.geometry.coordinates;
-    for (const p of provinces) {
-      const bb = p.bb || (p.bb = turf.bbox(p.f));
-      if (c[0] < bb[0] || c[0] > bb[2] || c[1] < bb[1] || c[1] > bb[3]) continue;
-      if (turf.booleanPointInPolygon(c, p.f)) { p.modernPop += Math.sqrt(pl.properties.pop_max || 0); break; }
-    }
+    const p = namesake(pl.properties.name, c[0], c[1], provinceAt(c[0], c[1], provinces));
+    if (p) p.modernPop += Math.sqrt(pl.properties.pop_max || 0);
   }
   // pool = nazione + (paese moderno se ha una sotto-voce), altrimenti resto della nazione
-  const poolOf = (p) => { const t = NATION_POP_1881[p.info.owner]; return t && t[p.info.modern] !== undefined ? `${p.info.owner}:${p.info.modern}` : `${p.info.owner}:*`; };
+  // Africa: voce propria della nazione (EGY:SDN, TUR:YEM…), il bacino della nazione per le terre di casa (Alto Egitto,
+  // Neged), altrimenti il bacino del paese moderno (M:NGA), diviso fra tutti i padroni di quel paese
+  const poolOf = (p) => {
+    const t = NATION_POP_1881[p.info.owner];
+    if (t && t[p.info.modern] !== undefined) return `${p.info.owner}:${p.info.modern}`;
+    if (p.info.af) return AF_HOME[p.info.owner] === p.info.modern ? `${p.info.owner}:*` : `M:${p.info.modern}`;
+    return `${p.info.owner}:*`;
+  };
   const poolTotal = (key) => {
-    const [o, m] = key.split(':'); const t = NATION_POP_1881[o]; if (!t) return null;
+    const [o, m] = key.split(':');
+    if (o === 'M') return AF_POP[m] ?? null;
+    const t = NATION_POP_1881[o]; if (!t) return null;
     if (m !== '*') return t[m];
     return t.total - Object.entries(t).filter(([k]) => k !== 'total').reduce((s, [, v]) => s + v, 0);
   };
@@ -1239,16 +1322,15 @@ async function main() {
   // non porta abitanti. Altrove, con la sola superficie, Mezen o Tabuk risultavano popolose come una capitale.
   {
     const GSUM_OWNERS = new Set(['RUS', 'TUR', 'PER', 'ARA']);
-    const af = provinces.filter((p) => AFRICA_MODERN.has(p.info.modern) || GSUM_OWNERS.has(p.info.owner));
+    const af = provinces.filter((p) => !p.info.af && (AFRICA_MODERN.has(p.info.modern) || GSUM_OWNERS.has(p.info.owner)));
     for (const p of af) p.gsum = 0;
     for (const c of geoCities()) {
-      for (const p of af) {
-        const bb = p.bb || (p.bb = turf.bbox(p.f));
-        if (c.lon < bb[0] || c.lon > bb[2] || c.lat < bb[1] || c.lat > bb[3]) continue;
-        if (turf.booleanPointInPolygon([c.lon, c.lat], p.f)) { p.gsum += Math.sqrt(c.pop); break; }
-      }
+      const p = provinceAt(c.lon, c.lat, af);
+      if (p) p.gsum += Math.sqrt(c.pop);
     }
   }
+  // province africane: peso già calcolato dal costruttore (località GeoNames, ognuna al massimo 30.000 abitanti)
+  for (const p of provinces) if (p.info.af) p.gsum = p.info.gsum || 0;
   for (const p of provinces) {
     let w;
     if (p.gsum != null) { const a = Math.max(1, p.info.area); w = p.gsum + a * 0.15 * Math.min(1, Math.max(0.02, (p.gsum / a) * 5)); }
@@ -1259,7 +1341,7 @@ async function main() {
     p.pop = tot != null ? Math.round((tot * p.w) / byPool.get(k)) : Math.round(p.info.area * 2);
     // deserto: nomadi sparsi; oasi: stima del 1881
     if (p.info.desert) p.pop = Math.round(p.info.area * 0.02);
-    if (p.info.oasis) p.pop = OASES.find((o) => o.name === p.info.oasis)?.pop ?? p.pop;
+    if (p.info.oasis) p.pop = [...OASES, ...AF_OASES].find((o) => o.name === p.info.oasis)?.pop ?? p.pop;
   }
 
   // stretti: coppie di province costiere non confinanti ma vicine (<STRAIT_KM)
@@ -1307,10 +1389,14 @@ async function main() {
   }
 
   // terreno dai poligoni di Natural Earth (catene montuose, altopiani, deserti, paludi)
-  const physAll = readJSON(path.join(TMP, 'phys.geojson')).features;
-  const physBB = physAll.map((f) => turf.bbox(f));
+  const physEu = readJSON(path.join(TMP, 'phys.geojson')).features;
+  const physAf = readJSON(path.join(TMP, 'phys_af.geojson')).features;
+  const physBBEu = physEu.map((f) => turf.bbox(f)), physBBAf = physAf.map((f) => turf.bbox(f));
+  // foreste pluviali d'Africa (Congo, golfo di Guinea, costa orientale del Madagascar)
+  const rainforest = (lon, lat) => (Math.abs(lat) <= 4.5 && lon > 8 && lon < 30.5) || (lat > 4.5 && lat < 7.8 && lon > -13 && lon < 10.5) || (lat > -7 && lat < -4.5 && lon > 12 && lon < 28) || (lon > 48 && lat > -25 && lat < -13 && lon < 50.5);
   for (const p of provinces) {
     const bb = p.bb || (p.bb = turf.bbox(p.f));
+    const physAll = p.info.af ? physAf : physEu, physBB = p.info.af ? physBBAf : physBBEu;
     const hits = physAll.map((f, i) => ({ f, i })).filter(({ i }) => !(physBB[i][2] < bb[0] || physBB[i][0] > bb[2] || physBB[i][3] < bb[1] || physBB[i][1] > bb[3]));
     const cnt = { mtn: 0, plat: 0, des: 0, wet: 0, n: 0 };
     const N = 7;
@@ -1324,6 +1410,16 @@ async function main() {
       if (cls.has('Wetlands')) cnt.wet++;
     }
     const n = Math.max(1, cnt.n), [lon, lat] = p.pt;
+    if (p.info.af) {
+      p.terrain = p.info.desert || p.info.oasis ? 'desert'
+        : cnt.mtn / n >= 0.45 ? 'mountain'
+        : cnt.wet / n >= 0.3 ? 'marsh'
+        : cnt.mtn / n >= 0.15 || cnt.plat / n >= 0.5 ? 'hills'
+        : rainforest(lon, lat) ? 'forest'
+        : cnt.des / n >= 0.5 ? 'desert'
+        : 'plain';
+      continue;
+    }
     p.terrain = p.info.desert || p.info.oasis ? 'desert'
       : cnt.mtn / n >= 0.45 ? 'mountain'
       : cnt.des / n >= 0.5 || (lat < 31.5 && lon > -12) ? 'desert'
@@ -1334,7 +1430,7 @@ async function main() {
   }
 
   // confini lungo i fiumi: chi attacca attraverso un fiume è svantaggiato
-  const riversGeo = readJSON(path.join(TMP, 'rivers.geojson'));
+  const riversGeo = readJSON(path.join(TMP, 'rivers_wide.geojson'));
   riversGeo.features = riversGeo.features.filter((f) => f.properties.rank <= 10);
   const nearRiver = riverIndex(riversGeo);
   const edgeLen = new Map(), edgeRiver = new Map();
@@ -1422,7 +1518,7 @@ async function main() {
     return best;
   };
   const routes = [];
-  for (const [from, to, line] of CARAVAN_ROUTES) {
+  for (const [from, to, line] of [...CARAVAN_ROUTES, ...AF_ROUTES]) {
     const a = passableAt(line[0]), b = passableAt(line[line.length - 1]);
     if (!a || !b || a.k === b.k) { log(`pista ${from} – ${to}: capi non trovati`); continue; }
     routes.push({ a: a.k, b: b.k, name: `${from} – ${to}`, km: Math.round(turf.length(turf.lineString(line))), pts: flatArc(line) });
@@ -1451,6 +1547,7 @@ async function main() {
       n: fnbr[p.k],
       _town: !!p.info.byTown,
       _lock: p.info.lockName,
+      _af: !!p.info.af,
       ...(p.info.desert ? { impassable: true, region: p.info.desert } : {}),
       ...(p.info.oasis ? { oasis: true } : {}),
       ...(tiny.has(p.k) ? { tiny: true } : {}),
@@ -1471,8 +1568,23 @@ async function main() {
     if (owner && p.owner !== owner) continue;
     p.name = p.name.replace(new RegExp(`(^|[\\s(])${esc(from)}(?=$|[\\s)])`, 'u'), `$1${to}`);
   }
-  // le province bloccate tengono il nome della mappa approvata
+  // le province bloccate tengono il nome della mappa approvata (salvo i nomi passati alle città vere, ora in mappa)
   for (const p of out.provinces) if (p._lock) p.name = p._lock;
+  // province europee che portavano il nome di una città rimasta fuori mappa, ora entrata con l'Africa
+  const EU_RENAME = { 'Medina|TUR': 'Hegiaz settentrionale' };
+  for (const p of out.provinces) if (!p._af && EU_RENAME[`${p.name}|${p.owner}`]) p.name = EU_RENAME[`${p.name}|${p.owner}`];
+  // nomi africani uguali a nomi europei: l'Europa tiene il suo, l'Africa passa alla località seguente o al nome della regione
+  {
+    const euNames = new Set(out.provinces.filter((p) => !p._af).map((p) => p.name));
+    const afUsed = new Set(out.provinces.filter((p) => p._af).map((p) => p.name));
+    for (const p of out.provinces) {
+      if (!p._af || !euNames.has(p.name)) continue;
+      const info = provinces[p.id].info;
+      const alt = (info.byNameList || []).find((n) => !euNames.has(n) && !afUsed.has(n));
+      p.name = alt || `${p.name} (${info.region || p.modern})`;
+      afUsed.add(p.name);
+    }
+  }
   // nomi duplicati
   const seen = new Map();
   for (const p of out.provinces) { const n = seen.get(p.name) || 0; seen.set(p.name, n + 1); }
@@ -1510,6 +1622,19 @@ async function main() {
   for (const p of out.provinces) if (seen2.get(p.name) > 1) { const n = (cnt.get(p.name) || 0) + 1; cnt.set(p.name, n); p.name = `${p.name} ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n - 1] || n}`; }
 
   for (const p of out.provinces) { delete p._region; delete p._town; delete p._lock; }
+  // identificativi stabili: prima le province europee (con quelle-simbolo), poi le africane
+  {
+    const order = [...out.provinces.filter((p) => !p._af), ...out.provinces.filter((p) => p._af)];
+    const nid = new Map(order.map((p, i) => [p.id, i]));
+    const tinyNames = [...tiny].map((k) => out.provinces[k].name);
+    for (const p of order) { p.id = nid.get(p.id); p.n = p.n.map((x) => nid.get(x)); delete p._af; }
+    out.provinces = order;
+    out.arcSides = out.arcSides.map(([a, b]) => [a >= 0 ? nid.get(a) : a, b >= 0 ? nid.get(b) : b]);
+    out.straits = out.straits.map(([a, b, d]) => [nid.get(a), nid.get(b), d]);
+    out.routes = out.routes.map((r) => ({ ...r, a: nid.get(r.a), b: nid.get(r.b) }));
+    out.rivers = out.rivers.map(([a, b, n]) => [nid.get(a), nid.get(b), n]);
+    tiny.clear(); for (const p of out.provinces) if (tinyNames.includes(p.name)) tiny.add(p.id);
+  }
   log(`${tiny.size} province-simbolo (${[...tiny].map((k) => out.provinces[k].name).join(', ')})`);
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });

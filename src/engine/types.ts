@@ -91,6 +91,8 @@ export interface Movement {
   path: number[]; // province ancora da raggiungere, la prima è la tappa corrente
   progress: number; // giorni già percorsi sulla tappa corrente
   legDays: number; // durata della tappa corrente
+  /** tratto per mare (sbarco): da un porto proprio a una costa, fuori dai collegamenti di terra */
+  sea?: { from: number; to: number; days: number };
 }
 
 export type Condition =

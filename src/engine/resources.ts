@@ -8,7 +8,8 @@ import type { GameMap } from './map';
 import type { ProvinceData, Tag } from './types';
 
 export type ResourceId = 'grano' | 'bestiame' | 'legname' | 'pesce' | 'datteri' | 'olio' | 'vino' | 'tabacco' | 'seta' | 'cotone'
-  | 'sale' | 'zolfo' | 'metalli' | 'petrolio' | 'ferro' | 'carbone';
+  | 'sale' | 'zolfo' | 'metalli' | 'petrolio' | 'ferro' | 'carbone'
+  | 'oro' | 'diamanti' | 'avorio' | 'gomma' | 'palma' | 'caffe' | 'spezie' | 'zucchero' | 'perle';
 
 export interface ResourceInfo { label: string; icon: string; value: number; strategic: boolean; industrial: boolean }
 
@@ -30,6 +31,16 @@ export const RESOURCES: Record<ResourceId, ResourceInfo> = {
   petrolio: { label: 'petrolio', icon: '🛢️', value: 0.12, strategic: true, industrial: true },
   ferro: { label: 'ferro', icon: '🔩', value: 0.2, strategic: true, industrial: true },
   carbone: { label: 'carbone', icon: '⚫', value: 0.25, strategic: true, industrial: true },
+  // risorse coloniali (Africa e Arabia)
+  oro: { label: 'oro', icon: '🪙', value: 0.3, strategic: true, industrial: false },
+  diamanti: { label: 'diamanti', icon: '💎', value: 0.35, strategic: false, industrial: false },
+  avorio: { label: 'avorio', icon: '🦣', value: 0.08, strategic: false, industrial: false },
+  gomma: { label: 'gomma', icon: '🌳', value: 0.08, strategic: false, industrial: true },
+  palma: { label: 'olio di palma', icon: '🌴', value: 0.06, strategic: false, industrial: false },
+  caffe: { label: 'caffè', icon: '☕', value: 0.08, strategic: false, industrial: false },
+  spezie: { label: 'chiodi di garofano e spezie', icon: '🌶️', value: 0.1, strategic: false, industrial: false },
+  zucchero: { label: 'zucchero', icon: '🍬', value: 0.08, strategic: false, industrial: false },
+  perle: { label: 'perle', icon: '🦪', value: 0.08, strategic: false, industrial: false },
 };
 
 /** Giacimenti e distretti noti nel 1881: [risorsa, lon, lat, nome]. */
@@ -70,6 +81,16 @@ export const SITES: [ResourceId, number, number, string][] = [
   ['seta', 4.85, 45.75, 'Lione'], ['seta', 29.06, 40.18, 'Brussa'], ['seta', 35.6, 33.9, 'Monte Libano'], ['seta', 47.2, 41.2, 'Nukha'], ['seta', -1.1, 38.0, 'Murcia'],
   ['seta', 16.2, 38.9, 'Calabria'], ['tabacco', 24.4, 41.0, 'Cavalla'], ['tabacco', 24.9, 41.15, 'Xanthi'], ['tabacco', 35.8, 35.5, 'Laodicea'],
   ['tabacco', 17.8, 43.34, 'Erzegovina'], ['tabacco', 36.3, 41.28, 'Samsun'], ['tabacco', 24.75, 42.15, 'Filippopoli'], ['tabacco', 22.4, 39.6, 'Tessaglia'],
+  // Africa e Arabia: oro, diamanti, rame, sale, caffè, chiodi di garofano, zucchero, perle (giacimenti noti o sfruttati nel 1881)
+  ['oro', -1.95, 5.3, 'Uassa e Ascianti'], ['oro', -2.2, 6.2, 'Obuasi'], ['oro', 30.75, -24.9, 'Pilgrim\'s Rest e Lydenburg'], ['oro', 34.5, 10.6, 'Beni Shangul'], ['oro', -10.8, 13.2, 'Bambuk'],
+  ['oro', -9.2, 11.5, 'Buré'], ['oro', 31.0, -17.8, 'Mashonaland'], ['oro', 33.0, -19.0, 'Manica'], ['diamanti', 24.77, -28.74, 'Kimberley'],
+  ['metalli', 26.5, -11.0, 'rame del Katanga'], ['metalli', 17.88, -29.66, 'rame di Okiep'], ['metalli', 22.5, -9.5, 'rame dei Lunda'],
+  ['sale', -3.97, 22.68, 'Taudeni'], ['sale', 12.92, 18.69, 'Bilma'], ['sale', 40.3, 14.2, 'piana del sale dancala'], ['sale', 14.1, 13.3, 'natron del Ciad'],
+  ['caffe', 36.25, 7.25, 'Caffa'], ['caffe', 43.25, 13.32, 'Moka'], ['caffe', 42.12, 9.31, 'Harar'], ['caffe', -10.8, 6.5, 'Liberia'],
+  ['spezie', 39.19, -6.16, 'Zanzibar'], ['spezie', 39.75, -5.15, 'Pemba'], ['spezie', 55.45, -21.1, 'vaniglia di Bourbon'], ['spezie', 54.0, 17.1, 'incenso del Dhofar'],
+  ['zucchero', 57.5, -20.2, 'Mauritius'], ['zucchero', 55.5, -21.1, 'Réunion'], ['zucchero', 31.0, -29.7, 'Natal'], ['zucchero', 32.6, 25.5, 'Alto Egitto'],
+  ['perle', 50.55, 26.1, 'banchi del Bahrein'], ['perle', 51.5, 25.6, 'Qatar'], ['perle', 54.5, 24.3, 'costa della Tregua'],
+  ['cotone', 33.4, 14.4, 'Gezira'], ['tabacco', -16.9, 32.7, 'Madera'], ['vino', -16.9, 32.7, 'Madera'], ['vino', 18.9, -33.9, 'Capo'],
   // vino di pregio fuori dalla fascia mediterranea
   ['vino', 0.0, 44.85, 'Bordeaux'], ['vino', 4.8, 47.0, 'Borgogna'], ['vino', 4.0, 49.1, 'Champagne'], ['vino', 8.0, 50.0, 'Rheingau'], ['vino', 6.9, 49.95, 'Mosella'],
   ['vino', 21.4, 48.13, 'Tokaj'], ['vino', -8.6, 41.15, 'Porto'], ['vino', -6.1, 36.7, 'Jerez'], ['vino', 11.25, 43.5, 'Chianti'], ['vino', 8.0, 44.7, 'Langhe'],
@@ -82,11 +103,30 @@ const STEPPE = new Set(['KAZ', 'TKM', 'UZB']);
 /** Hash deterministico 0..1 (stessa provincia, stessa risorsa a ogni partita). */
 const hash = (s: string) => { let h = 2166136261; for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619); return ((h >>> 0) % 1000) / 1000; };
 
+const AFRICA_SOUTH = (lon: number, lat: number) => lat < 27.2 || lon < -11.2;
+const ARABIA = new Set(['SAU', 'YEM', 'OMN', 'ARE', 'QAT', 'BHR']);
+
+/** Risorsa di base in Africa e Arabia: foresta (gomma, avorio), costa della Guinea (palma), savana, Sahel. */
+function africanResource(p: ProvinceData, h: number): ResourceId {
+  const [lon, lat] = p.lonlat;
+  if (ARABIA.has(p.modern)) return p.coast && lon > 49 && lat > 23.5 ? 'perle' : h < 0.5 ? 'datteri' : 'bestiame';
+  if (p.modern === 'EGY') return 'grano';
+  if (p.modern === 'ESP' || p.modern === 'PRT') return h < 0.5 ? 'vino' : 'pesce'; // Canarie, Madera, Azzorre
+  if (['MUS', 'COM', 'SYC', 'STP', 'CPV'].includes(p.modern)) return 'zucchero';
+  if (p.terrain === 'forest') return h < 0.55 ? 'gomma' : 'avorio';
+  if (p.coast && lat > 3.5 && lat < 10 && lon > -13.5 && lon < 10.5) return h < 0.7 ? 'palma' : 'pesce';
+  if (lat > 10 && lat < 18) return h < 0.55 ? 'bestiame' : 'grano'; // Sahel: miglio, sorgo, mandrie
+  if (lat < -22) return h < 0.6 ? 'bestiame' : 'grano'; // Africa australe: boeri e pastori
+  if (p.terrain === 'mountain' || p.terrain === 'hills') return h < 0.6 ? 'grano' : 'bestiame';
+  return h < 0.4 ? 'avorio' : h < 0.75 ? 'bestiame' : 'grano'; // savana
+}
+
 /** Risorsa di base dalla geografia. */
 export function baseResource(p: ProvinceData): ResourceId | null {
   const [lon, lat] = p.lonlat;
   if (p.impassable) return null;
   if (p.oasis) return 'datteri';
+  if (AFRICA_SOUTH(lon, lat)) return africanResource(p, hash(p.name + ':' + p.id));
   if (p.modern === 'EGY') return lat > 30.2 ? 'cotone' : 'grano';
   if (p.terrain === 'desert') return lat < 33 && hash(p.name) < 0.4 ? 'datteri' : 'bestiame';
   if (p.modern === 'NOR' || p.modern === 'ISL' || p.modern === 'FRO' || (p.coast && lat > 62)) return p.coast ? 'pesce' : 'legname';

@@ -111,8 +111,10 @@ export const NATION_POP_1881 = {
   AUH: { total: 39_400_000, BIH: 1_160_000 },
   GBR: { total: 35_100_000, IRL: 4_900_000, CYP: 186_000, CYN: 0, MLT: 150_000 },
   RUS: { total: 84_000_000, POL: 7_300_000, FIN: 2_060_000, GEO: 1_100_000, ARM: 600_000, AZE: 1_200_000 },
-  TUR: { total: 23_550_000, TUR: 11_500_000, LBY: 1_000_000, IRQ: 1_400_000, SYR: 1_600_000, LBN: 400_000, ISR: 300_000, PSX: 200_000, JOR: 200_000, SAU: 150_000 }, // SAU: solo Tabuk, Al-Jawf e al-Hasa sono in mappa (Mecca e Medina no)
-  EGY: { total: 6_800_000 },
+  // SAU: Hegiaz, Asir e al-Hasa (con Tabuk e al-Giauf); YEM: lo Yemen ottomano dal 1872; QAT: il Qatar
+  TUR: { total: 25_820_000, TUR: 11_500_000, LBY: 1_000_000, IRQ: 1_400_000, SYR: 1_600_000, LBN: 400_000, ISR: 300_000, PSX: 200_000, JOR: 200_000, SAU: 900_000, YEM: 1_500_000, QAT: 20_000 },
+  // Egitto (censimento 1882: 6,8 milioni) e il Sudan egiziano fino al Darfur, l'Equatoria, il Bahr el-Ghazal, Massaua e Harar
+  EGY: { total: 13_330_000, SDN: 5_000_000, SDS: 1_000_000, ERI: 150_000, SOL: 150_000, ETH: 200_000, SOM: 30_000 },
   SPA: { total: 16_600_000 },
   POR: { total: 4_550_000 },
   SWI: { total: 2_850_000 },
@@ -129,7 +131,7 @@ export const NATION_POP_1881 = {
   MOR: { total: 5_000_000 },
   TUN: { total: 1_100_000 },
   PER: { total: 2_500_000 },
-  ARA: { total: 1_500_000 },
+  ARA: { total: 1_800_000 }, // Gebel Shammar e Neged
   NUL: { total: 300_000 },
 };
 
