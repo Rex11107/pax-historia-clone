@@ -578,11 +578,25 @@ describe('Africa e Arabia', () => {
     for (const p of eu) expect(p.n.some((j) => j >= 1375), p.name).toBe(true);
   });
   it('fase 2a: Egitto-Sudan e Corno d\'Africa per regioni storiche', () => {
-    const exp: [string, string][] = [['Assab', 'ITA'], ['Massaua', 'EGY'], ['Hamasien', 'ETH'], ['Harar', 'EGY'], ['Berbera', 'EGY'], ['Mogadiscio', 'ZAN'], ['Scioa', 'ETH'], ['Gojjam (nord)', 'ETH'], ['Aussa', ''], ['Migiurtinia', '']];
+    const exp: [string, string][] = [['Assab', 'ITA'], ['Massaua', 'EGY'], ['Hamasien', 'ETH'], ['Harar', 'EGY'], ['Berbera', 'EGY'], ['Benadir', 'ZAN'], ['Scioa', 'ETH'], ['Gojjam (nord)', 'ETH'], ['Ogaden', ''], ['Nogal', '']];
     for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
     const zone = MAP.provinces.filter((p) => p.id >= 1375 && ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'].includes(p.modern));
     expect(zone.length).toBeGreaterThan(140);
     expect(zone.length).toBeLessThan(210);
+  });
+  it('sultanati del Corno come stati, Eritrea senza exclavi', () => {
+    const exp: [string, string][] = [['Aussa', 'AUS'], ['Migiurtinia', 'MIG'], ['Obbia', 'OBB'], ['Uarsangheli', 'WSG'], ['Raheita', 'RAH'], ['Obock e Tagiura', 'TAG']];
+    for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
+    const w = newGame(MAP, 'ITA', 'sultanati');
+    for (const [, t] of exp) { expect(w.profiles[t], t).toBeTruthy(); expect(w.state.units.some((u) => u.nation === t), t).toBe(true); }
+    // ogni regione eritrea è una provincia sola (niente "Bogos (nord)", "Zula (est)"…), con il padrone del 1881
+    const eri = MAP.provinces.filter((p) => p.modern === 'ERI' && !p.impassable);
+    const own: Record<string, string> = { Massaua: 'EGY', Zula: 'EGY', Bogos: 'EGY', Sahel: 'EGY', Barca: 'EGY', Hamasien: 'ETH', 'Seraè': 'ETH', 'Acchelè Guzai': 'ETH', 'Dancalia settentrionale': '', Beilul: '', Assab: 'ITA' };
+    for (const [n, o] of Object.entries(own)) { const list = eri.filter((p) => p.name === n); expect(list.length, n).toBe(1); expect(list[0].owner, n).toBe(o); }
+    for (const p of eri) expect(p.name, p.name).not.toMatch(/\(/);
+    const assab = byName('Assab');
+    expect(assab.area).toBeGreaterThan(300);
+    expect(assab.area).toBeLessThan(1500);
   });
   it('ogni nazione presente ha un profilo e un esercito', () => {
     const w = newGame(MAP, 'ITA', 'af');

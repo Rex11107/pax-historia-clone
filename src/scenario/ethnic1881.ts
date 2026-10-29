@@ -62,6 +62,7 @@ export const STATE_PEOPLES: Record<Tag, { own: string[]; regional?: string[] }> 
   KNG: { own: ['mande'], regional: ['akan'] }, WAS: { own: ['mande'] }, TUK: { own: ['fulbe'], regional: ['mande'] }, FTO: { own: ['fulbe'], regional: ['wolof'] }, FJA: { own: ['fulbe'] },
   LIB: { own: ['guineani'] }, TRA: { own: ['boeri'] }, OFS: { own: ['boeri'] }, ZUL: { own: ['nguni'] }, SWZ: { own: [], regional: ['nguni'] }, NDE: { own: ['ndebele'], regional: ['nguni'] },
   NGW: { own: ['sotho'] }, LOZ: { own: ['lozi'] }, OVI: { own: ['ovimbundu'] }, MAD: { own: ['malgasci'] }, OMA: { own: ['arabi'] }, TRU: { own: [], regional: ['arabi'] }, BHR: { own: [], regional: ['arabi'] },
+  OBB: { own: [], regional: ['somali'] }, MIG: { own: [], regional: ['somali'] }, WSG: { own: [], regional: ['somali'] }, AUS: { own: [], regional: ['afar'] }, RAH: { own: [], regional: ['afar'] }, TAG: { own: [], regional: ['afar'] },
 };
 
 export interface Match { iso?: string[]; owner?: Tag[]; modern?: string[]; lang?: string[]; name?: string[] }

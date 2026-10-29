@@ -22,6 +22,19 @@ export const AFRICA_NATIONS: Record<string, P> = {
   // Africa orientale
   ZAN: base({ name: 'Sultanato di Zanzibar', short: ['', 'Zanzibar'], adjective: 'zanzibarino', color: '#b3473f', capital: [39.19, -6.16], government: 'sultanato', leader: 'Sultano Barghash bin Said',
     finance: 25, naval: 5, armyPeace: 5000, temperament: 'mercantile, legato al console britannico Kirk', goals: ['controllo delle carovane dell\'interno'], friends: ['GBR'], rivals: ['MIR'] }),
+  // sultanati del Corno: piccoli, si legano a una potenza con un trattato di protettorato più che con la guerra
+  OBB: base({ name: 'Sultanato di Obbia', short: ['il ', 'Sultanato di Obbia'], adjective: 'obbiese', color: '#8e4fc4', capital: [48.53, 5.35], government: 'sultanato', leader: 'Sultano Yusuf Ali Kenadid',
+    cohesion: 45, finance: 4, naval: 1, armyPeace: 2500, temperament: 'fondatore ambizioso, in cerca di un protettore contro i rivali', goals: ['tenere la costa da Obbia a El Dher'], rivals: ['MIG', 'ZAN'] }),
+  MIG: base({ name: 'Sultanato della Migiurtinia', short: ['la ', 'Migiurtinia'], adjective: 'migiurtino', color: '#c4664f', capital: [50.75, 11.97], government: 'sultanato', leader: 'Boqor Osman Mahamud',
+    cohesion: 50, finance: 6, naval: 2, armyPeace: 3000, temperament: 'signore della costa dei naufragi, geloso della sua indipendenza', goals: ['dominare il Capo Guardafui e i suoi commerci'], rivals: ['OBB'] }),
+  WSG: base({ name: 'Sultanato dei Uarsangheli', short: ['i ', 'Uarsangheli'], adjective: 'uarsanghelo', color: '#4f8ac4', capital: [48.2, 11.16], government: 'sultanato', leader: 'il sultano di Las Khorey',
+    cohesion: 50, finance: 3, armyPeace: 1500, temperament: 'piccolo sultanato costiero, commercia con Aden', goals: ['preservare l\'indipendenza'], friends: ['GBR'] }),
+  AUS: base({ name: 'Sultanato dell\'Aussa', short: ["l'", 'Aussa'], adjective: 'aussino', color: '#d4a07a', capital: [41.44, 11.57], government: 'sultanato', leader: 'Sultano Mohammed Hanfadhe',
+    cohesion: 55, finance: 4, armyPeace: 4000, temperament: 'padrone delle carovane fra la costa dancala e lo Scioa', goals: ['controllo della via del sale e delle carovane'] }),
+  RAH: base({ name: 'Sultanato di Raheita', short: ['il ', 'Sultanato di Raheita'], adjective: 'raheitino', color: '#a094e0', capital: [43.2, 12.73], government: 'sultanato', leader: 'il sultano di Raheita',
+    cohesion: 50, finance: 2, armyPeace: 800, temperament: 'piccolo sultanato dancalo, stretto fra Assab e Obock', goals: ['preservare l\'indipendenza'] }),
+  TAG: base({ name: 'Sultanato di Tagiura', short: ['il ', 'Sultanato di Tagiura'], adjective: 'tagiurino', color: '#d07a6a', capital: [42.88, 11.78], government: 'sultanato', leader: 'il sultano di Tagiura',
+    cohesion: 50, finance: 3, armyPeace: 1000, temperament: 'sultanato dancalo, ha venduto Obock alla Francia nel 1862', goals: ['commercio con l\'Harar e lo Scioa'], friends: ['FRA'] }),
   MIR: base({ name: 'Regno di Mirambo', short: ['', 'Unyamwezi'], adjective: 'nyamwezi', color: '#8a5a2b', capital: [32.07, -5.07], leader: 'Mtemi Mirambo', militaryQuality: 40, armyPeace: 12000,
     temperament: 'ambizioso, padrone delle vie dell\'avorio', goals: ['dominare le carovane fra la costa e i Grandi Laghi'], rivals: ['ZAN'] }),
   BUG: base({ name: 'Regno di Buganda', short: ['il ', 'Buganda'], adjective: 'ganda', color: '#5d4a9e', capital: [32.57, 0.31], leader: 'Kabaka Mutesa I', cohesion: 65, armyPeace: 20000, naval: 2,
@@ -100,4 +113,5 @@ export const AFRICA_OPINIONS: [string, string, number][] = [
   ['NDE', 'NGW', -30], ['NGW', 'NDE', -30], ['NGW', 'GBR', 30], ['ZAN', 'GBR', 30], ['GBR', 'ZAN', 20], ['ZAN', 'MIR', -30], ['MIR', 'ZAN', -20],
   ['OMA', 'GBR', 30], ['TRU', 'GBR', 35], ['ARA', 'TUR', -30], ['TUR', 'ARA', -20], ['WAD', 'BOR', -30], ['BOR', 'WAD', -30], ['RAB', 'BOR', -30],
   ['TEK', 'FRA', 30], ['KGO', 'POR', 20], ['SOK', 'BOR', -20],
+  ['OBB', 'MIG', -40], ['MIG', 'OBB', -40], ['OBB', 'ZAN', -20], ['ZAN', 'OBB', -15], ['TAG', 'FRA', 20], ['FRA', 'TAG', 10], ['WSG', 'GBR', 15], ['AUS', 'ETH', -10], ['RAH', 'TAG', 10],
 ];

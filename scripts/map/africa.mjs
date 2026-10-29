@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -68,6 +68,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     if (valleyAll) c = turf.difference(turf.featureCollection([c, valleyAll])) || null;
     if (c) cuts.push({ ...c, properties: { oasis: o.name } });
   }
+  // piccoli possedimenti costieri (la baia di Assab): un ritaglio che diventa una regione a sé
+  for (const e of AF_ENCLAVES) cuts.push({ ...turf.circle(e.at, e.r, { units: 'kilometers', steps: 32 }), properties: { enclave: e.name } });
   fs.writeFileSync(P('cuts.geojson'), JSON.stringify(turf.featureCollection(cuts)));
   // zona di dettaglio: bacini di HydroBASINS livello 6 dentro i paesi della fase in corso
   const detailSet = new Set(AF_DETAIL_MODERN);
@@ -83,7 +85,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     const pr = f.properties;
     const hist = pr.hist ?? 'null';
     if (AF_HIST[hist] === undefined) throw new Error(`stato africano senza tag: ${hist}`);
-    return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, valley: !!pr.valley, area: km2(f), c: turf.centroid(f).geometry.coordinates, detail: detailSet.has(pr.modern) };
+    return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, enclave: pr.enclave || null, valley: !!pr.valley, area: km2(f), c: turf.centroid(f).geometry.coordinates, detail: detailSet.has(pr.modern) };
   }).filter((a) => a.area > 0.5);
   for (const a of A) for (const o of AF_OVERRIDES) {
     if (o.modern && o.modern !== a.modern) continue;
@@ -116,7 +118,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   const split = [];
   for (const a of A) {
     const T = targetOf(a);
-    const k = a.oasis ? 1 : a.detail ? Math.round(a.area / Math.max(T, 60000)) : Math.round(a.area / T);
+    const k = a.oasis || a.enclave ? 1 : a.detail ? Math.round(a.area / (AF_FINE[a.modern] ?? Math.max(T, 60000))) : Math.round(a.area / T);
     if (k < 2) { split.push(a); continue; }
     const bb = turf.bbox(a.f);
     const step = Math.sqrt(a.area / (k * 60)) / 111;
@@ -198,13 +200,48 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
 
   // regioni storiche della zona di dettaglio: il centro più vicino fra quelli ammessi per il paese moderno
   const REG = AF_DETAIL_REGIONS.map(([name, lon, lat, mods, T, owner]) => ({ name, at: [lon, lat], mods, T, owner }));
+  const ENC = new Set(AF_ENCLAVES.map((e) => e.name));
   for (const a of A) {
     if (!a.detail) continue;
     let best = null, bd = Infinity;
-    for (const r of REG) { if (!r.mods.includes(a.modern)) continue; const d = turf.distance(a.c, r.at); if (d < bd) { bd = d; best = r; } }
+    if (a.enclave) best = REG.find((r) => r.name === a.enclave);
+    else for (const r of REG) { if (!r.mods.includes(a.modern) || ENC.has(r.name)) continue; const d = turf.distance(a.c, r.at); if (d < bd) { bd = d; best = r; } }
     a.region = best;
     // il padrone della regione storica vale per tutte le sue terre abitate (niente schegge di confine del dataset)
     if (best && best.owner !== undefined && !a.desert && !a.oasis ) a.owner = best.owner;
+  }
+  // contiguità: ogni regione tiene il suo pezzo connesso più grande; gli altri pezzi (exclavi del "centro più
+  // vicino") passano alla regione confinante con cui condividono più confine. Le isole restano dove sono.
+  for (let it = 0; it < 8; it++) {
+    let moved = 0;
+    const byR = new Map();
+    for (const a of A) if (a.detail && a.region) byR.set(a.region, [...(byR.get(a.region) || []), a]);
+    for (const [r, list] of byR) {
+      const set = new Set(list.map((a) => a.i)), seen = new Set(), comps = [];
+      for (const a of list) {
+        if (seen.has(a.i)) continue;
+        const q = [a.i], c = { ids: [], area: 0 }; seen.add(a.i);
+        while (q.length) { const i = q.pop(); c.ids.push(i); c.area += A[i].area; for (const j of shared[i].keys()) if (set.has(j) && !seen.has(j)) { seen.add(j); q.push(j); } }
+        comps.push(c);
+      }
+      if (comps.length < 2) continue;
+      comps.sort((x, y) => y.area - x.area);
+      for (const c of comps.slice(1)) {
+        const ids = new Set(c.ids), border = new Map();
+        for (const i of c.ids) for (const [j, l] of shared[i]) {
+          const b = A[j];
+          if (ids.has(j) || !b.detail || !b.region || b.region === r) continue;
+          const w = b.region.mods.includes(A[i].modern) ? l : l * 0.3;
+          border.set(b.region, (border.get(b.region) || 0) + w);
+        }
+        if (!border.size) continue; // isola
+        const nr = [...border].sort((x, y) => y[1] - x[1])[0][0];
+        if (c.ids.some((i) => A[i].enclave)) continue;
+        for (const i of c.ids) { const a = A[i]; a.region = nr; if (nr.owner !== undefined && !a.desert && !a.oasis) a.owner = nr.owner; }
+        moved++;
+      }
+    }
+    if (!moved) break;
   }
 
   // 5. accorpamento: stesso stato d'epoca, stessa classe, stesso paese moderno (nella zona di dettaglio: stessa regione), forma compatta
@@ -273,6 +310,26 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     }
     if (best !== null) merge(best, id);
   }
+  // zona di dettaglio: i pezzi staccati di una regione (isole come le Dahlak) si uniscono alla provincia maggiore della regione
+  for (const [id, c] of [...cl]) {
+    if (!cl.has(id) || !c.reg || c.A > c.T * 0.35) continue;
+    let best = null;
+    for (const [o, O] of cl) if (o !== id && O.reg === c.reg && O.owner === c.owner && O.A > c.A && (!best || O.A > cl.get(best).A)) best = o;
+    if (best !== null && !c.nb.has(best)) merge(best, id);
+  }
+  // una regione che sta in una sola provincia (area totale entro 1,6 volte la dimensione) non resta divisa da un pezzetto
+  {
+    const byR = new Map();
+    for (const [id, c] of cl) if (c.reg && c.cls === 'L') { const k = `${c.reg}|${c.owner}`; byR.set(k, [...(byR.get(k) || []), id]); }
+    for (const ids of byR.values()) {
+      if (ids.length < 2) continue;
+      const tot = ids.reduce((x, i) => x + cl.get(i).A, 0);
+      if (tot > cl.get(ids[0]).T * 1.6) continue;
+      ids.sort((a, b) => cl.get(b).A - cl.get(a).A);
+      for (const i of ids.slice(1)) if (cl.get(i).A < cl.get(i).T * 0.5) merge(ids[0], i);
+    }
+  }
+  if (process.env.DEBUG_REG) for (const [id, c] of cl) if (c.reg && process.env.DEBUG_REG.split(',').includes(c.reg)) log('DBG', id, c.reg, c.owner, c.key, Math.round(c.A), c.T, [...c.nb].map(([o, l]) => `${cl.get(o).reg || cl.get(o).key}:${o}:${Math.round(l)}`).join(' '));
   log(`Africa: ${cl.size} province`);
 
   // 6. informazioni di provincia

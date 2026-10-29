@@ -251,6 +251,12 @@ export const AF_SIZE = { ZAF: 0.55, LSO: 0.6, SWZ: 0.6, EGY: 0.35, ETH: 0.75, ER
 // le province si formano dentro la regione, con la dimensione indicata (km²).
 export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
+/** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
+export const AF_FINE = { ERI: 6000 };
+
+/** Piccoli possedimenti costieri ritagliati come regione a sé (la baia comprata dalla Rubattino, circa 600 km²). */
+export const AF_ENCLAVES = [{ name: 'Assab', at: [42.7, 13.0], r: 15 }];
+
 export const AF_DETAIL_REGIONS = [
   // Alto Egitto: le mudiriyya del 1881
   ['Girga', 31.75, 26.4, ['EGY'], 5000, 'EGY'], ['Qena', 32.7, 26.0, ['EGY'], 5000, 'EGY'], ['Esna', 32.55, 25.2, ['EGY'], 5000, 'EGY'], ['Assuan', 32.9, 24.1, ['EGY'], 6000, 'EGY'], ['Nubia', 31.5, 22.3, ['EGY', 'SDN'], 12000, 'EGY'],
@@ -261,8 +267,10 @@ export const AF_DETAIL_REGIONS = [
   ['El Fasher', 25.4, 14.4, ['SDN'], 66000, 'EGY'], ['Kebkabiya', 23.4, 13.0, ['SDN'], 57000], ['Dara', 24.6, 11.6, ['SDN'], 57000, 'EGY'], ['Shakka', 26.5, 10.2, ['SDN', 'SDS'], 66000, 'EGY'],
   ['Bahr el-Ghazal', 27.5, 7.8, ['SDS', 'SDN'], 64000, 'EGY'], ['Rohl', 30.0, 6.8, ['SDS'], 64000, 'EGY'], ['Sobat', 33.0, 8.6, ['SDS'], 64000, 'EGY'], ['Equatoria', 31.6, 4.6, ['SDS'], 64000, 'EGY'], ['Bor', 31.8, 6.6, ['SDS'], 64000, 'EGY'],
   // Eritrea e costa
-  ['Massaua', 39.3, 15.8, ['ERI'], 14000, 'EGY'], ['Bogos', 38.3, 15.9, ['ERI'], 16000, 'EGY'], ['Hamasien', 38.9, 15.3, ['ERI'], 7000, 'ETH'], ['Seraè', 38.6, 14.8, ['ERI'], 8000, 'ETH'], ['Acchelè Guzai', 39.3, 14.8, ['ERI'], 7000, 'ETH'], ['Zula', 39.85, 15.05, ['ERI'], 6000, 'EGY'],
-  ['Dancalia settentrionale', 40.6, 14.3, ['ERI', 'ETH'], 20000, ''], ['Assab', 42.7, 13.0, ['ERI'], 6000, 'ITA'], ['Beilul', 42.2, 13.5, ['ERI'], 12000, ''], ['Raheita', 43.15, 12.7, ['ERI', 'DJI'], 8000, ''],
+  // Massaua con il Samhar, la baia di Zula e le Dahlak; Sahel, Bogos (Cheren) e Barca egiziani dal 1872; l'altopiano (Mareb Mellash) di ras Alula
+  ['Massaua', 39.45, 15.5, ['ERI'], 14000, 'EGY'], ['Sahel', 38.55, 16.9, ['ERI'], 26000, 'EGY'], ['Bogos', 38.45, 15.8, ['ERI'], 18000, 'EGY'], ['Barca', 37.6, 15.8, ['ERI'], 34000, 'EGY'],
+  ['Hamasien', 38.9, 15.3, ['ERI'], 9000, 'ETH'], ['Seraè', 38.7, 14.85, ['ERI'], 9000, 'ETH'], ['Acchelè Guzai', 39.4, 14.85, ['ERI'], 8000, 'ETH'],
+  ['Zula', 40.0, 15.0, ['ERI'], 9000, 'EGY'], ['Dancalia settentrionale', 41.2, 14.3, ['ERI'], 24000, ''], ['Assab', 42.7, 13.0, ['ERI'], 6000, 'ITA'], ['Beilul', 42.15, 13.2, ['ERI'], 24000, ''], ['Raheita', 43.15, 12.7, ['ERI', 'DJI'], 8000, 'RAH'],
   // Etiopia: i regni dell'impero di Giovanni IV
   ['Tigrè', 39.2, 13.7, ['ETH'], 17000, 'ETH'], ['Semien', 38.2, 13.3, ['ETH'], 17000, 'ETH'], ['Begemder', 37.9, 12.0, ['ETH'], 18000, 'ETH'], ['Gojjam', 37.4, 10.6, ['ETH'], 21000, 'ETH'],
   ['Lasta', 39.1, 12.5, ['ETH'], 16000, 'ETH'], ['Uollo', 39.6, 11.1, ['ETH'], 17000, 'ETH'], ['Scioa', 39.1, 9.5, ['ETH'], 21000, 'ETH'],
@@ -270,11 +278,11 @@ export const AF_DETAIL_REGIONS = [
   ['Beni Shangul', 35.0, 10.6, ['ETH', 'SDN'], 35000, 'EGY'], ['Uallega', 35.9, 9.1, ['ETH'], 31000, ''], ['Illubabor', 35.3, 7.9, ['ETH'], 35000, ''], ['Gambela', 34.3, 8.0, ['ETH', 'SDS'], 42000, ''],
   ['Gimma', 36.9, 7.7, ['ETH'], 25000, ''], ['Caffa', 36.1, 7.1, ['ETH'], 25000, ''], ['Gurage', 38.0, 8.3, ['ETH'], 25000, ''], ['Uolaita', 37.6, 6.8, ['ETH'], 31000, ''], ['Sidamo', 38.6, 6.0, ['ETH'], 35000, ''],
   ['Borana', 38.4, 4.3, ['ETH', 'KEN'], 56000, ''], ['Arussi', 39.5, 7.7, ['ETH'], 31000, ''], ['Bale', 40.6, 6.9, ['ETH'], 42000, ''], ['Harar', 42.1, 9.3, ['ETH', 'SOL'], 14000, 'EGY'], ['Ciercer', 40.9, 8.9, ['ETH'], 22000, ''], ['Giggiga', 43.2, 8.9, ['ETH', 'SOL'], 30000, ''],
-  ['Aussa', 41.3, 11.6, ['ETH', 'DJI'], 35000, ''], ['Dancalia', 40.3, 12.9, ['ETH', 'ERI'], 35000, ''], ['Ogaden', 44.2, 7.2, ['ETH'], 77000, ''], ['Uebi Scebeli', 43.0, 5.5, ['ETH', 'SOM'], 70000, ''],
+  ['Aussa', 41.3, 11.6, ['ETH', 'DJI'], 35000, 'AUS'], ['Dancalia', 40.3, 12.9, ['ETH', 'ERI'], 35000, ''], ['Ogaden', 44.2, 7.2, ['ETH'], 77000, ''], ['Uebi Scebeli', 43.0, 5.5, ['ETH', 'SOM'], 70000, ''],
   // Gibuti e Somalia settentrionale
-  ['Obock e Tagiura', 42.7, 11.7, ['DJI'], 25000, ''], ['Zeila', 43.3, 10.9, ['SOL', 'DJI', 'ETH'], 15000, 'EGY'], ['Berbera', 45.0, 10.1, ['SOL'], 20000, 'EGY'], ['Haud', 45.5, 8.8, ['SOL', 'ETH'], 56000, ''],
-  ['Dulbahante', 47.4, 8.7, ['SOL', 'SOM'], 49000, ''], ['Uarsangheli', 47.6, 10.7, ['SOL', 'SOM'], 35000, ''], ['Migiurtinia', 49.6, 10.2, ['SOM'], 49000, ''], ['Nogal', 48.6, 8.3, ['SOM'], 49000, ''],
+  ['Obock e Tagiura', 42.7, 11.7, ['DJI'], 25000, 'TAG'], ['Zeila', 43.3, 10.9, ['SOL', 'DJI', 'ETH'], 15000, 'EGY'], ['Berbera', 45.0, 10.1, ['SOL'], 20000, 'EGY'], ['Haud', 45.5, 8.8, ['SOL', 'ETH'], 56000, ''],
+  ['Dulbahante', 47.4, 8.7, ['SOL', 'SOM'], 49000, ''], ['Uarsangheli', 47.6, 10.7, ['SOL', 'SOM'], 35000, 'WSG'], ['Migiurtinia', 49.6, 10.2, ['SOM'], 49000, 'MIG'], ['Nogal', 48.6, 8.3, ['SOM'], 49000, ''],
   // Somalia meridionale
-  ['Obbia', 48.3, 5.5, ['SOM'], 49000, ''], ['Mudugh', 47.2, 6.2, ['SOM'], 49000, ''], ['Hiran', 45.4, 4.6, ['SOM', 'ETH'], 42000, ''], ['Benadir', 45.4, 2.3, ['SOM'], 15000, 'ZAN'],
+  ['Obbia', 48.3, 5.5, ['SOM'], 49000, 'OBB'], ['Mudugh', 47.2, 6.2, ['SOM'], 49000, ''], ['Hiran', 45.4, 4.6, ['SOM', 'ETH'], 42000, ''], ['Benadir', 45.4, 2.3, ['SOM'], 15000, 'ZAN'],
   ['Basso Scebeli', 44.3, 1.6, ['SOM'], 18000], ['Bai', 43.6, 2.8, ['SOM'], 35000, ''], ['Lugh', 42.3, 3.6, ['SOM', 'ETH', 'KEN'], 42000, ''], ['Oltregiuba', 41.8, -0.2, ['SOM', 'KEN'], 42000],
 ];
