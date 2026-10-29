@@ -577,6 +577,13 @@ describe('Africa e Arabia', () => {
     expect(eu.length).toBeGreaterThanOrEqual(4);
     for (const p of eu) expect(p.n.some((j) => j >= 1375), p.name).toBe(true);
   });
+  it('fase 2a: Egitto-Sudan e Corno d\'Africa per regioni storiche', () => {
+    const exp: [string, string][] = [['Assab', 'ITA'], ['Massaua', 'EGY'], ['Hamasien', 'ETH'], ['Harar', 'EGY'], ['Berbera', 'EGY'], ['Mogadiscio', 'ZAN'], ['Scioa', 'ETH'], ['Gojjam (nord)', 'ETH'], ['Aussa', ''], ['Migiurtinia', '']];
+    for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
+    const zone = MAP.provinces.filter((p) => p.id >= 1375 && ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'].includes(p.modern));
+    expect(zone.length).toBeGreaterThan(140);
+    expect(zone.length).toBeLessThan(210);
+  });
   it('ogni nazione presente ha un profilo e un esercito', () => {
     const w = newGame(MAP, 'ITA', 'af');
     for (const t of ['ETH', 'SOK', 'TRA', 'MAD', 'ZAN']) expect(w.state.units.some((u) => u.nation === t), t).toBe(true);

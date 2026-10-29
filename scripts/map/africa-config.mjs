@@ -176,7 +176,11 @@ export const AF_TOWNS = [
   // Egitto e Sudan egiziano
   ['Asiut', 31.18, 27.18, 40], ['Girga', 31.89, 26.34, 30], ['Sohag', 31.7, 26.56, 20], ['Qena', 32.72, 26.16, 30], ['Luxor', 32.64, 25.69, 25], ['Esna', 32.55, 25.29, 20], ['Assuan', 32.9, 24.09, 30], ['Uadi Halfa', 31.33, 21.8, 20], ['Dongola', 30.48, 19.17, 30], ['Berber', 33.98, 18.02, 30], ['Khartum', 32.53, 15.6, 60], ['Sennar', 33.63, 13.55, 35], ['El Obeid', 30.22, 13.18, 45], ['El Fasher', 25.35, 13.63, 40], ['Cassala', 36.4, 15.45, 35], ['Suakin', 37.33, 19.1, 35], ['Massaua', 39.45, 15.61, 40], ['Cheren', 38.47, 15.78, 20], ['Fascioda', 32.1, 9.88, 25], ['Lado', 31.7, 5.03, 25], ['Dem Zubeir', 26.07, 7.73, 20], ['Gondokoro', 31.67, 4.9, 15], ['Fazogli', 34.35, 11.3, 15], ['Gallabat', 36.37, 12.97, 20], ['Ed Damer', 33.97, 17.6, 15], ['Shendi', 33.43, 16.68, 20], ['Darà', 24.3, 11.5, 15], ['Taiscia', 22.0, 11.8, 10], ['Nyala', 24.88, 12.05, 15], ['Kordofan', 30.2, 12.0, 5], ['Zeila', 43.47, 11.35, 35], ['Berbera', 45.03, 10.44, 35], ['Harar', 42.12, 9.31, 50],
   // Etiopia e Corno
-  ['Debre Tabor', 38.03, 11.85, 45], ['Gondar', 37.47, 12.6, 40], ['Adua', 38.9, 14.17, 35], ['Macallè', 39.47, 13.5, 35], ['Axum', 38.72, 14.13, 20], ['Ancober', 39.73, 9.59, 40], ['Magdala', 39.37, 11.37, 20], ['Gogiam', 37.7, 10.33, 30], ['Uollo', 39.6, 11.1, 20], ['Gimma', 36.83, 7.67, 30], ['Caffa', 36.25, 7.25, 25], ['Aussa', 41.4, 11.6, 25], ['Gildessa', 42.05, 9.85, 10], ['Ogaden', 44.5, 7.2, 10], ['Mogadiscio', 45.34, 2.04, 45], ['Brava', 44.03, 1.11, 25], ['Merca', 44.75, 1.72, 20], ['Chisimaio', 42.54, -0.36, 25], ['Obbia', 48.53, 5.32, 20], ['Alula', 50.75, 11.97, 15], ['Lugh', 42.55, 3.8, 15], ['Bardera', 42.3, 2.35, 15], ['Gibuti', 43.15, 11.6, 1], ['Obock', 43.29, 11.96, 15], ['Tagiura', 42.88, 11.78, 15],
+  ['Debre Tabor', 38.03, 11.85, 45], ['Gondar', 37.47, 12.6, 40], ['Adua', 38.9, 14.17, 35], ['Macallè', 39.47, 13.5, 35], ['Axum', 38.72, 14.13, 20], ['Ancober', 39.73, 9.59, 40], ['Magdala', 39.37, 11.37, 20], ['Gogiam', 37.7, 10.33, 30], ['Uollo', 39.6, 11.1, 20], ['Gimma', 36.83, 7.67, 30], ['Caffa', 36.25, 7.25, 25], ['Aussa', 41.4, 11.6, 25], ['Gildessa', 42.05, 9.85, 10], ['Ogaden', 44.5, 7.2, 10], ['Mogadiscio', 45.34, 2.04, 45], ['Brava', 44.03, 1.11, 25], ['Merca', 44.75, 1.72, 20], ['Chisimaio', 42.54, -0.36, 25], ['Obbia', 48.53, 5.32, 20], ['Alula', 50.75, 11.97, 15], ['Lugh', 42.55, 3.8, 15], ['Bardera', 42.3, 2.35, 15], ['Gibuti', 43.15, 11.6, 1], ['Obock', 43.29, 11.96, 15], ['Assab', 42.73, 13.01, 30],
+  ['Asmara', 38.93, 15.33, 12], ['Adi Ugri', 38.82, 14.88, 12], ['Adigrat', 39.46, 14.28, 15], ['Antalo', 39.38, 13.3, 12], ['Socota', 39.03, 12.63, 15], ['Debre Marcos', 37.73, 10.33, 20],
+  ['Basso', 37.75, 10.1, 5], ['Debre Berhan', 39.53, 9.68, 15], ['Liccè', 39.65, 9.9, 15], ['Entotto', 38.77, 9.08, 10], ['Bonga', 36.24, 7.27, 20], ['Ghera', 36.2, 7.7, 8], ['Lekemti', 36.55, 9.08, 15],
+  ['Uad Medani', 33.52, 14.4, 20], ['Metemma', 36.2, 12.95, 15], ['El Damer', 33.97, 17.59, 10], ['Duem', 32.3, 13.99, 10], ['Bara', 30.37, 13.7, 10], ['Talodi', 30.38, 10.63, 10], ['Kaka', 32.18, 10.62, 8],
+  ['Uau', 28.0, 7.7, 10], ['Rumbek', 29.7, 6.8, 10], ['Dufile', 31.95, 3.58, 10], ['Bor', 31.56, 6.21, 8], ['Kobbei', 25.1, 14.2, 15], ['Kebkabiya', 24.08, 13.64, 15], ['Shakka', 26.5, 10.2, 10], ['Tagiura', 42.88, 11.78, 15],
   // Africa orientale
   ['Zanzibar', 39.19, -6.16, 60], ['Pemba', 39.75, -5.15, 20], ['Mombasa', 39.67, -4.05, 40], ['Malindi', 40.11, -3.22, 25], ['Lamu', 40.9, -2.27, 30], ['Bagamoyo', 38.9, -6.44, 30], ['Dar es Salaam', 39.28, -6.82, 25], ['Chilua', 39.52, -8.95, 25], ['Lindi', 39.71, -10.0, 20], ['Tabora', 32.8, -5.02, 40], ['Ugigi', 29.67, -4.88, 35], ['Urambo', 32.07, -5.07, 30], ['Mengo', 32.57, 0.31, 45], ['Masindi', 31.72, 1.68, 30], ['Kabarega', 31.35, 1.45, 5], ['Nyanza', 29.75, -2.35, 30], ['Kitega', 29.93, -3.43, 30], ['Ujiji', 29.67, -4.88, 1], ['Tanga', 39.1, -5.07, 20], ['Pangani', 38.98, -5.43, 20], ['Mamboya', 37.27, -6.27, 10], ['Kilimangiaro', 37.35, -3.3, 15], ['Ruvuma', 37.5, -11.0, 5], ['Songea', 35.65, -10.68, 15], ['Kilwa', 39.5, -8.93, 1], ['Masai', 36.5, -2.0, 10], ['Kavirondo', 34.6, 0.2, 10], ['Ukambani', 37.8, -1.5, 10], ['Teita', 38.4, -3.4, 5], ['Unyoro', 31.5, 1.8, 1], ['Toro', 30.27, 0.65, 15], ['Ankole', 30.65, -0.6, 15], ['Busoga', 33.4, 0.7, 15], ['Karagwe', 31.1, -1.75, 15], ['Usukuma', 33.5, -3.0, 10], ['Ugogo', 35.75, -6.2, 10], ['Uhehe', 35.7, -7.8, 15], ['Ufipa', 31.6, -8.0, 10],
   // Congo e Africa centrale
@@ -208,7 +212,7 @@ export const AF_DESERT_NAMES = [['Saguia el-Hamra', -12.0, 26.5], ['Río de Oro'
 export const AF_ANACHRONISTIC = new Set(['Dar Naim', 'Serekunda', 'Ajegunle', 'Ikeja', 'Nazrēt', 'Ncotshane', 'Addis Ababa', 'Nairobi', 'Johannesburg', 'Harare', 'Lusaka', 'Djibouti', 'Port Sudan', 'Conakry', 'Abidjan', 'Bangui', "N'Djamena", 'Niamey', 'Kigali', 'Bujumbura',
   'Dodoma', 'Arusha', 'Kampala', 'Kinshasa', 'Lubumbashi', 'Kolwezi', 'Likasi', 'Kisangani', 'Mbuji-Mayi', 'Kananga', 'Bukavu', 'Goma', 'Port Harcourt', 'Kaduna', 'Jos', 'Abuja', 'Yamoussoukro', 'Nouakchott',
   'Gaborone', 'Lilongwe', 'Kitwe', 'Ndola', 'Chingola', 'Mufulira', 'Luanshya', 'Welkom', 'Soweto', 'Sasolburg', 'Vanderbijlpark', 'Secunda', 'Benoni', 'Germiston', 'Boksburg', 'Springs', 'Krugersdorp',
-  'Juba', 'Malakal', 'Kosti', 'Wad Medani', 'Omdurman', 'Kisumu', 'Entebbe', 'Jinja', 'Port-Gentil', 'Pointe-Noire', 'Yaoundé', 'Beira', 'Nacala', 'Maputo', 'Matola', 'Mutare', 'Gweru', 'Kwekwe',
+  'Juba', 'Malakal', 'Kosti', 'Omdurman', 'Kisumu', 'Entebbe', 'Jinja', 'Port-Gentil', 'Pointe-Noire', 'Yaoundé', 'Beira', 'Nacala', 'Maputo', 'Matola', 'Mutare', 'Gweru', 'Kwekwe',
   'Francistown', 'Lobito', 'Huambo', 'Lubango', 'Kuito', 'Mbanza-Ngungu', 'Antsiranana', 'Toamasina', 'Mahajanga', 'Antananarivo', 'Toliara', 'Thohoyandou', 'Polokwane', 'Mbombela', 'Nelspruit',
   'Bhisho', 'Mthatha', 'Rustenburg', 'Klerksdorp', 'Tema', 'Takoradi', 'Sekondi-Takoradi', 'Tamale', 'Bobo', 'Koudougou', 'Ouagadougou', 'Bamako', 'Sikasso', 'Garoua', 'Maroua', 'Ngaoundéré',
   'Bertoua', 'Ebolowa', 'Bafoussam', 'Bamenda', 'Douala', 'Libreville', 'Owendo', 'Moanda', 'Franceville', 'Dolisie', 'Gemena', 'Mbandaka', 'Bandundu', 'Kikwit', 'Tshikapa', 'Kalemie', 'Uvira',
@@ -240,3 +244,37 @@ export const AF_NULL_REGION = {
 };
 // scala delle dimensioni per paese moderno (più fitte dove serve dettaglio storico)
 export const AF_SIZE = { ZAF: 0.55, LSO: 0.6, SWZ: 0.6, EGY: 0.35, ETH: 0.75, ERI: 0.7, YEM: 0.55, OMN: 0.8, NGA: 1.0, GHA: 0.8, SEN: 0.75, GMB: 0.6, SLE: 0.8, MDG: 0.9, TZA: 0.9, KEN: 0.9, UGA: 0.8, SAU: 0.85 };
+
+// --- Fase 2a: regioni storiche e province di dettaglio (Egitto-Sudan e Corno d'Africa) ---
+// Atomi = suddivisioni ∩ stati d'epoca ∩ bacini HydroBASINS di livello 6 (confini naturali sugli spartiacque);
+// ogni atomo va alla regione storica del centro più vicino (fra quelle ammesse per il suo paese moderno);
+// le province si formano dentro la regione, con la dimensione indicata (km²).
+export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'];
+/** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
+export const AF_DETAIL_REGIONS = [
+  // Alto Egitto: le mudiriyya del 1881
+  ['Girga', 31.75, 26.4, ['EGY'], 5000, 'EGY'], ['Qena', 32.7, 26.0, ['EGY'], 5000, 'EGY'], ['Esna', 32.55, 25.2, ['EGY'], 5000, 'EGY'], ['Assuan', 32.9, 24.1, ['EGY'], 6000, 'EGY'], ['Nubia', 31.5, 22.3, ['EGY', 'SDN'], 12000, 'EGY'],
+  // Sudan egiziano: le province (mudiriyya) del governatorato di Khartum
+  ['Dongola', 30.5, 19.3, ['SDN'], 34000, 'EGY'], ['Berber', 33.9, 18.2, ['SDN'], 38000, 'EGY'], ['Khartum', 32.6, 15.7, ['SDN'], 34000, 'EGY'], ['Sennar', 33.6, 13.4, ['SDN'], 38000, 'EGY'],
+  ['Fazogli', 34.4, 11.2, ['SDN', 'ETH'], 48000, 'EGY'], ['Gallabat', 36.2, 13.0, ['SDN'], 38000, 'EGY'], ['Taka', 36.3, 15.6, ['SDN', 'ERI'], 48000, 'EGY'], ['Suakin', 37.0, 19.3, ['SDN'], 57000, 'EGY'],
+  ['Kordofan', 30.2, 13.5, ['SDN'], 57000, 'EGY'], ['Monti Nuba', 30.0, 11.0, ['SDN'], 57000, 'EGY'], ['Fascioda', 32.4, 10.3, ['SDN', 'SDS'], 66000, 'EGY'],
+  ['El Fasher', 25.4, 14.4, ['SDN'], 66000, 'EGY'], ['Kebkabiya', 23.4, 13.0, ['SDN'], 57000], ['Dara', 24.6, 11.6, ['SDN'], 57000, 'EGY'], ['Shakka', 26.5, 10.2, ['SDN', 'SDS'], 66000, 'EGY'],
+  ['Bahr el-Ghazal', 27.5, 7.8, ['SDS', 'SDN'], 64000, 'EGY'], ['Rohl', 30.0, 6.8, ['SDS'], 64000, 'EGY'], ['Sobat', 33.0, 8.6, ['SDS'], 64000, 'EGY'], ['Equatoria', 31.6, 4.6, ['SDS'], 64000, 'EGY'], ['Bor', 31.8, 6.6, ['SDS'], 64000, 'EGY'],
+  // Eritrea e costa
+  ['Massaua', 39.3, 15.8, ['ERI'], 14000, 'EGY'], ['Bogos', 38.3, 15.9, ['ERI'], 16000, 'EGY'], ['Hamasien', 38.9, 15.3, ['ERI'], 7000, 'ETH'], ['Seraè', 38.6, 14.8, ['ERI'], 8000, 'ETH'], ['Acchelè Guzai', 39.3, 14.8, ['ERI'], 7000, 'ETH'], ['Zula', 39.85, 15.05, ['ERI'], 6000, 'EGY'],
+  ['Dancalia settentrionale', 40.6, 14.3, ['ERI', 'ETH'], 20000, ''], ['Assab', 42.7, 13.0, ['ERI'], 6000, 'ITA'], ['Beilul', 42.2, 13.5, ['ERI'], 12000, ''], ['Raheita', 43.15, 12.7, ['ERI', 'DJI'], 8000, ''],
+  // Etiopia: i regni dell'impero di Giovanni IV
+  ['Tigrè', 39.2, 13.7, ['ETH'], 17000, 'ETH'], ['Semien', 38.2, 13.3, ['ETH'], 17000, 'ETH'], ['Begemder', 37.9, 12.0, ['ETH'], 18000, 'ETH'], ['Gojjam', 37.4, 10.6, ['ETH'], 21000, 'ETH'],
+  ['Lasta', 39.1, 12.5, ['ETH'], 16000, 'ETH'], ['Uollo', 39.6, 11.1, ['ETH'], 17000, 'ETH'], ['Scioa', 39.1, 9.5, ['ETH'], 21000, 'ETH'],
+  // terre oromo, sidama e somale fuori dall'impero
+  ['Beni Shangul', 35.0, 10.6, ['ETH', 'SDN'], 35000, 'EGY'], ['Uallega', 35.9, 9.1, ['ETH'], 31000, ''], ['Illubabor', 35.3, 7.9, ['ETH'], 35000, ''], ['Gambela', 34.3, 8.0, ['ETH', 'SDS'], 42000, ''],
+  ['Gimma', 36.9, 7.7, ['ETH'], 25000, ''], ['Caffa', 36.1, 7.1, ['ETH'], 25000, ''], ['Gurage', 38.0, 8.3, ['ETH'], 25000, ''], ['Uolaita', 37.6, 6.8, ['ETH'], 31000, ''], ['Sidamo', 38.6, 6.0, ['ETH'], 35000, ''],
+  ['Borana', 38.4, 4.3, ['ETH', 'KEN'], 56000, ''], ['Arussi', 39.5, 7.7, ['ETH'], 31000, ''], ['Bale', 40.6, 6.9, ['ETH'], 42000, ''], ['Harar', 42.1, 9.3, ['ETH', 'SOL'], 14000, 'EGY'], ['Ciercer', 40.9, 8.9, ['ETH'], 22000, ''], ['Giggiga', 43.2, 8.9, ['ETH', 'SOL'], 30000, ''],
+  ['Aussa', 41.3, 11.6, ['ETH', 'DJI'], 35000, ''], ['Dancalia', 40.3, 12.9, ['ETH', 'ERI'], 35000, ''], ['Ogaden', 44.2, 7.2, ['ETH'], 77000, ''], ['Uebi Scebeli', 43.0, 5.5, ['ETH', 'SOM'], 70000, ''],
+  // Gibuti e Somalia settentrionale
+  ['Obock e Tagiura', 42.7, 11.7, ['DJI'], 25000, ''], ['Zeila', 43.3, 10.9, ['SOL', 'DJI', 'ETH'], 15000, 'EGY'], ['Berbera', 45.0, 10.1, ['SOL'], 20000, 'EGY'], ['Haud', 45.5, 8.8, ['SOL', 'ETH'], 56000, ''],
+  ['Dulbahante', 47.4, 8.7, ['SOL', 'SOM'], 49000, ''], ['Uarsangheli', 47.6, 10.7, ['SOL', 'SOM'], 35000, ''], ['Migiurtinia', 49.6, 10.2, ['SOM'], 49000, ''], ['Nogal', 48.6, 8.3, ['SOM'], 49000, ''],
+  // Somalia meridionale
+  ['Obbia', 48.3, 5.5, ['SOM'], 49000, ''], ['Mudugh', 47.2, 6.2, ['SOM'], 49000, ''], ['Hiran', 45.4, 4.6, ['SOM', 'ETH'], 42000, ''], ['Benadir', 45.4, 2.3, ['SOM'], 15000, 'ZAN'],
+  ['Basso Scebeli', 44.3, 1.6, ['SOM'], 18000], ['Bai', 43.6, 2.8, ['SOM'], 35000, ''], ['Lugh', 42.3, 3.6, ['SOM', 'ETH', 'KEN'], 42000, ''], ['Oltregiuba', 41.8, -0.2, ['SOM', 'KEN'], 42000],
+];

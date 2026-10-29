@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -69,7 +69,11 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     if (c) cuts.push({ ...c, properties: { oasis: o.name } });
   }
   fs.writeFileSync(P('cuts.geojson'), JSON.stringify(turf.featureCollection(cuts)));
-  ms('-i', P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), 'combine-files', 'snap', 'snap-interval=0.0005', '-union', 'target=adm,hist,cuts',
+  // zona di dettaglio: bacini di HydroBASINS livello 6 dentro i paesi della fase in corso
+  const detailSet = new Set(AF_DETAIL_MODERN);
+  ms(P('adm.geojson'), '-filter', `${JSON.stringify(AF_DETAIL_MODERN)}.includes(modern)`, '-dissolve', '-o', P('detail_land.geojson'));
+  ms(path.join(RAW, 'hydro', 'hybas_af_lev06_v1c.shp'), '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
+  ms('-i', P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), P('basins.geojson'), 'combine-files', 'snap', 'snap-interval=0.0005', '-union', 'target=adm,hist,cuts,basins',
     '-filter', 'pid != null', 'remove-empty', '-explode', '-o', P('u.geojson'));
 
   // 2. proprietari
@@ -79,7 +83,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     const pr = f.properties;
     const hist = pr.hist ?? 'null';
     if (AF_HIST[hist] === undefined) throw new Error(`stato africano senza tag: ${hist}`);
-    return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, valley: !!pr.valley, area: km2(f), c: turf.centroid(f).geometry.coordinates };
+    return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, valley: !!pr.valley, area: km2(f), c: turf.centroid(f).geometry.coordinates, detail: detailSet.has(pr.modern) };
   }).filter((a) => a.area > 0.5);
   for (const a of A) for (const o of AF_OVERRIDES) {
     if (o.modern && o.modern !== a.modern) continue;
@@ -112,7 +116,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   const split = [];
   for (const a of A) {
     const T = targetOf(a);
-    const k = a.oasis ? 1 : Math.round(a.area / T);
+    const k = a.oasis ? 1 : a.detail ? Math.round(a.area / Math.max(T, 60000)) : Math.round(a.area / T);
     if (k < 2) { split.push(a); continue; }
     const bb = turf.bbox(a.f);
     const step = Math.sqrt(a.area / (k * 60)) / 111;
@@ -192,13 +196,24 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   }
   log(`Africa: ${A.filter((a) => a.desert).length} atomi di deserto`);
 
-  // 5. accorpamento: stesso stato d'epoca, stessa classe, stesso paese moderno, forma compatta
+  // regioni storiche della zona di dettaglio: il centro più vicino fra quelli ammessi per il paese moderno
+  const REG = AF_DETAIL_REGIONS.map(([name, lon, lat, mods, T, owner]) => ({ name, at: [lon, lat], mods, T, owner }));
+  for (const a of A) {
+    if (!a.detail) continue;
+    let best = null, bd = Infinity;
+    for (const r of REG) { if (!r.mods.includes(a.modern)) continue; const d = turf.distance(a.c, r.at); if (d < bd) { bd = d; best = r; } }
+    a.region = best;
+    // il padrone della regione storica vale per tutte le sue terre abitate (niente schegge di confine del dataset)
+    if (best && best.owner !== undefined && !a.desert && !a.oasis ) a.owner = best.owner;
+  }
+
+  // 5. accorpamento: stesso stato d'epoca, stessa classe, stesso paese moderno (nella zona di dettaglio: stessa regione), forma compatta
   const clsOf = (a) => (a.oasis ? `O:${a.oasis}` : a.desert ? 'D' : 'L');
-  const keyOf = (a) => (a.oasis ? `O:${a.oasis}|${a.owner}` : `${a.owner}|${clsOf(a)}|${a.modern}`);
+  const keyOf = (a) => (a.oasis ? `O:${a.oasis}|${a.owner}` : a.region && !a.desert ? `${a.owner}|L|R:${a.region.name}` : `${a.owner}|${clsOf(a)}|${a.modern}`);
   const parent = A.map((_, i) => i);
   const find = (i) => { while (parent[i] !== i) { parent[i] = parent[parent[i]]; i = parent[i]; } return i; };
   const cl = new Map();
-  for (const a of A) cl.set(a.i, { ids: [a.i], A: a.area, Pm: perim[a.i], nb: new Map(shared[a.i]), key: keyOf(a), T: a.desert ? DESERT_T : targetOf(a), owner: a.owner, cls: clsOf(a), modern: a.modern, bb: a.bb.slice() });
+  for (const a of A) cl.set(a.i, { ids: [a.i], A: a.area, Pm: perim[a.i], nb: new Map(shared[a.i]), key: keyOf(a), T: a.desert ? DESERT_T : a.region ? a.region.T : targetOf(a), owner: a.owner, cls: clsOf(a), modern: a.modern, reg: a.region && !a.desert ? a.region.name : null, bb: a.bb.slice() });
   const span = (bb) => turf.distance([bb[0], bb[1]], [bb[2], bb[3]]);
   const ubb = (a, b) => [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
   const merge = (a, b) => { // b dentro a
@@ -233,7 +248,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   const compact = (S, O, l) => pp(S.A + O.A, S.Pm + O.Pm - 2 * l) * (1 + 0.3 * Math.max(0, 1 - O.A / O.T));
   pass(0.62, 1.45, (S, O) => S.key === O.key, compact);
   // resti piccoli: stesso stato e stessa classe anche oltre il confine moderno, poi stesso stato
-  pass(0.3, 1.8, (S, O) => S.owner === O.owner && S.cls === O.cls && S.cls !== 'D' && !S.cls.startsWith('O:'), (S, O, l) => l / Math.sqrt(O.A));
+  pass(0.3, 1.8, (S, O) => S.owner === O.owner && S.cls === O.cls && S.cls !== 'D' && !S.cls.startsWith('O:') && (S.reg === O.reg || (!S.reg && !O.reg)), (S, O, l) => l / Math.sqrt(O.A));
   pass(0.12, 2.2, (S, O) => S.owner === O.owner && !S.cls.startsWith('O:') && !O.cls.startsWith('O:') && (S.cls === 'D') === (O.cls === 'D'), (S, O, l) => l / Math.sqrt(O.A));
   // isolette senza vicini: alla provincia più vicina dello stesso stato e paese moderno (Capo Verde, Seychelles, Comore)
   const cent = (c) => turf.centroid(turf.featureCollection(c.ids.map((i) => turf.point(A[i].c)))).geometry.coordinates;
@@ -313,13 +328,20 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
         name = near[0];
       }
     } else if (towns.length) name = towns[0][0];
+    else if (c.reg) name = c.reg; // zona di dettaglio senza località storiche: il nome della regione (poi nord, sud…)
     else {
       const g = mem.flatMap((a) => a.geo).sort((x, y) => y[1] - x[1])[0];
       name = g && g[1] >= 3000 ? g[0] : cleanName(mem[0].pname);
     }
-    const region = histName ? AF_REGION[histName] || histName : AF_NULL_REGION[modern] || modern;
+    const region = c.reg || (histName ? AF_REGION[histName] || histName : AF_NULL_REGION[modern] || modern);
     groupOf.set(id, infos.length);
-    infos.push({ name, owner, modern, area: c.A, region, prot: null, byNameList: towns.length > 1 ? towns.map((t) => t[0]) : null, byTown: !!towns.length, lockName: null, desert, oasis, iso, hreg: histName, lang: '', af: true, gsum: mem.reduce((s, a) => s + a.gsum, 0) });
+    infos.push({ name, owner, modern, area: c.A, region, prot: null, byNameList: towns.length > 1 ? towns.map((t) => t[0]) : null, byTown: !!towns.length, lockName: null, desert, oasis, iso, hreg: histName, lang: '', af: true, reg: c.reg, gsum: mem.reduce((s, a) => s + a.gsum, 0) });
+  }
+  // zona di dettaglio: una regione con una sola provincia (dello stesso padrone) prende il nome della regione
+  {
+    const byReg = new Map();
+    for (const g of infos) if (g.reg) byReg.set(g.reg, [...(byReg.get(g.reg) || []), g]);
+    for (const [reg, list] of byReg) if (list.length === 1) { list[0].name = reg; list[0].byTown = true; list[0].byNameList = null; }
   }
   // nomi doppi: la provincia più estesa tiene il nome, le altre passano alla località seguente
   {
