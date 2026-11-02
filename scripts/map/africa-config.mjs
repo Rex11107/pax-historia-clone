@@ -189,7 +189,7 @@ export const AF_TOWNS = [
   // Africa occidentale
   ['Sokoto', 5.24, 13.06, 50], ['Kano', 8.52, 12.0, 50], ['Katsina', 7.6, 12.99, 35], ['Zaria', 7.72, 11.11, 35], ['Bauchi', 9.84, 10.31, 30], ['Gombe', 11.17, 10.29, 20], ['Ilorin', 4.55, 8.5, 30], ['Bida', 6.01, 9.08, 30], ['Nupe', 6.0, 9.0, 1], ['Gando', 4.5, 12.6, 25], ['Kontagora', 5.47, 10.4, 15], ['Keffi', 7.87, 8.85, 15], ['Muri', 10.8, 9.2, 15], ['Lokoja', 6.74, 7.8, 15], ['Ibadan', 3.9, 7.38, 45], ['Abeokuta', 3.35, 7.15, 35], ['Oyo', 3.93, 7.85, 30], ['Ilesha', 4.75, 7.62, 20], ['Ife', 4.55, 7.48, 15], ['Ijebu Ode', 3.92, 6.82, 15], ['Lagos', 3.39, 6.45, 40], ['Benin', 5.62, 6.34, 40], ['Bonny', 7.17, 4.43, 25], ['Calabar', 8.32, 4.95, 30], ['Opobo', 7.55, 4.52, 20], ['Arochukwu', 7.9, 5.38, 25], ['Onitsha', 6.78, 6.15, 25], ['Brass', 6.24, 4.32, 15], ['Igala', 6.9, 7.3, 10], ['Tiv', 9.0, 7.4, 10], ['Bussa', 4.52, 9.88, 25], ['Nikki', 3.21, 9.94, 25], ['Kandi', 2.94, 11.13, 10],
   ['Abomey', 1.99, 7.18, 45], ['Uidah', 2.08, 6.36, 30], ['Porto Novo', 2.62, 6.5, 30], ['Cotonou', 2.43, 6.37, 15], ['Atakpamé', 1.13, 7.53, 15], ['Lomé', 1.22, 6.13, 5], ['Kumasi', -1.62, 6.69, 50], ['Cape Coast', -1.24, 5.11, 35], ['Accra', -0.2, 5.56, 35], ['Elmina', -1.35, 5.08, 15], ['Salaga', -0.52, 8.55, 20], ['Yendi', -0.01, 9.44, 25], ['Kintampo', -1.73, 8.05, 15], ['Bontuku', -2.8, 8.04, 25], ['Kong', -4.6, 9.15, 45], ['Bobo-Dioulasso', -4.3, 11.18, 30], ['Uagadugu', -1.53, 12.37, 45], ['Uahiguya', -2.42, 13.58, 30], ['Tenkodogo', -0.37, 11.78, 20], ['Fada Ngurma', 0.35, 12.06, 20], ['Gruma', 0.8, 12.0, 1], ['Dori', -0.03, 14.03, 15], ['Ségou', -6.27, 13.45, 45], ['Nioro', -9.6, 15.23, 30], ['Bandiagara', -3.61, 14.35, 30], ['Bissandugu', -9.0, 10.0, 35], ['Kankan', -9.31, 10.38, 30], ['Sikasso', -5.67, 11.32, 30], ['Timbuctù', -3.0, 16.77, 40], ['Gao', -0.05, 16.27, 25], ['Djenné', -4.55, 13.9, 30], ['Mopti', -4.2, 14.5, 15], ['Kayes', -11.45, 14.45, 10], ['Médine', -11.37, 14.37, 20], ['Bamako', -8.0, 12.65, 20], ['Kita', -9.49, 13.03, 15], ['Say', 2.36, 13.1, 25], ['Niamey', 2.11, 13.51, 1], ['Dosso', 3.19, 13.05, 20], ['Tessaua', 7.98, 13.75, 15], ['Maradi', 7.1, 13.5, 20], ['Agadez', 7.99, 16.97, 30], ['Ansongo', 0.5, 15.67, 15], ['Menaka', 2.4, 15.92, 10], ['Hombori', -1.68, 15.28, 15], ['Kidal', 1.41, 18.44, 10], ['Arauan', -3.4, 18.9, 5],
-  ['Saint-Louis', -16.5, 16.03, 45], ['Dakar', -17.44, 14.69, 35], ['Gorée', -17.4, 14.67, 20], ['Rufisque', -17.27, 14.72, 15], ['Bakel', -12.47, 14.9, 15], ['Podor', -14.96, 16.65, 20], ['Matam', -13.26, 15.66, 15], ['Kaolack', -16.07, 14.15, 15], ['Ziguinchor', -16.27, 12.58, 15], ['Bathurst', -16.58, 13.45, 30], ['Bolama', -15.48, 11.58, 25], ['Cacheu', -16.17, 12.27, 15], ['Bissau', -15.6, 11.86, 20], ['Timbo', -11.83, 10.63, 40], ['Labé', -12.28, 11.32, 25], ['Boké', -14.29, 10.94, 15], ['Freetown', -13.23, 8.48, 40], ['Port Loko', -12.79, 8.77, 15], ['Bonthe', -12.5, 7.53, 15], ['Monrovia', -10.8, 6.3, 40], ['Harper', -7.72, 4.37, 20], ['Buchanan', -10.05, 5.88, 15], ['Grand-Bassam', -3.74, 5.2, 25], ['Assinie', -3.28, 5.13, 15], ['Grand Lahou', -5.02, 5.13, 15], ['Baulé', -5.0, 7.5, 10], ['Man', -7.55, 7.41, 10], ['Odienné', -7.57, 9.51, 15], ['Korhogo', -5.63, 9.46, 15], ['Kissi', -10.1, 9.2, 5],
+  ['Saint-Louis', -16.5, 16.03, 45], ['Dakar', -17.44, 14.69, 35], ['Gorée', -17.4, 14.67, 20], ['Rufisque', -17.27, 14.72, 15], ['Bakel', -12.47, 14.9, 15], ['Podor', -14.96, 16.65, 20], ['Matam', -13.26, 15.66, 15], ['Kaolack', -16.07, 14.15, 15], ['Ziguinchor', -16.27, 12.58, 15], ['Bathurst', -16.58, 13.45, 30], ['Bolama', -15.48, 11.58, 25], ['Cacheu', -16.17, 12.27, 15], ['Bissau', -15.6, 11.86, 20], ['Timbo', -11.83, 10.63, 40], ['Labé', -12.28, 11.32, 25], ['Boké', -14.29, 10.94, 15], ['Freetown', -13.23, 8.48, 40], ['Port Loko', -12.79, 8.77, 15], ['Bonthe', -12.5, 7.53, 15], ['Monrovia', -10.8, 6.3, 40], ['Harper', -7.72, 4.37, 20], ['Buchanan', -10.05, 5.88, 15], ['Grand-Bassam', -3.74, 5.2, 25], ['Assinie', -3.45, 5.17, 15], ['Grand Lahou', -5.02, 5.13, 15], ['Baulé', -5.0, 7.5, 10], ['Man', -7.55, 7.41, 10], ['Odienné', -7.57, 9.51, 15], ['Korhogo', -5.63, 9.46, 15], ['Kissi', -10.1, 9.2, 5],
   // Africa australe
   ['Città del Capo', 18.42, -33.92, 60], ['Port Elizabeth', 25.6, -33.96, 35], ['Grahamstown', 26.53, -33.3, 30], ['East London', 27.91, -33.02, 25], ['Graaff-Reinet', 24.53, -32.25, 25], ['Kimberley', 24.77, -28.74, 40], ['Beaufort West', 22.58, -32.35, 20], ['Colesberg', 25.0, -30.72, 15], ['Calvinia', 19.77, -31.47, 15], ['Springbok', 17.88, -29.66, 10], ['Upington', 21.25, -28.45, 5], ['Vryburg', 24.73, -26.95, 5], ['Kuruman', 23.43, -27.45, 20], ['Mafeking', 25.64, -25.86, 10], ['Umtata', 28.78, -31.59, 20], ['Pondoland', 29.5, -31.2, 15], ['Pietermaritzburg', 30.38, -29.6, 40], ['Durban', 31.03, -29.86, 35], ['Ulundi', 31.42, -28.32, 35], ['Pretoria', 28.19, -25.75, 45], ['Potchefstroom', 27.1, -26.71, 35], ['Lydenburg', 30.45, -25.1, 20], ['Pietersburg', 29.45, -23.9, 5], ['Zoutpansberg', 30.0, -23.0, 15], ['Rustenburg', 27.24, -25.67, 20], ['Utrecht', 30.32, -27.66, 15], ['Bloemfontein', 26.21, -29.12, 40], ['Harrismith', 29.13, -28.27, 15], ['Kroonstad', 27.23, -27.65, 15], ['Maseru', 27.48, -29.31, 30], ['Mbabane', 31.13, -26.32, 25], ['Shoshong', 26.5, -23.03, 35], ['Molepolole', 25.5, -24.4, 15], ['Bulawayo', 28.58, -20.15, 40], ['Inyati', 28.85, -19.68, 10], ['Lealui', 23.05, -15.2, 35], ['Sesheke', 24.3, -17.48, 15], ['Lukulu', 23.24, -14.38, 10], ['Ngami', 22.7, -20.4, 10], ['Ghanzi', 21.7, -21.7, 5], ['Okavango', 20.0, -18.5, 5], ['Windhoek', 17.08, -22.57, 20], ['Walvis Bay', 14.5, -22.95, 20], ['Otjimbingwe', 16.13, -22.35, 15], ['Bethanie', 17.17, -26.5, 10], ['Rehoboth', 17.08, -23.32, 10], ['Ovamboland', 16.0, -17.8, 15], ['Damaraland', 15.5, -20.5, 5], ['Namaqualand', 17.5, -27.5, 5], ['Kaokoveld', 13.5, -18.5, 3],
   ['Lourenço Marques', 32.57, -25.97, 35], ['Inhambane', 35.38, -23.86, 30], ['Sofala', 34.75, -20.15, 20], ['Quelimane', 36.88, -17.88, 30], ['Mozambico', 40.73, -15.03, 40], ['Ibo', 40.58, -12.35, 20], ['Tete', 33.59, -16.16, 25], ['Sena', 35.0, -17.45, 20], ['Regno di Gaza', 33.0, -24.0, 15], ['Manicaland', 33.0, -19.0, 15], ['Zumbo', 30.45, -15.6, 10], ['Niassa', 36.5, -13.0, 10], ['Blantyre', 35.0, -15.79, 20], ['Livingstonia', 34.1, -10.6, 10], ['Shire', 35.2, -16.2, 5], ['Mashonaland', 31.0, -17.8, 10], ['Gutu', 31.15, -19.65, 5], ['Luangwa', 31.5, -12.5, 5], ['Bemba', 31.0, -10.5, 10], ['Kafue', 27.0, -15.0, 5],
@@ -249,13 +249,23 @@ export const AF_SIZE = { ZAF: 0.55, LSO: 0.6, SWZ: 0.6, EGY: 0.35, ETH: 0.75, ER
 // Atomi = suddivisioni ∩ stati d'epoca ∩ bacini HydroBASINS di livello 6 (confini naturali sugli spartiacque);
 // ogni atomo va alla regione storica del centro più vicino (fra quelle ammesse per il suo paese moderno);
 // le province si formano dentro la regione, con la dimensione indicata (km²).
-export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'];
+export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM',
+  // fase 2b: il resto del continente a sud del 27° parallelo
+  'MRT', 'SEN', 'GMB', 'GNB', 'GIN', 'SLE', 'LBR', 'CIV', 'GHA', 'TGO', 'BEN', 'BFA', 'MLI', 'NER', 'NGA', 'CMR', 'TCD', 'CAF', 'GAB', 'GNQ', 'COG', 'COD',
+  'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
 export const AF_FINE = { ERI: 6000 };
 
 /** Piccoli possedimenti costieri ritagliati come regione a sé (la baia comprata dalla Rubattino, circa 600 km²). */
-export const AF_ENCLAVES = [{ name: 'Assab', at: [42.7, 13.0], r: 15 }];
+export const AF_ENCLAVES = [{ name: 'Assab', at: [42.7, 13.0], r: 15 }, { name: 'Dakar e Gorea', at: [-17.33, 14.73], r: 16 }, { name: 'Lagos', at: [3.4, 6.5], r: 22 }, { name: 'Walvis Bay', at: [14.55, -22.95], r: 22 }];
+
+/**
+ * Fase 2b: fattore sulla dimensione delle province per paese (primo paese della regione). Dove la popolazione
+ * del 1881 è rada (bacino del Congo, Ubangi, Zambesi, Kalahari) le province sono molto più grandi.
+ */
+export const AF_DETAIL_SCALE = { COD: 1.7, CAF: 1.7, COG: 1.6, GAB: 1.6, AGO: 1.4, ZMB: 1.6, MWI: 1.3, MOZ: 1.4, NAM: 1.3, BWA: 1.2, TCD: 1.4, MRT: 1.2, MLI: 1.4, NER: 1.4,
+  BFA: 1.3, ZWE: 1.5, TZA: 1.5, KEN: 1.5, UGA: 1.3, CMR: 1.4, GIN: 1.3, SLE: 1.2, LBR: 1.3, CIV: 1.4, GHA: 1.3, TGO: 1.2, BEN: 1.2, NGA: 1.4, SEN: 1.3, MDG: 1.4, ZAF: 1.7 };
 
 export const AF_DETAIL_REGIONS = [
   // Alto Egitto: le mudiriyya del 1881
@@ -277,12 +287,105 @@ export const AF_DETAIL_REGIONS = [
   // terre oromo, sidama e somale fuori dall'impero
   ['Beni Shangul', 35.0, 10.6, ['ETH', 'SDN'], 35000, 'EGY'], ['Uallega', 35.9, 9.1, ['ETH'], 31000, ''], ['Illubabor', 35.3, 7.9, ['ETH'], 35000, ''], ['Gambela', 34.3, 8.0, ['ETH', 'SDS'], 42000, ''],
   ['Gimma', 36.9, 7.7, ['ETH'], 25000, ''], ['Caffa', 36.1, 7.1, ['ETH'], 25000, ''], ['Gurage', 38.0, 8.3, ['ETH'], 25000, ''], ['Uolaita', 37.6, 6.8, ['ETH'], 31000, ''], ['Sidamo', 38.6, 6.0, ['ETH'], 35000, ''],
-  ['Borana', 38.4, 4.3, ['ETH', 'KEN'], 56000, ''], ['Arussi', 39.5, 7.7, ['ETH'], 31000, ''], ['Bale', 40.6, 6.9, ['ETH'], 42000, ''], ['Harar', 42.1, 9.3, ['ETH', 'SOL'], 14000, 'EGY'], ['Ciercer', 40.9, 8.9, ['ETH'], 22000, ''], ['Giggiga', 43.2, 8.9, ['ETH', 'SOL'], 30000, ''],
+  ['Borana', 38.4, 4.3, ['ETH'], 56000, ''], ['Arussi', 39.5, 7.7, ['ETH'], 31000, ''], ['Bale', 40.6, 6.9, ['ETH'], 42000, ''], ['Harar', 42.1, 9.3, ['ETH', 'SOL'], 14000, 'EGY'], ['Ciercer', 40.9, 8.9, ['ETH'], 22000, ''], ['Giggiga', 43.2, 8.9, ['ETH', 'SOL'], 30000, ''],
   ['Aussa', 41.3, 11.6, ['ETH', 'DJI'], 35000, 'AUS'], ['Dancalia', 40.3, 12.9, ['ETH', 'ERI'], 35000, ''], ['Ogaden', 44.2, 7.2, ['ETH'], 77000, ''], ['Uebi Scebeli', 43.0, 5.5, ['ETH', 'SOM'], 70000, ''],
   // Gibuti e Somalia settentrionale
   ['Obock e Tagiura', 42.7, 11.7, ['DJI'], 25000, 'TAG'], ['Zeila', 43.3, 10.9, ['SOL', 'DJI', 'ETH'], 15000, 'EGY'], ['Berbera', 45.0, 10.1, ['SOL'], 20000, 'EGY'], ['Haud', 45.5, 8.8, ['SOL', 'ETH'], 56000, ''],
   ['Dulbahante', 47.4, 8.7, ['SOL', 'SOM'], 49000, ''], ['Uarsangheli', 47.6, 10.7, ['SOL', 'SOM'], 35000, 'WSG'], ['Migiurtinia', 49.6, 10.2, ['SOM'], 49000, 'MIG'], ['Nogal', 48.6, 8.3, ['SOM'], 49000, ''],
   // Somalia meridionale
   ['Obbia', 48.3, 5.5, ['SOM'], 49000, 'OBB'], ['Mudugh', 47.2, 6.2, ['SOM'], 49000, ''], ['Hiran', 45.4, 4.6, ['SOM', 'ETH'], 42000, ''], ['Benadir', 45.4, 2.3, ['SOM'], 15000, 'ZAN'],
-  ['Basso Scebeli', 44.3, 1.6, ['SOM'], 18000], ['Bai', 43.6, 2.8, ['SOM'], 35000, ''], ['Lugh', 42.3, 3.6, ['SOM', 'ETH', 'KEN'], 42000, ''], ['Oltregiuba', 41.8, -0.2, ['SOM', 'KEN'], 42000],
+  ['Basso Scebeli', 44.3, 1.6, ['SOM'], 18000], ['Bai', 43.6, 2.8, ['SOM'], 35000, ''], ['Lugh', 42.3, 3.6, ['SOM', 'ETH'], 42000, ''], ['Oltregiuba', 41.8, -0.2, ['SOM'], 42000],
+  // ===== Fase 2b: il resto del continente (1881) =====
+  // Mauritania: gli emirati mauri
+  ['Trarza', -15.3, 17.6, ['MRT'], 60000, ''], ['Brakna', -13.6, 17.3, ['MRT'], 55000, ''], ['Tagant', -11.4, 18.4, ['MRT'], 90000, ''], ['Adrar mauro', -12.8, 20.6, ['MRT'], 150000, ''],
+  ['Assaba', -11.6, 16.6, ['MRT'], 45000, ''], ['Guidimaka', -12.0, 15.3, ['MRT'], 25000, ''], ['Hodh', -8.0, 16.5, ['MRT', 'MLI'], 90000, ''],
+  // Senegambia
+  ['Walo', -15.9, 16.2, ['SEN'], 9000, 'FRA'], ['Dakar e Gorea', -17.33, 14.73, ['SEN'], 2000, 'FRA'], ['Cayor', -16.5, 15.3, ['SEN'], 14000, ''], ['Baol', -16.2, 14.7, ['SEN'], 11000, ''],
+  ['Sine-Saloum', -16.0, 13.9, ['SEN'], 16000, ''], ['Djolof', -15.2, 15.3, ['SEN'], 20000, ''], ['Futa Toro', -13.8, 16.0, ['SEN'], 22000, 'FTO'], ['Bundu', -12.5, 14.3, ['SEN'], 25000, ''],
+  ['Niani', -14.0, 13.6, ['SEN'], 25000, ''], ['Casamance', -15.6, 12.8, ['SEN'], 20000, ''], ['Gambia', -15.5, 13.45, ['GMB'], 12000, 'GBR'], ['Guinea portoghese', -15.3, 11.9, ['GNB'], 18000, 'POR'],
+  // Guinea, Sierra Leone, Liberia
+  ['Futa Gialon', -12.2, 11.2, ['GIN'], 30000, 'FJA'], ['Fiumi del Sud', -14.0, 10.3, ['GIN'], 20000, ''], ['Alta Guinea', -9.4, 10.6, ['GIN'], 35000, 'WAS'], ['Guinea forestale', -9.0, 8.5, ['GIN'], 30000, ''],
+  ['Freetown', -13.1, 8.4, ['SLE'], 5000, 'GBR'], ['Sherbro', -12.3, 7.5, ['SLE'], 15000, ''], ['Paese temne', -12.2, 9.0, ['SLE'], 22000, ''], ['Paese mende', -11.2, 8.0, ['SLE'], 22000, ''],
+  ['Monrovia', -10.6, 6.5, ['LBR'], 15000, 'LIB'], ['Costa del Grano', -8.8, 5.2, ['LBR'], 20000, 'LIB'], ['Liberia interna', -9.5, 7.3, ['LBR'], 40000, ''],
+  // Costa d'Avorio, Costa d'Oro, Togo, Dahomey
+  ['Grand-Bassam', -3.6, 5.6, ['CIV'], 18000, 'FRA'], ['Costa d\'Avorio occidentale', -6.6, 5.6, ['CIV'], 35000, ''], ['Paese baulé', -5.0, 7.3, ['CIV'], 40000, ''], ['Kong', -4.3, 9.1, ['CIV', 'BFA'], 35000, 'KNG'],
+  ['Kabadugu', -7.4, 9.5, ['CIV', 'GIN'], 30000, 'WAS'], ['Paese dan', -7.6, 7.4, ['CIV'], 30000, ''], ['Gyaman', -3.0, 8.0, ['CIV', 'GHA'], 25000, ''],
+  ['Costa d\'Oro', -1.3, 5.4, ['GHA'], 10000, 'GBR'], ['Accra', -0.2, 5.8, ['GHA'], 9000, 'GBR'], ['Ascianti', -1.7, 6.7, ['GHA'], 20000, 'ASA'], ['Brong', -1.8, 7.8, ['GHA'], 25000, ''],
+  ['Paese ewe', 0.6, 6.8, ['GHA', 'TGO'], 15000, ''], ['Gonja', -1.5, 9.0, ['GHA'], 30000, ''], ['Dagomba', -0.2, 9.6, ['GHA', 'TGO'], 25000, ''], ['Mamprusi', -0.6, 10.6, ['GHA', 'BFA'], 22000, ''],
+  ['Togo', 1.1, 7.6, ['TGO'], 18000, ''], ['Togo settentrionale', 1.0, 9.8, ['TGO'], 25000, ''],
+  ['Dahomey', 2.1, 7.1, ['BEN'], 15000, 'DAH'], ['Porto Novo', 2.6, 6.6, ['BEN'], 4000, 'FRA'], ['Borgu', 2.9, 10.2, ['BEN', 'NGA'], 35000, 'BRG'], ['Atakora', 1.5, 10.6, ['BEN', 'TGO'], 25000, ''],
+  // Alto Volta, Sudan occidentale, Niger
+  ['Uagadugu', -1.4, 12.3, ['BFA'], 22000, 'MOS'], ['Yatenga', -2.4, 13.6, ['BFA', 'MLI'], 20000, 'MOS'], ['Tenkodogo', -0.4, 11.7, ['BFA'], 15000, 'MOS'], ['Gurma', 0.6, 12.2, ['BFA', 'NER'], 35000, ''],
+  ['Liptako', -0.2, 14.1, ['BFA', 'NER'], 30000, ''], ['Bobo-Dioulasso', -4.3, 11.3, ['BFA', 'MLI'], 30000, ''], ['Paese lobi', -3.2, 10.2, ['BFA', 'CIV', 'GHA'], 25000, ''], ['Paese gurunsi', -2.3, 11.5, ['BFA'], 25000, ''],
+  ['Kaarta', -9.5, 14.8, ['MLI'], 40000, 'TUK'], ['Segù', -6.3, 13.4, ['MLI'], 35000, 'TUK'], ['Macina', -4.5, 14.3, ['MLI'], 35000, 'TUK'], ['Bambuk', -11.2, 13.4, ['MLI', 'SEN'], 30000, ''],
+  ['Alto Senegal', -10.9, 14.2, ['MLI'], 15000, 'FRA'], ['Beledugu', -7.8, 12.9, ['MLI'], 30000, ''], ['Uassulu', -8.2, 11.4, ['MLI', 'GIN'], 30000, 'WAS'], ['Kenedugu', -5.6, 11.4, ['MLI'], 25000, ''],
+  ['Timbuctù', -3.2, 16.5, ['MLI'], 60000, ''], ['Gao', -0.2, 16.0, ['MLI', 'NER'], 60000, ''], ['Hombori', -1.7, 15.2, ['MLI', 'BFA'], 40000, ''], ['Adrar degli Ifoghas', 1.4, 19.0, ['MLI'], 120000, ''],
+  ['Damagaram', 9.0, 13.9, ['NER'], 30000, 'DMG'], ['Maradi', 7.2, 13.5, ['NER'], 25000, ''], ['Gobir', 5.6, 13.9, ['NER'], 30000, ''], ['Adar', 5.3, 15.2, ['NER'], 40000, ''],
+  ['Zarma', 3.2, 13.2, ['NER'], 30000, ''], ['Say', 2.3, 13.2, ['NER'], 25000, ''], ['Aïr', 8.0, 17.5, ['NER'], 120000, ''], ['Manga', 11.5, 14.0, ['NER'], 50000, 'BOR'],
+  // Nigeria: gli emirati del califfato di Sokoto, il Bornu, i Yoruba, il delta
+  ['Sokoto', 5.3, 13.0, ['NGA'], 22000, 'SOK'], ['Gando', 4.3, 12.2, ['NGA'], 25000, 'SOK'], ['Katsina', 7.6, 12.6, ['NGA'], 18000, 'SOK'], ['Kano', 8.6, 11.9, ['NGA'], 16000, 'SOK'],
+  ['Katagum', 10.0, 12.3, ['NGA'], 22000, 'SOK'], ['Zaria', 7.8, 10.6, ['NGA'], 25000, 'SOK'], ['Bauchi', 9.8, 10.4, ['NGA'], 25000, 'SOK'], ['Gombe', 11.2, 10.3, ['NGA'], 20000, 'SOK'],
+  ['Adamaua', 12.4, 9.3, ['NGA', 'CMR'], 30000, 'SOK'], ['Muri', 10.8, 8.8, ['NGA'], 25000, 'SOK'], ['Nupe', 6.0, 9.2, ['NGA'], 22000, 'SOK'], ['Kontagora', 5.4, 10.4, ['NGA'], 25000, 'SOK'],
+  ['Ilorin', 4.6, 8.6, ['NGA'], 14000, 'SOK'], ['Nasarawa', 7.9, 8.8, ['NGA'], 20000, 'SOK'], ['Bornu', 13.2, 12.0, ['NGA', 'NER', 'TCD', 'CMR'], 30000, 'BOR'],
+  ['Lagos', 3.4, 6.5, ['NGA'], 2000, 'GBR'], ['Egba', 3.3, 7.1, ['NGA'], 11000, ''], ['Ijebu', 4.0, 6.8, ['NGA'], 8000, ''], ['Ibadan', 3.9, 7.5, ['NGA'], 14000, 'YOR'], ['Oyo', 3.9, 8.2, ['NGA'], 15000, 'YOR'],
+  ['Ekiti e Ilesha', 5.0, 7.6, ['NGA'], 14000, ''], ['Benin', 5.8, 6.4, ['NGA'], 16000, 'BNN'], ['Delta del Niger', 6.3, 5.0, ['NGA'], 14000, ''], ['Calabar', 8.3, 5.1, ['NGA'], 12000, ''],
+  ['Paese igbo', 7.3, 5.8, ['NGA'], 14000, 'ARO'], ['Igala', 6.9, 7.4, ['NGA'], 15000, ''], ['Paese tiv', 9.0, 7.3, ['NGA'], 20000, ''], ['Altopiano di Jos', 9.1, 9.5, ['NGA'], 25000, ''],
+  // Camerun, Ciad, Ubangi
+  ['Duala', 9.8, 4.2, ['CMR'], 15000, ''], ['Camerun meridionale', 11.5, 3.0, ['CMR'], 50000, ''], ['Grassfields', 10.4, 5.9, ['CMR'], 25000, ''], ['Ngaundere', 13.6, 7.2, ['CMR'], 40000, 'SOK'],
+  ['Garua', 13.4, 9.3, ['CMR'], 35000, 'SOK'], ['Mandara', 14.0, 10.9, ['CMR'], 20000, ''], ['Camerun orientale', 14.3, 4.3, ['CMR'], 60000, ''],
+  ['Kanem', 15.3, 14.4, ['TCD'], 50000, ''], ['Bagirmi', 16.6, 11.3, ['TCD'], 40000, ''], ['Uadai', 20.8, 13.6, ['TCD'], 40000, 'WAD'], ['Batha', 18.5, 13.3, ['TCD'], 50000, 'WAD'],
+  ['Salamat', 19.8, 10.9, ['TCD'], 45000, 'WAD'], ['Paese sara', 17.0, 8.8, ['TCD', 'CAF'], 40000, ''], ['Logone', 15.5, 9.8, ['TCD', 'CMR'], 30000, ''],
+  ['Borcu', 18.5, 18.0, ['TCD'], 150000, ''], ['Ennedi', 22.0, 17.0, ['TCD'], 120000, ''], ['Tibesti', 17.5, 21.0, ['TCD'], 150000, ''],
+  ['Dar Kuti', 20.6, 8.4, ['CAF'], 60000], ['Ubangi', 18.6, 4.4, ['CAF'], 50000, ''], ['Paese zande', 24.5, 5.5, ['CAF'], 60000, ''], ['Sanga', 16.0, 4.5, ['CAF'], 50000, ''],
+  ['Alto Kotto', 22.0, 6.5, ['CAF'], 60000, ''], ['Ouham', 17.4, 7.0, ['CAF'], 50000, ''],
+  // Gabon, Congo, Guinea spagnola
+  ['Gabon', 9.7, 0.3, ['GAB'], 15000, 'FRA'], ['Ogowè', 10.6, -1.0, ['GAB'], 40000, ''], ['Gabon interno', 12.5, 0.0, ['GAB'], 60000, ''], ['Fernando Po', 8.7, 3.5, ['GNQ'], 3000, 'SPA'], ['Rio Muni', 10.3, 1.6, ['GNQ'], 25000, ''],
+  ['Loango', 12.0, -4.3, ['COG'], 30000, ''], ['Niari', 13.5, -3.8, ['COG'], 30000, ''], ['Paese teke', 15.5, -3.0, ['COG'], 40000, 'TEK'], ['Congo settentrionale', 16.3, 1.0, ['COG'], 70000, ''],
+  ['Basso Congo', 14.3, -5.4, ['COD'], 20000, ''], ['Kwango', 17.6, -6.8, ['COD'], 50000, 'YAK'], ['Kwilu', 18.8, -4.8, ['COD'], 45000, ''], ['Paese kuba', 21.8, -5.0, ['COD'], 45000, 'KUB'],
+  ['Lulua', 22.5, -6.5, ['COD'], 40000, ''], ['Paese luba', 25.0, -7.8, ['COD'], 50000, 'LUB'], ['Lunda', 22.6, -8.7, ['COD'], 50000, 'LUN'], ['Katanga', 27.0, -10.5, ['COD'], 60000, 'YEK'],
+  ['Urua', 27.5, -7.0, ['COD'], 50000, ''], ['Manyema', 26.3, -4.0, ['COD'], 45000, 'UTE'], ['Kivu', 28.5, -2.0, ['COD'], 40000, ''], ['Ituri', 29.6, 1.6, ['COD'], 55000, ''],
+  ['Uele', 26.5, 3.6, ['COD'], 70000, ''], ['Mongala', 21.5, 2.5, ['COD'], 70000, ''], ['Equatore', 19.0, 0.0, ['COD'], 80000, ''], ['Lualaba', 25.0, 0.5, ['COD'], 80000, ''],
+  ['Sankuru', 23.6, -3.0, ['COD'], 60000, ''], ['Lago Leopoldo', 18.3, -2.5, ['COD'], 70000, ''],
+  // Angola, Africa del Sud-Ovest, Bechuana
+  ['Luanda', 13.5, -9.2, ['AGO'], 20000, 'POR'], ['Ambriz', 13.6, -7.8, ['AGO'], 20000, 'POR'], ['Regno del Congo', 14.6, -6.5, ['AGO'], 30000, 'KGO'], ['Cabinda', 12.3, -5.0, ['AGO'], 7000, ''],
+  ['Benguela', 13.7, -12.6, ['AGO'], 25000, 'POR'], ['Moçâmedes', 12.6, -15.2, ['AGO'], 35000, 'POR'], ['Pungo Andongo', 15.6, -9.8, ['AGO'], 25000, 'POR'], ['Cassange', 17.6, -9.3, ['AGO'], 40000, ''],
+  ['Bailundo', 15.8, -12.3, ['AGO'], 30000, 'OVI'], ['Bié', 17.2, -12.4, ['AGO'], 35000, 'OVI'], ['Huíla', 14.8, -15.0, ['AGO'], 40000, ''], ['Cuanhama', 15.8, -17.0, ['AGO'], 40000, ''],
+  ['Lunda angolana', 20.5, -8.8, ['AGO'], 60000, 'LUN'], ['Moxico', 21.0, -12.5, ['AGO'], 80000, ''], ['Cuando-Cubango', 19.5, -15.8, ['AGO'], 100000, ''],
+  ['Ovamboland', 16.0, -17.9, ['NAM'], 50000, ''], ['Kaokoveld', 13.5, -18.8, ['NAM'], 100000, ''], ['Damaraland', 16.8, -21.3, ['NAM'], 120000, ''], ['Walvis Bay', 14.55, -22.95, ['NAM'], 2000, 'GBR'],
+  ['Namaqualand', 17.5, -26.0, ['NAM'], 150000, ''], ['Gobabis', 19.5, -22.5, ['NAM'], 120000, ''], ['Okavango', 20.5, -18.2, ['NAM', 'BWA'], 80000, ''],
+  ['Bamangwato', 26.5, -22.3, ['BWA'], 80000, 'NGW'], ['Bakwena', 25.5, -24.5, ['BWA'], 60000, ''], ['Ngami', 22.7, -19.8, ['BWA'], 100000, ''], ['Kalahari', 22.3, -23.8, ['BWA'], 150000, ''],
+  // Sudafrica: la colonia del Capo, il Natal, le repubbliche boere
+  ['Capo', 18.9, -33.8, ['ZAF'], 12000, 'GBR'], ['Capo meridionale', 21.0, -34.0, ['ZAF'], 25000, 'GBR'], ['Karoo', 21.8, -32.3, ['ZAF'], 60000, 'GBR'], ['Namaqualand del Capo', 18.3, -29.8, ['ZAF'], 60000, 'GBR'],
+  ['Port Elizabeth', 25.0, -33.6, ['ZAF'], 20000, 'GBR'], ['Graaff-Reinet', 24.5, -32.0, ['ZAF'], 30000, 'GBR'], ['Kaffraria', 27.4, -32.6, ['ZAF'], 18000, 'GBR'], ['Transkei', 28.5, -31.7, ['ZAF'], 15000, 'GBR'],
+  ['Pondoland', 29.4, -31.3, ['ZAF'], 10000, ''], ['Griqualand Est', 29.4, -30.4, ['ZAF'], 12000, 'GBR'], ['Natal', 30.4, -29.4, ['ZAF'], 18000, 'GBR'], ['Zululand', 31.6, -28.2, ['ZAF'], 15000, 'ZUL'],
+  ['Griqualand Ovest', 24.0, -28.6, ['ZAF'], 40000, 'GBR'], ['Colesberg', 25.0, -30.6, ['ZAF'], 30000, 'GBR'], ['Bechuana meridionali', 23.8, -26.6, ['ZAF'], 60000, ''], ['Kalahari del Capo', 21.0, -28.0, ['ZAF'], 100000, ''],
+  ['Bloemfontein', 26.0, -29.0, ['ZAF'], 30000, 'OFS'], ['Kroonstad', 27.3, -27.6, ['ZAF'], 30000, 'OFS'], ['Harrismith', 28.9, -28.3, ['ZAF'], 15000, 'OFS'],
+  ['Pretoria', 28.2, -25.7, ['ZAF'], 25000, 'TRA'], ['Potchefstroom', 26.8, -26.6, ['ZAF'], 30000, 'TRA'], ['Lydenburg', 30.4, -25.0, ['ZAF'], 25000, 'TRA'], ['Zoutpansberg', 29.8, -23.2, ['ZAF'], 40000, 'TRA'],
+  ['Waterberg', 28.0, -24.0, ['ZAF'], 35000, 'TRA'], ['Wakkerstroom', 30.1, -27.2, ['ZAF'], 15000, 'TRA'],
+  ['Basutoland', 28.2, -29.5, ['LSO'], 30000, 'GBR'], ['Swaziland', 31.5, -26.5, ['SWZ'], 20000, 'SWZ'],
+  // Mozambico, Zambesi, Nyasa
+  ['Lourenço Marques', 32.6, -25.8, ['MOZ'], 15000, 'POR'], ['Gaza', 33.2, -23.6, ['MOZ'], 60000, ''], ['Inhambane', 34.9, -23.5, ['MOZ'], 25000, 'POR'], ['Sofala', 34.6, -19.9, ['MOZ'], 35000, 'POR'],
+  ['Manica', 33.3, -19.0, ['MOZ', 'ZWE'], 40000, ''], ['Zambesia', 36.5, -17.5, ['MOZ'], 40000, 'POR'], ['Tete', 33.0, -15.8, ['MOZ'], 50000, 'POR'], ['Mozambico', 40.0, -15.0, ['MOZ'], 25000, 'POR'],
+  ['Paese macua', 38.5, -14.5, ['MOZ'], 40000, ''], ['Niassa', 36.0, -13.0, ['MOZ'], 60000, ''], ['Capo Delgado', 39.8, -12.3, ['MOZ'], 30000],
+  ['Matabeleland', 28.5, -20.0, ['ZWE'], 60000, 'NDE'], ['Mashonaland', 31.0, -17.6, ['ZWE'], 60000, ''], ['Mashonaland meridionale', 31.0, -20.5, ['ZWE'], 50000, ''],
+  ['Barotseland', 23.3, -15.5, ['ZMB'], 70000, 'LOZ'], ['Kafue', 26.8, -15.5, ['ZMB'], 70000, ''], ['Paese tonga', 27.3, -17.0, ['ZMB'], 40000, ''], ['Paese bemba', 31.0, -10.5, ['ZMB'], 60000, ''],
+  ['Kazembe', 28.9, -9.8, ['ZMB'], 50000, ''], ['Luangwa', 32.0, -12.8, ['ZMB'], 60000, ''], ['Zambesi superiore', 25.0, -12.5, ['ZMB'], 70000, ''],
+  ['Nyasa settentrionale', 33.9, -10.8, ['MWI'], 30000, ''], ['Nyasa centrale', 33.8, -13.5, ['MWI'], 25000, ''], ['Shire', 35.0, -15.5, ['MWI'], 20000, ''],
+  // Africa orientale: la costa di Zanzibar, l'interno, i Grandi Laghi
+  ['Zanzibar', 39.4, -5.7, ['TZA'], 3000, 'ZAN'], ['Mrima', 38.9, -6.4, ['TZA'], 15000, 'ZAN'], ['Tanga', 38.9, -5.0, ['TZA'], 12000, 'ZAN'], ['Kilwa', 39.2, -9.0, ['TZA'], 20000, 'ZAN'],
+  ['Lindi', 39.5, -10.3, ['TZA'], 20000, 'ZAN'], ['Usambara', 38.3, -4.8, ['TZA'], 15000, ''], ['Kilimangiaro', 37.4, -3.4, ['TZA', 'KEN'], 20000, ''], ['Paese masai', 36.5, -4.5, ['TZA', 'KEN'], 60000, ''],
+  ['Usukuma', 33.3, -3.0, ['TZA'], 35000, ''], ['Unyamwezi', 32.8, -5.0, ['TZA'], 40000, 'MIR'], ['Ugogo', 35.8, -6.0, ['TZA'], 35000, ''], ['Uhehe', 35.5, -8.2, ['TZA'], 40000, ''],
+  ['Songea', 35.6, -10.7, ['TZA'], 40000, 'NGO'], ['Ufipa', 31.5, -8.0, ['TZA'], 40000, ''], ['Ujiji', 30.2, -4.8, ['TZA'], 35000, ''], ['Karagwe', 31.1, -1.8, ['TZA'], 25000, ''],
+  ['Usagara', 37.0, -6.8, ['TZA'], 25000, ''], ['Mahenge', 37.0, -9.5, ['TZA'], 40000, ''], ['Ruvuma', 38.0, -10.8, ['TZA'], 40000, ''],
+  ['Mombasa', 39.5, -3.9, ['KEN'], 12000, 'ZAN'], ['Malindi e Lamu', 40.3, -2.6, ['KEN'], 20000, 'ZAN'], ['Teita', 38.4, -3.4, ['KEN'], 25000, ''], ['Ukambani', 37.8, -1.5, ['KEN'], 25000, ''],
+  ['Paese kikuyu', 36.9, -0.6, ['KEN'], 15000, ''], ['Kavirondo', 34.7, 0.0, ['KEN'], 15000, ''], ['Samburu', 37.2, 1.5, ['KEN'], 70000, ''], ['Turkana', 35.5, 3.2, ['KEN'], 80000, ''],
+  ['Mandera', 40.5, 2.5, ['KEN'], 100000, ''], ['Tana', 39.5, -0.5, ['KEN'], 60000, ''],
+  ['Buganda', 32.2, 0.3, ['UGA'], 15000, 'BUG'], ['Bunyoro', 31.4, 1.6, ['UGA'], 18000, 'BUN'], ['Busoga', 33.4, 0.8, ['UGA'], 10000, ''], ['Ankole', 30.6, -0.6, ['UGA'], 15000, ''],
+  ['Toro', 30.3, 0.7, ['UGA'], 12000, ''], ['Acioli', 32.4, 3.0, ['UGA'], 30000, ''], ['Lango', 33.0, 2.0, ['UGA'], 20000, ''], ['Karamoja', 34.3, 2.8, ['UGA'], 25000, ''], ['Bugisu', 34.2, 1.2, ['UGA'], 12000, ''],
+  ['Ruanda', 29.9, -2.0, ['RWA'], 26000, 'RWA'], ['Burundi', 29.9, -3.4, ['BDI'], 28000, 'BDI'],
+  // Madagascar: il regno merina e i popoli indipendenti
+  ['Imerina', 47.5, -18.9, ['MDG'], 25000, 'MAD'], ['Betsileo', 47.0, -21.2, ['MDG'], 30000, 'MAD'], ['Costa orientale', 49.0, -18.0, ['MDG'], 35000, 'MAD'], ['Antsihanaka', 48.4, -17.2, ['MDG'], 25000, 'MAD'],
+  ['Boina', 46.5, -16.2, ['MDG'], 40000, 'MAD'], ['Antankara', 49.2, -13.2, ['MDG'], 25000, 'MAD'], ['Fort-Dauphin', 46.9, -24.6, ['MDG'], 20000, 'MAD'], ['Costa sud-orientale', 47.8, -22.5, ['MDG'], 25000, 'MAD'],
+  ['Menabe', 44.5, -19.8, ['MDG'], 50000, ''], ['Bara', 45.5, -22.6, ['MDG'], 50000, ''], ['Paese antandroy', 45.6, -24.8, ['MDG'], 35000, ''], ['Tuléar', 43.9, -23.0, ['MDG'], 35000, ''],
+  ['Sakalava settentrionali', 47.8, -14.7, ['MDG'], 30000, ''],
 ];

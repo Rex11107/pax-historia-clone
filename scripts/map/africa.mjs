@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -199,7 +199,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   log(`Africa: ${A.filter((a) => a.desert).length} atomi di deserto`);
 
   // regioni storiche della zona di dettaglio: il centro più vicino fra quelli ammessi per il paese moderno
-  const REG = AF_DETAIL_REGIONS.map(([name, lon, lat, mods, T, owner]) => ({ name, at: [lon, lat], mods, T, owner }));
+  const REG = AF_DETAIL_REGIONS.map(([name, lon, lat, mods, T, owner]) => ({ name, at: [lon, lat], mods, T: T * (AF_DETAIL_SCALE[mods[0]] ?? 1), owner }));
   const ENC = new Set(AF_ENCLAVES.map((e) => e.name));
   for (const a of A) {
     if (!a.detail) continue;
@@ -293,7 +293,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     if (!cl.has(id) || c.nb.size || c.A > c.T * 0.3) continue;
     const cc = cent(c);
     let best = null, bd = 420;
-    for (const [o, O] of cl) { if (o === id || O.owner !== c.owner || O.modern !== c.modern || O.cls !== c.cls) continue; const d = turf.distance(cc, cent(O)); if (d < bd) { bd = d; best = o; } }
+    for (const [o, O] of cl) { if (o === id || O.owner !== c.owner || O.modern !== c.modern || O.cls !== c.cls) continue; const d = turf.distance(cc, cent(O)) * (c.reg && O.reg === c.reg ? 0.3 : 1); if (d < bd) { bd = d; best = o; } }
     if (best !== null && cl.get(best).A >= c.A) merge(best, id);
     else if (best !== null) merge(id, best);
   }
