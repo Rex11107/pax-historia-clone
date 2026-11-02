@@ -31,7 +31,7 @@ import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORR
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
 import { buildAfrica } from './africa.mjs';
-import { AF_POP, AF_POP_ISO, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
+import { AF_POP, AF_POP_FIXED, AF_POP_ISO, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
 import { AFRICA_MODERN, atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -511,7 +511,7 @@ async function main() {
   // livelli da disegnare: Europa e Mediterraneo (il rettangolo) più Africa, Arabia e isole atlantiche
   // Persia orientale e Asia centrale: solo sulle terre incluse (niente fiumi dell'India o della Siberia nel vuoto)
   const EAST_MASK = path.join(TMP, 'draw_mask_east.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${BBOX[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS','IND','PAK','BGD','NPL','BTN','LKA','KAS'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${AF_CLIP[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
   const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], 62, BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], 40], EAST_MASK];
   const drawLayer = (out, src, pre, post) => {
     const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', typeof b === 'string' ? b : `bbox=${b}`, '-o', o); return o; });
@@ -1269,7 +1269,7 @@ async function main() {
   const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
   // frontiere provvisorie verso le terre non ancora in mappa (Siberia, Cina, Pakistan, India): non sono coste
   const FRONTIER = path.join(TMP, 'frontier.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['CHN','PAK','IND','NPL','MNG','KAS','PRK','BTN'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['CHN','MNG','PRK','MMR'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
   const frontierFc = readJSON(FRONTIER);
   const frontier = (frontierFc.features ?? frontierFc.geometries.map((g) => ({ type: 'Feature', geometry: g, properties: {} }))).filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) }));
   const onFrontier = (arc) => {
@@ -1362,6 +1362,7 @@ async function main() {
     // deserto: nomadi sparsi; oasi: stima del 1881
     if (p.info.desert) p.pop = Math.round(p.info.area * 0.02);
     if (p.info.oasis) p.pop = [...OASES, ...AF_OASES].find((o) => o.name === p.info.oasis)?.pop ?? p.pop;
+    if (p.info.af && AF_POP_FIXED[p.info.name]) p.pop = AF_POP_FIXED[p.info.name];
   }
 
   // stretti: coppie di province costiere non confinanti ma vicine (<STRAIT_KM)
@@ -1507,7 +1508,7 @@ async function main() {
       nb = [...(gInfo.gNb.get(gi) || new Map()).keys()].map((b) => gToK.get(b)).filter((x) => x !== undefined);
     }
     if (!pt) continue;
-    const info = gi >= 0 ? gInfo[gi] : { name: pr.name, owner: pr.owner, modern: pr.id, area: 1, region: pr.region || pr.name, prot: pr };
+    const info = gi >= 0 ? gInfo[gi] : { name: pr.name, owner: pr.owner, modern: pr.id, area: 1, region: pr.region || pr.name, prot: pr, af: !!pr.af };
     provinces.push({ k, info, pt, coast: pr.coast, terrain: pr.terrain, pop: pr.pop, synthetic: true });
     fnbr[k] = nb;
     for (const j of nb) if (!fnbr[j].includes(k)) fnbr[j].push(k);

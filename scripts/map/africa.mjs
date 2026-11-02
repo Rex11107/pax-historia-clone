@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_ARAL, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_ARAL, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -79,8 +79,38 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
   const hyb = ['af', 'eu', 'as', 'si'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
   ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
-  ms('-i', P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), P('basins.geojson'), 'combine-files', 'snap', 'snap-interval=0.0005', '-union', 'target=adm,hist,cuts,basins',
+  // India: distretti del censimento 2011 (DataMeet, CC BY 4.0) per gli stati principeschi e i possedimenti europei
+  const distSrc = path.join(RAW, 'datameet', 'dist.json');
+  const distCentroid = new Map();
+  const distFeats = [];
+  const distAt = (f) => {
+    if (!distFeats.length) return null;
+    let pt; try { pt = turf.pointOnFeature(f).geometry.coordinates; } catch { return null; }
+    for (const d of distFeats) if (pt[0] >= d.bb[0] && pt[0] <= d.bb[2] && pt[1] >= d.bb[1] && pt[1] <= d.bb[3] && turf.booleanPointInPolygon(pt, d.f)) return d.dist;
+    return null;
+  };
+  const layers = [P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), P('basins.geojson')];
+  if (fs.existsSync(distSrc)) {
+    const dj = readJSON(distSrc);
+    for (const f of dj.features) { f.properties = { dist: `${f.properties.ST_NM}|${f.properties.DISTRICT}` }; distCentroid.set(f.properties.dist, turf.centroid(f).geometry.coordinates); }
+    fs.writeFileSync(P('dist_src.geojson'), JSON.stringify(dj));
+    ms(P('dist_src.geojson'), '-simplify', 'interval=500', 'keep-shapes', '-o', P('dist.geojson'));
+    layers.push(P('dist.geojson'));
+    // i tagli dell'unione seguono i distretti, ma i suoi attributi a volte finiscono sul pezzo accanto: il distretto
+    // di ogni atomo si ricava da un suo punto interno
+    for (const f of readJSON(P('dist.geojson')).features) distFeats.push({ f, bb: turf.bbox(f), dist: f.properties.dist });
+  }
+  // l'unione con quattro livelli e l'aggancio dei vertici sbaglia gli attributi quando c'è anche quello dei distretti
+  // (mezzo Bangladesh etichettato come India): i distretti si uniscono dopo, solo sugli atomi indiani e senza aggancio
+  const base4 = layers.slice(0, 4);
+  ms('-i', ...base4, 'combine-files', 'snap', 'snap-interval=0.0005', '-union', `target=${base4.map((l) => path.basename(l, '.geojson')).join(',')}`,
     '-filter', 'pid != null', 'remove-empty', '-explode', '-o', P('u.geojson'));
+  if (layers.length > 4) {
+    ms(P('u.geojson'), '-filter', "modern == 'IND'", '-o', P('u_in.geojson'));
+    ms('-i', P('u_in.geojson'), P('dist.geojson'), 'combine-files', '-union', 'target=u_in,dist', '-filter', 'pid != null', 'remove-empty', '-explode', '-o', P('u_in_d.geojson'));
+    const rest = readJSON(P('u.geojson')).features.filter((f) => f.properties.modern !== 'IND');
+    fs.writeFileSync(P('u.geojson'), JSON.stringify(turf.featureCollection([...rest, ...readJSON(P('u_in_d.geojson')).features])));
+  }
 
   // 2. proprietari
   const u = readJSON(P('u.geojson')).features.filter((f) => f.geometry);
@@ -89,7 +119,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     const pr = f.properties;
     const hist = pr.hist ?? 'null';
     if (AF_HIST[hist] === undefined) throw new Error(`stato africano senza tag: ${hist}`);
-    return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, enclave: pr.enclave || null, valley: !!pr.valley, area: km2(f), c: turf.centroid(f).geometry.coordinates, detail: detailSet.has(pr.modern) };
+    return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, enclave: pr.enclave || null, valley: !!pr.valley, dist: pr.modern === 'IND' ? distAt(f) : null, area: km2(f), c: turf.centroid(f).geometry.coordinates, detail: detailSet.has(pr.modern) };
   }).filter((a) => a.area > 0.5)
     // la punta orientale dell'isola di Kolguev oltre il 50° meridiano: resta con il resto dell'isola, in Europa
     .filter((a) => !(a.c[0] < 50.6 && a.c[1] > 68.6 && a.c[1] < 69.6));
@@ -209,15 +239,23 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   // regioni storiche della zona di dettaglio: il centro più vicino fra quelli ammessi per il paese moderno
   const REG = AF_DETAIL_REGIONS.map(([name, lon, lat, mods, T, owner]) => ({ name, at: [lon, lat], mods, T: T * (AF_DETAIL_SCALE[mods[0]] ?? 1), owner }));
   const ENC = new Set(AF_ENCLAVES.map((e) => e.name));
+  const DIST_REG = new Map(Object.entries(AF_DISTRICT_REGIONS).flatMap(([r, ds]) => ds.map((d) => [d, r])));
+  const DIST_NAMES = new Set(Object.keys(AF_DISTRICT_REGIONS));
   for (const a of A) {
     if (!a.detail) continue;
     let best = null, bd = Infinity;
     if (a.enclave) best = REG.find((r) => r.name === a.enclave);
-    else for (const r of REG) { if (!r.mods.includes(a.modern) || ENC.has(r.name)) continue; const d = turf.distance(a.c, r.at); if (d < bd) { bd = d; best = r; } }
+    else if (a.dist && DIST_REG.has(a.dist)) best = REG.find((r) => r.name === DIST_REG.get(a.dist));
+    else {
+      // in India il distretto intero va alla regione più vicina (confini sui distretti, non linee di Voronoi)
+      const at = (a.dist && distCentroid.get(a.dist)) || a.c;
+      for (const r of REG) { if (!r.mods.includes(a.modern) || ENC.has(r.name) || DIST_NAMES.has(r.name)) continue; const d = turf.distance(at, r.at); if (d < bd) { bd = d; best = r; } }
+    }
     a.region = best;
     // il padrone della regione storica vale per tutte le sue terre abitate (niente schegge di confine del dataset)
     if (best && best.owner !== undefined && !a.desert && !a.oasis ) a.owner = best.owner;
   }
+  if (process.env.DEBUG_DIST) { const m = {}; for (const a of A) if (a.region && process.env.DEBUG_DIST.split(",").includes(a.region.name)) { const k = a.region.name + " <- " + (a.dist || "nodist:" + a.modern); m[k] = (m[k] || 0) + a.area; } log(JSON.stringify(m)); }
   // contiguità: ogni regione tiene il suo pezzo connesso più grande; gli altri pezzi (exclavi del "centro più
   // vicino") passano alla regione confinante con cui condividono più confine. Le isole restano dove sono.
   for (let it = 0; it < 8; it++) {
@@ -295,10 +333,12 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   // resti piccoli: stesso stato e stessa classe anche oltre il confine moderno, poi stesso stato
   pass(0.3, 1.8, (S, O) => S.owner === O.owner && S.cls === O.cls && S.cls !== 'D' && !S.cls.startsWith('O:') && (S.reg === O.reg || (!S.reg && !O.reg)), (S, O, l) => l / Math.sqrt(O.A));
   pass(0.12, 2.2, (S, O) => S.owner === O.owner && !S.cls.startsWith('O:') && !O.cls.startsWith('O:') && (S.cls === 'D') === (O.cls === 'D'), (S, O, l) => l / Math.sqrt(O.A));
+  // possedimenti minuscoli voluti (Mahé, Yanaon, Diu, Damão): regioni con dimensione fino a 500 km², restano a sé
+  const MICRO_T = 500;
   // isolette senza vicini: alla provincia più vicina dello stesso stato e paese moderno (Capo Verde, Seychelles, Comore)
   const cent = (c) => turf.centroid(turf.featureCollection(c.ids.map((i) => turf.point(A[i].c)))).geometry.coordinates;
   for (const [id, c] of [...cl]) {
-    if (!cl.has(id) || c.nb.size || c.A > c.T * 0.3) continue;
+    if (!cl.has(id) || c.nb.size || c.A > c.T * 0.3 || c.T <= MICRO_T) continue;
     const cc = cent(c);
     let best = null, bd = 420;
     for (const [o, O] of cl) { if (o === id || O.owner !== c.owner || O.modern !== c.modern || O.cls !== c.cls) continue; const d = turf.distance(cc, cent(O)) * (c.reg && O.reg === c.reg ? 0.3 : 1); if (d < bd) { bd = d; best = o; } }
@@ -309,6 +349,13 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   for (const [id, c] of [...cl]) {
     if (!cl.has(id) || c.A > Math.max(120, c.T * 0.04) || c.cls.startsWith('O:')) continue;
     const cc = cent(c);
+    // possedimento minuscolo: i suoi pezzi si riuniscono fra loro, mai con i vicini
+    if (c.T <= MICRO_T) {
+      let best = null, bd = 60;
+      for (const [o, O] of cl) { if (o === id || O.reg !== c.reg || O.A < c.A) continue; const d = turf.distance(cc, cent(O)); if (d < bd) { bd = d; best = o; } }
+      if (best !== null) merge(best, id);
+      continue;
+    }
     // stesso padrone; solo gli scogli davvero minuscoli possono finire a un altro
     let best = null, bd = 200;
     for (const [o, O] of cl) {

@@ -2,6 +2,7 @@ import { GameMap } from './map';
 import type { GameState, MapData, NationProfile, NationState, Tag, Unit, UnitType } from './types';
 import { NOBODY, type World } from './world';
 import { updateDeserts } from './desert';
+import { colonialWeight } from './ethnic';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
 
 export const ROMAN = (n: number) => {
@@ -29,7 +30,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   for (const tag of present) {
     const pr = profiles[tag];
     if (!pr) throw new Error(`profilo mancante per ${tag}`);
-    const pop = map.provinces.filter((p) => p.owner === tag).reduce((s, p) => s + p.pop, 0);
+    const pop = map.provinces.filter((p) => p.owner === tag).reduce((s, p) => s + p.pop * colonialWeight({ map } as World, tag, p.id), 0);
     nations[tag] = {
       tag,
       treasury: Math.round(pop / 1e6 * 4 * (0.5 + pr.finance / 100)),

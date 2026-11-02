@@ -2,9 +2,9 @@
 // Fase 1: province storiche e regni (divisione larga, guidata dagli stati d'epoca e dalla densità).
 
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
-export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'PAK', 'BRA',
+export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
   // fasi successive: India, Cina, Siberia
-  'IND', 'CHN', 'MNG', 'NPL', 'BGD', 'BTN', 'MMR', 'LKA', 'MDV', 'IOT', 'USA', 'KAS'];
+  'CHN', 'MNG', 'MMR', 'MDV', 'IOT', 'USA'];
 /**
  * Popolazione del 1881 per unità amministrativa moderna (stima dai censimenti del 1881-1897 dei governatorati).
  * Ha la precedenza sul bacino del paese moderno: in Siberia la popolazione di oggi (Vladivostok, Kuzbass) non dice
@@ -18,9 +18,265 @@ export const AF_POP_ISO = {
   'RU-KYA': 400_000, 'RU-KK': 80_000, 'RU-TY': 50_000, 'RU-IRK': 350_000, 'RU-BU': 200_000, 'RU-ZAB': 300_000,
   'RU-SA': 240_000, 'RU-AMU': 40_000, 'RU-YEV': 5_000, 'RU-KHA': 30_000, 'RU-PRI': 50_000, 'RU-SAK': 20_000,
   'RU-KAM': 10_000, 'RU-MAG': 10_000, 'RU-CHU': 12_000,
+  // India, Pakistan: stima del 1881 per stato moderno (censimento del 1881 per provincia e agenzia, ripartito)
+  'IN-UP': 42_000_000, 'IN-UT': 1_900_000, 'IN-BR': 23_000_000, 'IN-JH': 5_500_000, 'IN-OR': 5_500_000, 'IN-WB': 12_000_000,
+  'IN-AP': 12_000_000, 'IN-TN': 15_500_000, 'IN-KL': 5_500_000, 'IN-TG': 6_000_000, 'IN-KA': 10_400_000, 'IN-MH': 17_000_000,
+  'IN-GJ': 9_000_000, 'IN-RJ': 10_500_000, 'IN-MP': 14_500_000, 'IN-CT': 3_000_000, 'IN-PB': 6_500_000, 'IN-HR': 4_200_000,
+  'IN-HP': 1_600_000, 'IN-DL': 650_000, 'IN-JK': 1_500_000, 'IN-LA': 100_000, 'IN-AS': 2_600_000, 'IN-ML': 300_000, 'IN-NL': 150_000,
+  'IN-MZ': 80_000, 'IN-AR': 100_000, 'IN-MN': 220_000, 'IN-TR': 100_000, 'IN-SK': 30_000, 'IN-GA': 450_000, 'IN-PY': 280_000,
+  'IN-AN': 15_000, 'IN-LD': 14_000, 'IN-DH': 60_000, 'IN-CH': 20_000,
+  'PK-PB': 10_000_000, 'PK-SD': 2_550_000, 'PK-KP': 1_600_000, 'PK-TA': 900_000, 'PK-BA': 450_000, 'PK-JK': 500_000, 'PK-GB': 150_000, 'PK-IS': 50_000,
 };
+/** India: regioni assegnate per distretto (censimento 2011, DataMeet, CC BY 4.0): stati principeschi e possedimenti europei. */
+export const AF_DISTRICT_REGIONS = {
+ 'Calcutta': ['West Bengal|Kolkata', 'West Bengal|Haora'],
+ 'Bombay': ['Maharashtra|Mumbai', 'Maharashtra|Mumbai Suburban'],
+ 'Haiderabad': [
+  'Andhra Pradesh|Hyderabad',
+  'Andhra Pradesh|Rangareddy',
+  'Andhra Pradesh|Mahbubnagar'
+ ],
+ 'Warangal': [
+  'Andhra Pradesh|Warangal',
+  'Andhra Pradesh|Karimnagar',
+  'Andhra Pradesh|Khammam'
+ ],
+ 'Medak': [
+  'Andhra Pradesh|Medak',
+  'Andhra Pradesh|Nizamabad',
+  'Andhra Pradesh|Adilabad'
+ ],
+ 'Nalgonda': [
+  'Andhra Pradesh|Nalgonda'
+ ],
+ 'Aurangabad': [
+  'Maharashtra|Aurangabad',
+  'Maharashtra|Jalna'
+ ],
+ 'Nander': [
+  'Maharashtra|Nanded',
+  'Maharashtra|Parbhani',
+  'Maharashtra|Hingoli'
+ ],
+ 'Bhir': [
+  'Maharashtra|Bid',
+  'Maharashtra|Latur',
+  'Maharashtra|Osmanabad'
+ ],
+ 'Gulbarga': [
+  'Karnataka|Gulbarga',
+  'Karnataka|Yadgir',
+  'Karnataka|Bidar'
+ ],
+ 'Raichur': [
+  'Karnataka|Raichur',
+  'Karnataka|Koppal'
+ ],
+ 'Bangalore': [
+  'Karnataka|Bangalore',
+  'Karnataka|Bangalore Rural',
+  'Karnataka|Ramanagara'
+ ],
+ 'Mysore': [
+  'Karnataka|Mysore',
+  'Karnataka|Chamrajnagar',
+  'Karnataka|Mandya'
+ ],
+ 'Shimoga': [
+  'Karnataka|Shimoga',
+  'Karnataka|Chikmagalur'
+ ],
+ 'Chitaldrug': [
+  'Karnataka|Chitradurga',
+  'Karnataka|Davanagere'
+ ],
+ 'Tumkur': [
+  'Karnataka|Tumkur'
+ ],
+ 'Kolar': [
+  'Karnataka|Kolar',
+  'Karnataka|Chikkaballapura'
+ ],
+ 'Hassan': [
+  'Karnataka|Hassan'
+ ],
+ 'Trivandrum': [
+  'Kerala|Thiruvananthapuram',
+  'Tamil Nadu|Kanniyakumari'
+ ],
+ 'Quilon': [
+  'Kerala|Kollam',
+  'Kerala|Pathanamthitta'
+ ],
+ 'Kottayam': [
+  'Kerala|Kottayam',
+  'Kerala|Alappuzha',
+  'Kerala|Idukki'
+ ],
+ 'Cochin': [
+  'Kerala|Ernakulam',
+  'Kerala|Thrissur'
+ ],
+ 'Srinagar': [
+  'Jammu & Kashmir|Srinagar',
+  'Jammu & Kashmir|Badgam',
+  'Jammu & Kashmir|Ganderbal',
+  'Jammu & Kashmir|Pulwama',
+  'Jammu & Kashmir|Shupiyan',
+  'Jammu & Kashmir|Anantnag',
+  'Jammu & Kashmir|Kulgam',
+  'Jammu & Kashmir|Baramula',
+  'Jammu & Kashmir|Bandipore',
+  'Jammu & Kashmir|Kupwara'
+ ],
+ 'Jammu': [
+  'Jammu & Kashmir|Jammu',
+  'Jammu & Kashmir|Samba',
+  'Jammu & Kashmir|Kathua',
+  'Jammu & Kashmir|Udhampur',
+  'Jammu & Kashmir|Reasi',
+  'Jammu & Kashmir|Rajouri',
+  'Jammu & Kashmir|Punch'
+ ],
+ 'Kishtwar': [
+  'Jammu & Kashmir|Doda',
+  'Jammu & Kashmir|Kishtwar',
+  'Jammu & Kashmir|Ramban'
+ ],
+ 'Ladakh': [
+  'Jammu & Kashmir|Leh (ladakh)',
+  'Jammu & Kashmir|Kargil',
+  'Jammu & Kashmir|Data Not Available'
+ ],
+ 'Patiala': [
+  'Punjab|Patiala',
+  'Punjab|Sangrur',
+  'Punjab|Barnala',
+  'Punjab|Fatehgarh Sahib',
+  'Punjab|Bathinda',
+  'Punjab|Mansa'
+ ],
+ 'Jaipur': [
+  'Rajasthan|Jaipur',
+  'Rajasthan|Dausa',
+  'Rajasthan|Sikar',
+  'Rajasthan|Jhunjhunun',
+  'Rajasthan|Sawai Madhopur'
+ ],
+ 'Jodhpur': [
+  'Rajasthan|Jodhpur',
+  'Rajasthan|Nagaur',
+  'Rajasthan|Pali',
+  'Rajasthan|Barmer',
+  'Rajasthan|Jalor'
+ ],
+ 'Udaipur': [
+  'Rajasthan|Udaipur',
+  'Rajasthan|Rajsamand',
+  'Rajasthan|Chittaurgarh',
+  'Rajasthan|Bhilwara',
+  'Rajasthan|Pratapgarh'
+ ],
+ 'Bikaner': [
+  'Rajasthan|Bikaner',
+  'Rajasthan|Churu',
+  'Rajasthan|Ganganagar',
+  'Rajasthan|Hanumangarh'
+ ],
+ 'Gwalior': [
+  'Madhya Pradesh|Gwalior',
+  'Madhya Pradesh|Bhind',
+  'Madhya Pradesh|Morena',
+  'Madhya Pradesh|Sheopur',
+  'Madhya Pradesh|Shivpuri',
+  'Madhya Pradesh|Guna',
+  'Madhya Pradesh|Ashoknagar'
+ ],
+ 'Ujjain': [
+  'Madhya Pradesh|Ujjain',
+  'Madhya Pradesh|Shajapur',
+  'Madhya Pradesh|Mandsaur'
+ ],
+ 'Bhilsa': [
+  'Madhya Pradesh|Vidisha'
+ ],
+ 'Indore': [
+  'Madhya Pradesh|Indore',
+  'Madhya Pradesh|West Nimar'
+ ],
+ 'Bhopal': [
+  'Madhya Pradesh|Bhopal',
+  'Madhya Pradesh|Sehore',
+  'Madhya Pradesh|Raisen'
+ ],
+ 'Rewa': [
+  'Madhya Pradesh|Rewa',
+  'Madhya Pradesh|Satna',
+  'Madhya Pradesh|Sidhi',
+  'Madhya Pradesh|Singrauli',
+  'Madhya Pradesh|Shahdol',
+  'Madhya Pradesh|Umaria',
+  'Madhya Pradesh|Anuppur'
+ ],
+ 'Baroda': [
+  'Gujarat|Vadodara'
+ ],
+ 'Kadi': [
+  'Gujarat|Mahesana',
+  'Gujarat|Patan'
+ ],
+ 'Amreli': [
+  'Gujarat|Amreli'
+ ],
+ 'Navsari': [
+  'Gujarat|Navsari'
+ ],
+ 'Kutch': [
+  'Gujarat|Kachchh'
+ ],
+ 'Manipur': [
+  'Manipur|Bishnupur',
+  'Manipur|Chandel',
+  'Manipur|Churachandpur',
+  'Manipur|Imphal East',
+  'Manipur|Imphal West',
+  'Manipur|Senapati',
+  'Manipur|Tamenglong',
+  'Manipur|Thoubal',
+  'Manipur|Ukhrul'
+ ],
+ 'Tippera': [
+  'Tripura|Dhalai',
+  'Tripura|North Tripura',
+  'Tripura|South Tripura',
+  'Tripura|West Tripura'
+ ],
+ 'Sikkim': [
+  'Sikkim|East',
+  'Sikkim|North',
+  'Sikkim|South',
+  'Sikkim|West'
+ ],
+ 'Goa': [
+  'Goa|North Goa',
+  'Goa|South Goa'
+ ],
+
+
+ 'Nagar Aveli': [
+  'Dadara & Nagar Havelli|Dadra & Nagar Haveli'
+ ],
+ 'Pondichery': [
+  'Puducherry|Puducherry'
+ ],
+
+
+
+};
+/** Popolazione fissa delle grandi città-provincia (censimento del 1881), che i pesi delle località sottostimano. */
+export const AF_POP_FIXED = { Bombay: 773_000, Calcutta: 870_000 };
 /** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
-export const AF_FAR_KEEP = ['RUS'];
+export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
 export const AF_CLIP = [-30, -36, 180, 78];
 
@@ -46,7 +302,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': '', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': '', 'Imperial Japan': '',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Imperial Japan': '',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -115,6 +371,8 @@ export const AF_POP = {
   // Persia a est del 50° meridiano (l'ovest sta nel bacino della Persia), Afghanistan, Turkestan e steppa kazaka
   // Russia a est del 50° meridiano: Urali e Siberia (circa 5 milioni negli Urali, 4 in Siberia, poche centinaia di migliaia in Estremo Oriente)
   RUS: 9_000_000,
+  // subcontinente indiano (censimenti del 1881: 254 milioni con la Birmania; Ceylon 2,76)
+  IND: 200_000_000, PAK: 20_000_000, BGD: 27_000_000, NPL: 3_000_000, BTN: 200_000, LKA: 2_760_000, KAS: 5_000,
   IRN: 4_500_000, AFG: 3_000_000, TKM: 700_000, UZB: 3_200_000, KAZ: 2_400_000, KGZ: 650_000, TJK: 900_000, KAB: 5_000,
   ESP: 280_000, PRT: 395_000, FRA: 180_000,
 };
@@ -312,11 +570,11 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG', 'SAH', 'MAR',
   // fase 3: Arabia a sud del 27° parallelo, Persia a est del 50° meridiano, Afghanistan e Asia centrale
   'SAU', 'YEM', 'OMN', 'ARE', 'QAT', 'BHR', 'IRN', 'AFG', 'TKM', 'UZB', 'KAZ', 'KGZ', 'TJK', 'AZE', 'KAB',
-  // fase 4: la Russia a est del 50° meridiano
-  'RUS'];
+  // fase 4: la Russia a est del 50° meridiano, il subcontinente indiano
+  'RUS', 'IND', 'PAK', 'BGD', 'NPL', 'BTN', 'LKA', 'KAS'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
-export const AF_FINE = { ERI: 6000 };
+export const AF_FINE = { ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
 
 /** Deserto percorso dai nomadi, non intransitabile: il Sahara occidentale (spagnolo dal 1884) e la costa mauritana. */
 export const AF_STEPPE = { modern: ['SAH'], boxes: [[-17.5, 18.5, -15.2, 21.4], [-17.5, 20.7, -8.6, 27.7]] };
@@ -534,4 +792,340 @@ export const AF_DETAIL_REGIONS = [
   ['Sachalin', 142.5, 50.0, ['RUS'], 60000, 'RUS'], ['Curili', 148.0, 45.5, ['RUS'], 15000, ''],
   ['Iakutsk', 129.7, 62.0, ['RUS'], 300000, 'RUS'], ['Olekminsk', 120.4, 60.4, ['RUS'], 300000, 'RUS'], ['Viliuisk', 121.6, 64.0, ['RUS'], 450000, 'RUS'], ['Verchoiansk', 133.4, 67.5, ['RUS'], 600000, 'RUS'],
   ['Kolyma', 153.7, 67.5, ['RUS'], 400000, 'RUS'],
+
+  // ===== Fase 4b: India britannica e stati principeschi, Nepal, Bhutan, Ceylon, Belucistan =====
+  ['Calcutta', 88.36, 22.57, ['IND'], 2500, 'GBR'],
+  ['Burdwan', 87.86, 23.23, ['IND'], 22000, 'GBR'],
+  ['Krishnagar', 88.5, 23.4, ['IND'], 22000, 'GBR'],
+  ['Alipore', 88.6, 22.35, ['IND'], 15000, 'GBR'],
+  ['Hughli', 88.1, 22.9, ['IND'], 15000, 'GBR'],
+  ['Murshidabad', 88.27, 24.18, ['IND'], 22000, 'GBR'],
+  ['Darjeeling', 88.26, 27.04, ['IND'], 15000, 'GBR'],
+  ['Jalpaiguri', 88.7, 26.5, ['IND'], 22000, 'GBR'],
+  ['Midnapore', 87.32, 22.42, ['IND'], 22000, 'GBR'],
+  ['Bankura', 87.07, 23.23, ['IND'], 22000, 'GBR'],
+  ['Bhagalpur', 87.0, 25.25, ['IND'], 22000, 'GBR'],
+  ['Patna', 85.14, 25.6, ['IND'], 22000, 'GBR'],
+  ['Gaya', 85.0, 24.8, ['IND'], 22000, 'GBR'],
+  ['Muzaffarpur', 85.4, 26.1, ['IND'], 22000, 'GBR'],
+  ['Chapra', 84.7, 25.8, ['IND'], 22000, 'GBR'],
+  ['Darbhanga', 85.9, 26.15, ['IND'], 22000, 'GBR'],
+  ['Purnea', 87.47, 25.78, ['IND'], 22000, 'GBR'],
+  ['Arrah', 84.0, 25.0, ['IND'], 22000, 'GBR'],
+  ['Monghyr', 86.47, 25.37, ['IND'], 22000, 'GBR'],
+  ['Dumka', 87.25, 24.27, ['IND'], 22000, 'GBR'],
+  ['Ranchi', 85.33, 23.35, ['IND'], 22000, 'GBR'],
+  ['Hazaribagh', 85.36, 24.0, ['IND'], 22000, 'GBR'],
+  ['Daltonganj', 84.07, 24.03, ['IND'], 22000, 'GBR'],
+  ['Chaibasa', 85.8, 22.55, ['IND'], 22000, 'GBR'],
+  ['Purulia', 86.36, 23.33, ['IND'], 22000, 'GBR'],
+  ['Cuttack', 85.88, 20.46, ['IND'], 22000, 'GBR'],
+  ['Balasore', 86.93, 21.5, ['IND'], 22000, 'GBR'],
+  ['Puri', 85.83, 19.81, ['IND'], 22000, 'GBR'],
+  ['Mahal tributari', 85.0, 21.0, ['IND'], 40000, 'GBR'],
+  ['Meerut', 77.7, 28.98, ['IND'], 22000, 'GBR'],
+  ['Agra', 78.0, 27.18, ['IND'], 22000, 'GBR'],
+  ['Aligarh', 78.08, 27.88, ['IND'], 22000, 'GBR'],
+  ['Bareilly', 79.43, 28.36, ['IND'], 22000, 'GBR'],
+  ['Moradabad', 78.77, 28.83, ['IND'], 22000, 'GBR'],
+  ['Shahjahanpur', 79.9, 27.88, ['IND'], 22000, 'GBR'],
+  ['Allahabad', 81.85, 25.44, ['IND'], 22000, 'GBR'],
+  ['Benares', 82.99, 25.32, ['IND'], 22000, 'GBR'],
+  ['Gorakhpur', 83.37, 26.76, ['IND'], 22000, 'GBR'],
+  ['Azamgarh', 83.18, 26.07, ['IND'], 22000, 'GBR'],
+  ['Jhansi', 78.57, 25.45, ['IND'], 8000, 'GBR'],
+  ['Lucknow', 80.95, 26.85, ['IND'], 22000, 'GBR'],
+  ['Faizabad', 82.13, 26.77, ['IND'], 22000, 'GBR'],
+  ['Sitapur', 80.68, 27.57, ['IND'], 22000, 'GBR'],
+  ['Kheri', 80.78, 27.95, ['IND'], 22000, 'GBR'],
+  ['Bahraich', 81.6, 27.57, ['IND'], 22000, 'GBR'],
+  ['Rae Bareli', 81.24, 26.23, ['IND'], 22000, 'GBR'],
+  ['Cawnpore', 80.33, 26.45, ['IND'], 22000, 'GBR'],
+  ['Farrukhabad', 79.58, 27.38, ['IND'], 22000, 'GBR'],
+  ['Etawah', 79.02, 26.78, ['IND'], 22000, 'GBR'],
+  ['Almora', 79.66, 29.6, ['IND'], 25000, 'GBR'],
+  ['Garhwal', 78.78, 30.15, ['IND'], 25000, 'GBR'],
+  ['Dehra Dun', 78.03, 30.32, ['IND'], 15000, 'GBR'],
+  ['Saharanpur', 77.55, 29.97, ['IND'], 22000, 'GBR'],
+  ['Mirzapur', 82.57, 25.15, ['IND'], 22000, 'GBR'],
+  ['Banda', 80.33, 25.48, ['IND'], 22000, 'GBR'],
+  ['Delhi', 77.2, 28.65, ['IND'], 22000, 'GBR'],
+  ['Hisar', 75.72, 29.15, ['IND'], 22000, 'GBR'],
+  ['Rohtak', 76.6, 28.9, ['IND'], 22000, 'GBR'],
+  ['Ambala', 76.78, 30.38, ['IND'], 22000, 'GBR'],
+  ['Jullundur', 75.58, 31.33, ['IND'], 22000, 'GBR'],
+  ['Amritsar', 74.87, 31.63, ['IND'], 22000, 'GBR'],
+  ['Ferozepur', 74.6, 30.92, ['IND'], 9000, 'GBR'],
+  ['Ludhiana', 75.85, 30.9, ['IND'], 22000, 'GBR'],
+  ['Gurdaspur', 75.4, 32.04, ['IND'], 22000, 'GBR'],
+  ['Kangra', 76.27, 32.1, ['IND'], 25000, 'GBR'],
+  ['Simla', 77.17, 31.1, ['IND'], 25000, 'GBR'],
+  ['Bombay', 72.88, 19.07, ['IND'], 2500, 'GBR'],
+  ['Thana', 73.0, 19.4, ['IND'], 22000, 'GBR'],
+  ['Kolaba', 73.0, 18.5, ['IND'], 22000, 'GBR'],
+  ['Poona', 73.85, 18.52, ['IND'], 22000, 'GBR'],
+  ['Satara', 74.0, 17.68, ['IND'], 22000, 'GBR'],
+  ['Ahmednagar', 74.74, 19.09, ['IND'], 22000, 'GBR'],
+  ['Nasik', 73.79, 20.0, ['IND'], 22000, 'GBR'],
+  ['Dhulia', 74.77, 20.9, ['IND'], 22000, 'GBR'],
+  ['Jalgaon', 75.56, 21.0, ['IND'], 22000, 'GBR'],
+  ['Sholapur', 75.9, 17.67, ['IND'], 22000, 'GBR'],
+  ['Belgaum', 74.5, 15.85, ['IND'], 22000, 'GBR'],
+  ['Dharwar', 75.0, 15.46, ['IND'], 22000, 'GBR'],
+  ['Bijapur', 75.71, 16.83, ['IND'], 22000, 'GBR'],
+  ['Ratnagiri', 73.3, 16.99, ['IND'], 22000, 'GBR'],
+  ['Karwar', 74.13, 14.8, ['IND'], 22000, 'GBR'],
+  ['Surat', 72.83, 21.17, ['IND'], 22000, 'GBR'],
+  ['Broach', 72.98, 21.7, ['IND'], 22000, 'GBR'],
+  ['Kaira', 72.68, 22.75, ['IND'], 22000, 'GBR'],
+  ['Ahmedabad', 72.58, 23.03, ['IND'], 8000, 'GBR'],
+  ['Godhra', 73.6, 22.78, ['IND'], 22000, 'GBR'],
+  ['Kathiawar', 70.8, 22.3, ['IND'], 22000, 'GBR'],
+  ['Palanpur', 72.43, 24.17, ['IND'], 22000, 'GBR'],
+  ['Idar', 73.0, 23.6, ['IND'], 22000, 'GBR'],
+  ['Rajpipla', 73.5, 21.8, ['IND'], 22000, 'GBR'],
+  ['Nagpur', 79.09, 21.15, ['IND'], 22000, 'GBR'],
+  ['Wardha', 78.6, 20.74, ['IND'], 22000, 'GBR'],
+  ['Chanda', 79.3, 19.95, ['IND'], 22000, 'GBR'],
+  ['Bhandara', 79.65, 21.17, ['IND'], 22000, 'GBR'],
+  ['Balaghat', 80.18, 21.8, ['IND'], 22000, 'GBR'],
+  ['Jubbulpore', 79.95, 23.17, ['IND'], 22000, 'GBR'],
+  ['Saugor', 78.73, 23.84, ['IND'], 22000, 'GBR'],
+  ['Damoh', 79.44, 23.84, ['IND'], 22000, 'GBR'],
+  ['Seoni', 79.55, 22.09, ['IND'], 22000, 'GBR'],
+  ['Mandla', 80.37, 22.6, ['IND'], 22000, 'GBR'],
+  ['Chhindwara', 78.94, 22.06, ['IND'], 22000, 'GBR'],
+  ['Betul', 77.9, 21.9, ['IND'], 22000, 'GBR'],
+  ['Hoshangabad', 77.72, 22.75, ['IND'], 22000, 'GBR'],
+  ['Narsinghpur', 79.19, 22.95, ['IND'], 22000, 'GBR'],
+  ['Khandwa', 76.35, 21.82, ['IND'], 22000, 'GBR'],
+  ['Raipur', 81.63, 21.25, ['IND'], 22000, 'GBR'],
+  ['Bilaspur', 82.15, 22.08, ['IND'], 22000, 'GBR'],
+  ['Sambalpur', 83.97, 21.47, ['IND'], 22000, 'GBR'],
+  ['Bastar', 81.95, 19.1, ['IND'], 35000, 'GBR'],
+  ['Sarguja', 83.2, 23.1, ['IND'], 30000, 'GBR'],
+  ['Amraoti', 77.75, 20.93, ['IND'], 22000, 'GBR'],
+  ['Akola', 77.0, 20.7, ['IND'], 22000, 'GBR'],
+  ['Buldana', 76.18, 20.53, ['IND'], 22000, 'GBR'],
+  ['Yavatmal', 78.12, 20.39, ['IND'], 22000, 'GBR'],
+  ['Madras', 80.27, 13.08, ['IND'], 8000, 'GBR'],
+  ['Chingleput', 79.98, 12.69, ['IND'], 22000, 'GBR'],
+  ['Vellore', 79.13, 12.92, ['IND'], 22000, 'GBR'],
+  ['Cuddalore', 79.75, 11.75, ['IND'], 22000, 'GBR'],
+  ['Tanjore', 79.14, 10.79, ['IND'], 22000, 'GBR'],
+  ['Trichinopoly', 78.69, 10.8, ['IND'], 22000, 'GBR'],
+  ['Madura', 78.12, 9.93, ['IND'], 22000, 'GBR'],
+  ['Ramnad', 78.83, 9.37, ['IND'], 22000, 'GBR'],
+  ['Tinnevelly', 77.7, 8.73, ['IND'], 22000, 'GBR'],
+  ['Coimbatore', 76.96, 11.0, ['IND'], 22000, 'GBR'],
+  ['Ootacamund', 76.7, 11.4, ['IND'], 10000, 'GBR'],
+  ['Salem', 78.15, 11.66, ['IND'], 22000, 'GBR'],
+  ['Krishnagiri', 78.2, 12.5, ['IND'], 22000, 'GBR'],
+  ['Calicut', 75.78, 11.25, ['IND'], 22000, 'GBR'],
+  ['Palghat', 76.65, 10.78, ['IND'], 22000, 'GBR'],
+  ['Cannanore', 75.37, 11.87, ['IND'], 22000, 'GBR'],
+  ['Mangalore', 74.86, 12.87, ['IND'], 22000, 'GBR'],
+  ['Bellary', 76.92, 15.14, ['IND'], 22000, 'GBR'],
+  ['Anantapur', 77.6, 14.68, ['IND'], 22000, 'GBR'],
+  ['Cuddapah', 78.82, 14.47, ['IND'], 22000, 'GBR'],
+  ['Kurnool', 78.05, 15.83, ['IND'], 22000, 'GBR'],
+  ['Nellore', 79.98, 14.44, ['IND'], 22000, 'GBR'],
+  ['Ongole', 80.05, 15.5, ['IND'], 22000, 'GBR'],
+  ['Masulipatam', 81.13, 16.17, ['IND'], 22000, 'GBR'],
+  ['Guntur', 80.45, 16.3, ['IND'], 22000, 'GBR'],
+  ['Rajahmundry', 81.78, 17.0, ['IND'], 22000, 'GBR'],
+  ['Cocanada', 82.23, 16.95, ['IND'], 22000, 'GBR'],
+  ['Vizagapatam', 83.3, 17.7, ['IND'], 22000, 'GBR'],
+  ['Vizianagram', 83.4, 18.1, ['IND'], 22000, 'GBR'],
+  ['Jeypore', 82.57, 18.85, ['IND'], 30000, 'GBR'],
+  ['Ganjam', 84.8, 19.31, ['IND'], 22000, 'GBR'],
+  ['Chicacole', 83.9, 18.3, ['IND'], 22000, 'GBR'],
+  ['Mercara', 75.74, 12.42, ['IND'], 10000, 'GBR'],
+  ['Pudukkottai', 78.82, 10.38, ['IND'], 10000, 'GBR'],
+  ['Kolhapur', 74.24, 16.7, ['IND'], 22000, 'GBR'],
+  ['Alwar', 76.6, 27.55, ['IND'], 22000, 'GBR'],
+  ['Bharatpur', 77.49, 27.22, ['IND'], 22000, 'GBR'],
+  ['Karauli', 77.02, 26.5, ['IND'], 22000, 'GBR'],
+  ['Tonk', 75.79, 26.17, ['IND'], 22000, 'GBR'],
+  ['Kota', 75.83, 25.18, ['IND'], 22000, 'GBR'],
+  ['Bundi', 75.64, 25.44, ['IND'], 22000, 'GBR'],
+  ['Jhalawar', 76.16, 24.6, ['IND'], 22000, 'GBR'],
+  ['Ajmer', 74.64, 26.45, ['IND'], 22000, 'GBR'],
+  ['Jaisalmer', 70.91, 26.92, ['IND'], 45000, 'GBR'],
+  ['Sirohi', 72.86, 24.89, ['IND'], 22000, 'GBR'],
+  ['Dungarpur', 73.71, 23.84, ['IND'], 22000, 'GBR'],
+  ['Banswara', 74.44, 23.55, ['IND'], 22000, 'GBR'],
+  ['Datia', 78.46, 25.67, ['IND'], 22000, 'GBR'],
+  ['Orchha', 78.84, 24.74, ['IND'], 22000, 'GBR'],
+  ['Panna', 80.19, 24.72, ['IND'], 22000, 'GBR'],
+  ['Chhatarpur', 79.59, 24.92, ['IND'], 22000, 'GBR'],
+  ['Dhar', 75.3, 22.6, ['IND'], 22000, 'GBR'],
+  ['Jhabua', 74.59, 22.77, ['IND'], 22000, 'GBR'],
+  ['Ratlam', 75.04, 23.33, ['IND'], 22000, 'GBR'],
+  ['Rajgarh', 76.73, 24.0, ['IND'], 22000, 'GBR'],
+  ['Dewas', 76.05, 22.97, ['IND'], 22000, 'GBR'],
+  ['Barwani', 74.9, 22.03, ['IND'], 22000, 'GBR'],
+  ['Nimach', 74.87, 24.47, ['IND'], 22000, 'GBR'],
+  ['Cooch Behar', 89.45, 26.32, ['IND'], 22000, 'GBR'],
+  ['Jind', 76.31, 29.32, ['IND'], 22000, 'GBR'],
+  ['Faridkot', 74.76, 30.67, ['IND'], 22000, 'GBR'],
+  ['Chamba', 76.13, 32.55, ['IND'], 25000, 'GBR'],
+  ['Mandi', 76.93, 31.7, ['IND'], 20000, 'GBR'],
+  ['Gauhati', 91.75, 26.18, ['IND'], 22000, 'GBR'],
+  ['Goalpara', 90.62, 26.17, ['IND'], 22000, 'GBR'],
+  ['Tezpur', 92.8, 26.63, ['IND'], 22000, 'GBR'],
+  ['Nowgong', 92.68, 26.35, ['IND'], 22000, 'GBR'],
+  ['Sibsagar', 94.64, 26.98, ['IND'], 22000, 'GBR'],
+  ['Dibrugarh', 94.9, 27.48, ['IND'], 22000, 'GBR'],
+  ['Silchar', 92.8, 24.83, ['IND'], 22000, 'GBR'],
+  ['Shillong', 91.88, 25.57, ['IND'], 22000, 'GBR'],
+  ['Tura', 90.22, 25.51, ['IND'], 22000, 'GBR'],
+  ['Kohima', 94.1, 25.67, ['IND'], 22000, 'GBR'],
+  ['Andamane', 92.73, 11.67, ['IND'], 10000, 'GBR'],
+  ['Terre degli Abor', 94.9, 28.3, ['IND'], 60000, ''],
+  ['Terre degli Aka e dei Dafla', 93.0, 27.6, ['IND'], 40000, ''],
+  ['Terre dei Mishmi', 96.2, 28.0, ['IND'], 40000, ''],
+  ['Naga liberi', 94.9, 26.4, ['IND'], 15000, ''],
+  ['Lushai', 92.8, 23.3, ['IND'], 25000, ''],
+  ['Haiderabad', 78.47, 17.38, ['IND'], 25000, 'HYD'],
+  ['Warangal', 79.59, 17.97, ['IND'], 25000, 'HYD'],
+  ['Aurangabad', 75.34, 19.88, ['IND'], 25000, 'HYD'],
+  ['Nander', 77.3, 19.15, ['IND'], 25000, 'HYD'],
+  ['Gulbarga', 76.83, 17.33, ['IND'], 25000, 'HYD'],
+  ['Raichur', 77.35, 16.2, ['IND'], 25000, 'HYD'],
+  ['Bhir', 75.76, 18.99, ['IND'], 25000, 'HYD'],
+  ['Medak', 78.26, 18.03, ['IND'], 25000, 'HYD'],
+  ['Nalgonda', 79.27, 17.05, ['IND'], 25000, 'HYD'],
+  ['Bangalore', 77.59, 12.97, ['IND'], 15000, 'MYS'],
+  ['Mysore', 76.64, 12.3, ['IND'], 15000, 'MYS'],
+  ['Shimoga', 75.57, 13.93, ['IND'], 15000, 'MYS'],
+  ['Chitaldrug', 76.4, 14.23, ['IND'], 15000, 'MYS'],
+  ['Tumkur', 77.1, 13.34, ['IND'], 15000, 'MYS'],
+  ['Kolar', 78.13, 13.14, ['IND'], 15000, 'MYS'],
+  ['Hassan', 76.1, 13.0, ['IND'], 15000, 'MYS'],
+  ['Trivandrum', 76.95, 8.52, ['IND'], 12000, 'TVC'],
+  ['Quilon', 76.6, 8.88, ['IND'], 12000, 'TVC'],
+  ['Kottayam', 76.52, 9.59, ['IND'], 12000, 'TVC'],
+  ['Cochin', 76.26, 9.97, ['IND'], 15000, 'COC'],
+  ['Srinagar', 74.8, 34.08, ['IND'], 20000, 'KSH'],
+  ['Jammu', 74.86, 32.73, ['IND'], 20000, 'KSH'],
+  ['Ladakh', 77.58, 34.16, ['IND'], 120000, 'KSH'],
+  ['Kishtwar', 75.77, 33.31, ['IND'], 20000, 'KSH'],
+  ['Patiala', 76.39, 30.34, ['IND'], 20000, 'PAT'],
+  ['Jaipur', 75.79, 26.91, ['IND'], 20000, 'JAI'],
+  ['Jodhpur', 73.02, 26.29, ['IND'], 30000, 'JOD'],
+  ['Udaipur', 73.71, 24.58, ['IND'], 25000, 'UDA'],
+  ['Bikaner', 73.31, 28.02, ['IND'], 35000, 'BIK'],
+  ['Gwalior', 78.18, 26.22, ['IND'], 22000, 'GWA'],
+  ['Ujjain', 75.78, 23.18, ['IND'], 22000, 'GWA'],
+  ['Bhilsa', 77.81, 23.52, ['IND'], 22000, 'GWA'],
+  ['Indore', 75.86, 22.72, ['IND'], 20000, 'HOL'],
+  ['Bhopal', 77.41, 23.26, ['IND'], 20000, 'BHO'],
+  ['Rewa', 81.3, 24.53, ['IND'], 25000, 'REW'],
+  ['Baroda', 73.18, 22.3, ['IND'], 20000, 'BRD'],
+  ['Kadi', 72.38, 23.6, ['IND'], 20000, 'BRD'],
+  ['Amreli', 71.22, 21.6, ['IND'], 20000, 'BRD'],
+  ['Navsari', 72.92, 20.95, ['IND'], 20000, 'BRD'],
+  ['Kutch', 69.67, 23.25, ['IND'], 25000, 'KUT'],
+  ['Manipur', 93.94, 24.81, ['IND'], 25000, 'MNP'],
+  ['Tippera', 91.28, 23.84, ['IND'], 15000, 'TRP'],
+  ['Sikkim', 88.61, 27.33, ['IND'], 10000, 'SIK'],
+  ['Goa', 73.95, 15.4, ['IND'], 8000, 'POR'],
+  ['Nagar Aveli', 73.0, 20.27, ['IND'], 300, 'POR'],
+  ['Pondichery', 79.8, 11.93, ['IND'], 300, 'FRA'],
+  ['Karachi', 67.0, 24.86, ['PAK'], 10000, 'GBR'],
+  ['Haiderabad del Sind', 68.37, 25.39, ['PAK'], 10000, 'GBR'],
+  ['Shikarpur', 68.64, 27.96, ['PAK'], 10000, 'GBR'],
+  ['Umarkot', 69.73, 25.36, ['PAK'], 30000, 'GBR'],
+  ['Jacobabad', 68.43, 28.28, ['PAK'], 10000, 'GBR'],
+  ['Khairpur', 68.76, 27.4, ['PAK'], 25000, 'KHP'],
+  ['Nawabshah', 68.4, 26.25, ['PAK'], 10000, 'GBR'],
+  ['Sanghar', 69.1, 26.2, ['PAK'], 25000, 'GBR'],
+  ['Larkana', 68.2, 27.55, ['PAK'], 10000, 'GBR'],
+  ['Lahore', 74.33, 31.55, ['PAK'], 10000, 'GBR'],
+  ['Rawalpindi', 73.05, 33.6, ['PAK'], 10000, 'GBR'],
+  ['Jhelum', 73.73, 32.93, ['PAK'], 10000, 'GBR'],
+  ['Gujrat', 74.08, 32.57, ['PAK'], 10000, 'GBR'],
+  ['Sialkot', 74.53, 32.5, ['PAK'], 10000, 'GBR'],
+  ['Gujranwala', 74.19, 32.16, ['PAK'], 10000, 'GBR'],
+  ['Shahpur', 72.67, 32.08, ['PAK'], 10000, 'GBR'],
+  ['Multan', 71.47, 30.2, ['PAK'], 10000, 'GBR'],
+  ['Jhang', 72.32, 31.27, ['PAK'], 10000, 'GBR'],
+  ['Montgomery', 73.1, 30.67, ['PAK'], 10000, 'GBR'],
+  ['Muzaffargarh', 71.2, 30.07, ['PAK'], 10000, 'GBR'],
+  ['Dera Ghazi Khan', 70.63, 30.05, ['PAK'], 25000, 'GBR'],
+  ['Dera Ismail Khan', 70.9, 31.83, ['PAK'], 25000, 'GBR'],
+  ['Bannu', 70.6, 32.98, ['PAK'], 10000, 'GBR'],
+  ['Kohat', 71.44, 33.58, ['PAK'], 10000, 'GBR'],
+  ['Peshawar', 71.57, 34.01, ['PAK'], 10000, 'GBR'],
+  ['Abbottabad', 73.21, 34.15, ['PAK'], 10000, 'GBR'],
+  ['Mianwali', 71.55, 32.58, ['PAK'], 10000, 'GBR'],
+  ['Bahawalpur', 71.68, 29.4, ['PAK'], 25000, 'BAH'],
+  ['Khanpur', 70.65, 28.65, ['PAK'], 25000, 'BAH'],
+  ['Bahawalnagar', 73.25, 29.99, ['PAK'], 25000, 'BAH'],
+  ['Kalat', 66.6, 29.03, ['PAK'], 50000, 'KAL'],
+  ['Kharan', 65.4, 28.58, ['PAK'], 60000, 'KAL'],
+  ['Kech', 63.05, 26.0, ['PAK'], 60000, 'KAL'],
+  ['Las Bela', 66.5, 26.0, ['PAK'], 40000, 'KAL'],
+  ['Khuzdar', 66.6, 27.8, ['PAK'], 50000, 'KAL'],
+  ['Kachhi', 67.6, 28.9, ['PAK'], 30000, 'KAL'],
+  ['Quetta', 67.0, 30.18, ['PAK'], 25000, 'GBR'],
+  ['Pishin', 67.0, 30.58, ['PAK'], 25000, 'GBR'],
+  ['Sibi', 67.87, 29.55, ['PAK'], 25000, 'GBR'],
+  ['Paese dei Marri e dei Bugti', 69.0, 29.3, ['PAK'], 40000, ''],
+  ['Zhob', 69.4, 31.3, ['PAK'], 50000, ''],
+  ['Chagai', 64.0, 29.3, ['PAK'], 80000, ''],
+  ['Waziristan', 69.9, 32.6, ['PAK'], 20000, ''],
+  ['Tirah e Khyber', 71.0, 33.8, ['PAK'], 15000, ''],
+  ['Kurram', 70.1, 33.8, ['PAK'], 10000, ''],
+  ['Dir e Bajaur', 71.6, 34.9, ['PAK'], 15000, ''],
+  ['Swat', 72.4, 35.2, ['PAK'], 15000, ''],
+  ['Chitral', 71.8, 35.85, ['PAK'], 25000, ''],
+  ['Muzaffarabad', 73.47, 34.37, ['PAK', 'KAS'], 15000, 'KSH'],
+  ['Mirpur', 73.75, 33.15, ['PAK', 'KAS'], 12000, 'KSH'],
+  ['Gilgit', 74.3, 35.92, ['PAK', 'KAS'], 30000, 'KSH'],
+  ['Baltistan', 75.63, 35.3, ['PAK', 'KAS'], 35000, 'KSH'],
+  ['Hunza e Nagar', 74.66, 36.32, ['PAK', 'KAS'], 15000, ''],
+  ['Dacca', 90.4, 23.7, ['BGD'], 9000, 'GBR'],
+  ['Chittagong', 91.8, 22.35, ['BGD'], 9000, 'GBR'],
+  ['Colline di Chittagong', 92.2, 22.6, ['BGD'], 9000, 'GBR'],
+  ['Mymensingh', 90.4, 24.75, ['BGD'], 9000, 'GBR'],
+  ['Rangpur', 89.25, 25.75, ['BGD'], 9000, 'GBR'],
+  ['Rajshahi', 88.6, 24.37, ['BGD'], 9000, 'GBR'],
+  ['Bogra', 89.37, 24.85, ['BGD'], 9000, 'GBR'],
+  ['Pabna', 89.23, 24.0, ['BGD'], 9000, 'GBR'],
+  ['Barisal', 90.35, 22.7, ['BGD'], 9000, 'GBR'],
+  ['Jessore', 89.2, 23.17, ['BGD'], 9000, 'GBR'],
+  ['Khulna', 89.55, 22.82, ['BGD'], 9000, 'GBR'],
+  ['Faridpur', 89.83, 23.6, ['BGD'], 9000, 'GBR'],
+  ['Noakhali', 91.1, 22.87, ['BGD'], 9000, 'GBR'],
+  ['Comilla', 91.18, 23.46, ['BGD'], 9000, 'GBR'],
+  ['Sylhet', 91.87, 24.9, ['BGD'], 9000, 'GBR'],
+  ['Kathmandu', 85.32, 27.7, ['NPL'], 10000, 'NEP'],
+  ['Pokhara', 83.98, 28.21, ['NPL'], 12000, 'NEP'],
+  ['Palpa', 83.55, 27.87, ['NPL'], 12000, 'NEP'],
+  ['Doti', 80.9, 29.3, ['NPL'], 15000, 'NEP'],
+  ['Jumla', 82.18, 29.27, ['NPL'], 20000, 'NEP'],
+  ['Morang', 87.27, 26.45, ['NPL'], 6000, 'NEP'],
+  ['Janakpur', 85.92, 26.73, ['NPL'], 10000, 'NEP'],
+  ['Dhankuta', 87.34, 26.98, ['NPL'], 12000, 'NEP'],
+  ['Gorkha', 84.63, 28.0, ['NPL'], 12000, 'NEP'],
+  ['Naya Muluk', 81.6, 28.05, ['NPL'], 12000, 'NEP'],
+  ['Salyan', 82.3, 28.3, ['NPL'], 12000, 'NEP'],
+  ['Birganj', 84.88, 27.0, ['NPL'], 10000, 'NEP'],
+  ['Punakha', 89.86, 27.6, ['BTN'], 10000, 'BHU'],
+  ['Paro', 89.4, 27.43, ['BTN'], 8000, 'BHU'],
+  ['Tongsa', 90.5, 27.5, ['BTN'], 10000, 'BHU'],
+  ['Tashigang', 91.55, 27.33, ['BTN'], 10000, 'BHU'],
+  ['Colombo', 79.86, 6.93, ['LKA'], 6000, 'GBR'],
+  ['Kandy', 80.63, 7.29, ['LKA'], 6000, 'GBR'],
+  ['Jaffna', 80.0, 9.66, ['LKA'], 6000, 'GBR'],
+  ['Trincomalee', 81.23, 8.58, ['LKA'], 8000, 'GBR'],
+  ['Batticaloa', 81.7, 7.73, ['LKA'], 8000, 'GBR'],
+  ['Galle', 80.22, 6.05, ['LKA'], 6000, 'GBR'],
+  ['Anuradhapura', 80.4, 8.31, ['LKA'], 10000, 'GBR'],
+  ['Badulla', 81.05, 6.99, ['LKA'], 8000, 'GBR'],
+  ['Kurunegala', 80.36, 7.49, ['LKA'], 6000, 'GBR'],
+  ['Ratnapura', 80.4, 6.68, ['LKA'], 6000, 'GBR'],
+  ['Mannar', 80.0, 8.98, ['LKA'], 6000, 'GBR'],
 ];

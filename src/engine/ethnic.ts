@@ -47,6 +47,16 @@ export function foreignness(tag: Tag, eth: string): number {
   return 1;
 }
 
+/**
+ * Peso della popolazione di una provincia per le casse e le leve del padrone: fuori dall'Europa (dopo `euCount`)
+ * una provincia abitata in maggioranza da un popolo estraneo è una colonia, con un bilancio e un esercito suoi
+ * (l'India britannica aveva entrate proprie): conta per l'8%.
+ */
+export function colonialWeight(w: World, tag: Tag, p: number): number {
+  if (p < (w.map.data.euCount ?? Infinity)) return 1;
+  return foreignness(tag, majority(w, p)) >= 1 ? 0.08 : 1;
+}
+
 /** Quota della popolazione di uno Stato che appartiene ad altri popoli (0-1). */
 export function foreignShare(w: World, tag: Tag): number {
   const s = w.state;

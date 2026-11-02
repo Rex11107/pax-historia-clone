@@ -356,6 +356,13 @@ export const PROTECTED = [
   { id: 'FIU', name: 'Fiume', owner: 'AUH', match: { reg: 'H:Fiume', bbox: [14.25, 45.25, 14.6, 45.45] }, pop: 21000, terrain: 'hills', coast: true },
   // Helgoland non è in Natural Earth: un punto, collegato via mare alla costa tedesca più vicina
   { id: 'HEL', name: 'Helgoland', owner: 'GBR', point: [7.886, 54.182], pop: 2000, terrain: 'plain', coast: true },
+  // banchi europei in India (troppo piccoli per la semplificazione): punti collegati via mare, fuori dal rettangolo europeo
+  { id: 'XMAHE', name: 'Mahé', owner: 'FRA', point: [75.53, 11.7], pop: 8000, terrain: 'plain', coast: true, af: true },
+  { id: 'XKARI', name: 'Karikal', owner: 'FRA', point: [79.83, 10.92], pop: 93000, terrain: 'plain', coast: true, af: true },
+  { id: 'XYANA', name: 'Yanaon', owner: 'FRA', point: [82.21, 16.73], pop: 5000, terrain: 'plain', coast: true, af: true },
+  { id: 'XCHAN', name: 'Chandernagor', owner: 'FRA', point: [88.37, 22.87], pop: 25000, terrain: 'plain', coast: true, af: true },
+  { id: 'XDIU', name: 'Diu', owner: 'POR', point: [70.98, 20.71], pop: 12000, terrain: 'plain', coast: true, af: true },
+  { id: 'XDAMA', name: 'Damão', owner: 'POR', point: [72.85, 20.41], pop: 40000, terrain: 'plain', coast: true, af: true },
 ];
 
 // Aree a maggioranza polacca della Prussia (approssimate sul confine del 1920-22, che le seguiva da vicino):

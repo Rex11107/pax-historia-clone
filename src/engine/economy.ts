@@ -1,5 +1,5 @@
 import { reparationsOf } from './peace';
-import { ethnicStability } from './ethnic';
+import { colonialWeight, ethnicStability } from './ethnic';
 import { researchCost, techEffects } from './research';
 import { ROMAN, UNIT_LABEL } from './setup';
 import type { Budget, GameEvent, Policies, Tag, UnitType } from './types';
@@ -48,7 +48,7 @@ export function budget(w: World, tag: Tag): Budget {
   const pol = n.policies;
   let popEff = 0, popOwn = 0, provinces = 0, occupied = 0;
   for (let i = 0; i < s.owner.length; i++) {
-    const p = w.map.provinces[i].pop;
+    const p = w.map.provinces[i].pop * (s.owner[i] === tag ? colonialWeight(w, tag, i) : 1);
     if (s.owner[i] === tag) { popOwn += p; if (!w.map.provinces[i].impassable) provinces++; }
     if (s.owner[i] === tag && s.controller[i] === tag) popEff += p;
     else if (s.controller[i] === tag) { popEff += p * 0.25; occupied++; } // requisizioni nelle province occupate
@@ -107,7 +107,7 @@ export function weeklyEconomy(w: World, sink: GameEvent[]) {
     }
     n.manpower += b.manpowerGain;
     n.rail = clamp(n.rail + POLICY_EFFECTS.infrastructure[n.policies.infrastructure].rail + govEffects(w, tag).rail, 0, 100);
-    const pop = w.map.provinces.reduce((x, p, i) => x + (s.owner[i] === tag ? p.pop : 0), 0) || 1;
+    const pop = w.map.provinces.reduce((x, p, i) => x + (s.owner[i] === tag ? p.pop * colonialWeight(w, tag, i) : 0), 0) || 1;
     if (warsOf(s, tag).length) n.warExhaustion = clamp(n.warExhaustion + (n.turnLosses / (pop / 1e6)) * 0.01 * POLICY_EFFECTS.press[n.policies.press].exhaustion * govEffects(w, tag).exhaustion * (1.3 - pr.cohesion / 100) + 0.3, 0, 100);
     else n.warExhaustion = clamp(n.warExhaustion - 1.5, 0, 100);
     n.turnLosses = 0;

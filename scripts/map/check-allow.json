@@ -1,18 +1,30 @@
 {
-  "_": "eccezioni accettate dal controllo della mappa (nome della provincia): solo dove la storia o la geografia le giustificano",
-  "deserto": [
-    "Deserto nubiano",
-    "Deserto orientale",
-    "Registan"
-  ],
-  "dentro": [
-    "Altopiano di Jos",
-    "Najran",
-    "Bayuda",
-    "Rub al-Khali (nord)"
-  ],
-  "forma": [
-    "Chikishlyar"
-  ],
-  "_frontiere": "Registan confina col Pakistan, non ancora in mappa: la sua \"costa\" è una frontiera provvisoria"
+ "_": "eccezioni accettate dal controllo della mappa (nome della provincia): solo dove la storia o la geografia le giustificano",
+ "deserto": [
+  "Deserto nubiano",
+  "Deserto orientale",
+  "Registan"
+ ],
+ "dentro": [
+  "Altopiano di Jos",
+  "Najran",
+  "Bayuda",
+  "Rub al-Khali (nord)",
+  "Patiala",
+  "Baroda",
+  "Bhopal",
+  "Indore",
+  "Rewa (nord)",
+  "Rewa (sud)",
+  "Mysore",
+  "Cochin",
+  "Kadi",
+  "Navsari",
+  "Datia"
+ ],
+ "forma": [
+  "Chikishlyar",
+  "Amreli"
+ ],
+ "_frontiere": "Registan confina col Pakistan, non ancora in mappa: la sua \"costa\" è una frontiera provvisoria"
 }
