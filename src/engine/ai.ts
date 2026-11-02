@@ -1,3 +1,4 @@
+import { geoKm } from './map';
 import { concludePeace, engineTerms } from './peace';
 import { aiFinances, recruit } from './economy';
 import { moveCost, planPath } from './orders';
@@ -135,9 +136,9 @@ export function aiColonize(w: World, sink: GameEvent[]) {
     const unit = [...pool].sort((a, b) => a.strength - b.strength)[0];
     if (!unit) continue;
     // candidati: i migliori per valore e vicinanza in linea d'aria, poi il percorso vero per i primi
-    const [ux, uy] = w.map.provinces[unit.location].c;
+    const here = w.map.provinces[unit.location].lonlat;
     const cand = [...near.map((p) => ({ p, k: 1 })), ...far.map((p) => ({ p, k: 0.6 }))]
-      .map(({ p, k }) => { const [x, y] = w.map.provinces[p].c; return { p, sc: (colonyValue(w, p) * k) / (1 + Math.hypot(x - ux, y - uy) / 800) }; })
+      .map(({ p, k }) => { return { p, sc: (colonyValue(w, p) * k) / (1 + geoKm(w.map.provinces[p].lonlat, here) / 800) }; })
       .sort((a, b) => b.sc - a.sc).slice(0, 4);
     let best: { p: number; v: number } | null = null;
     for (const c of cand) {

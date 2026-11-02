@@ -24,10 +24,7 @@ export class GameMap {
     this.data = data;
     this.provinces = data.provinces;
     this.adj = this.provinces.map(() => []);
-    const dist = (a: number, b: number) => {
-      const [x1, y1] = this.provinces[a].c, [x2, y2] = this.provinces[b].c;
-      return Math.hypot(x1 - x2, y1 - y2);
-    };
+    const dist = (a: number, b: number) => geoKm(this.provinces[a].lonlat, this.provinces[b].lonlat);
     for (const p of this.provinces) for (const q of p.n) if (q !== p.id) this.adj[p.id].push({ to: q, km: dist(p.id, q), strait: false });
     for (const [a, b, name] of data.rivers ?? []) { this.riverEdges.set(`${a},${b}`, name); this.riverEdges.set(`${b},${a}`, name); }
     for (const [a, b] of data.straits) {
@@ -204,12 +201,17 @@ class MinHeap {
 }
 
 /** Decodifica gli archi delta-codificati in coordinate km (y verso il basso per il disegno). */
-/** Proiezione azimutale equivalente di Lambert (centro 52N 10E), km: la stessa di scripts/map. */
+/** Proiezione cilindrica di Miller, km all'equatore: la stessa di scripts/map. */
 export function laea(lon: number, lat: number): [number, number] {
-  const LAT0 = (52 * Math.PI) / 180, LON0 = (10 * Math.PI) / 180, R = 6371;
-  const l = (lon * Math.PI) / 180, p = (lat * Math.PI) / 180;
-  const k = Math.sqrt(2 / (1 + Math.sin(LAT0) * Math.sin(p) + Math.cos(LAT0) * Math.cos(p) * Math.cos(l - LON0)));
-  return [R * k * Math.cos(p) * Math.sin(l - LON0), R * k * (Math.cos(LAT0) * Math.sin(p) - Math.sin(LAT0) * Math.cos(p) * Math.cos(l - LON0))];
+  const R = 6371, p = (Math.max(-85, Math.min(85, lat)) * Math.PI) / 180;
+  return [(R * lon * Math.PI) / 180, R * 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * p))];
+}
+
+/** Distanza vera (km, sulla sfera) fra due punti lon/lat: la proiezione della mappa ingrandisce le alte latitudini. */
+export function geoKm(a: [number, number], b: [number, number]): number {
+  const r = Math.PI / 180, dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * r) * Math.cos(b[1] * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
 export function decodeArcs(data: MapData): Float32Array[] {

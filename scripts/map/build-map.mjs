@@ -435,12 +435,13 @@ function basinSplit(f, rivers, places) {
   return fillGaps(f, parts);
 }
 
-// Proiezione azimutale equivalente di Lambert (centro 52N 10E), in km.
-const LAT0 = (52 * Math.PI) / 180, LON0 = (10 * Math.PI) / 180, R = 6371;
-function laea([lon, lat]) {
-  const l = (lon * Math.PI) / 180, p = (lat * Math.PI) / 180;
-  const k = Math.sqrt(2 / (1 + Math.sin(LAT0) * Math.sin(p) + Math.cos(LAT0) * Math.cos(p) * Math.cos(l - LON0)));
-  return [R * k * Math.cos(p) * Math.sin(l - LON0), R * k * (Math.cos(LAT0) * Math.sin(p) - Math.sin(LAT0) * Math.cos(p) * Math.cos(l - LON0))];
+// Proiezione cilindrica di Miller (come le mappe di HOI4): nord sempre in alto, meridiani dritti, la mappa si
+// potrà avvolgere da est a ovest. Unità: km all'equatore (x = R·λ); le distanze vere si calcolano su lon/lat.
+const R = 6371;
+function laea([lon, lat]) { return proj([lon, lat]); }
+function proj([lon, lat]) {
+  const p = (Math.max(-85, Math.min(85, lat)) * Math.PI) / 180;
+  return [(R * lon * Math.PI) / 180, R * 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * p))];
 }
 
 function terrainOf(lon, lat, owner) {

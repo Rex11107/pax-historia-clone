@@ -1,3 +1,4 @@
+import { geoKm } from './map';
 // Interessi coloniali: le potenze (e il giocatore) seguono idee storiche invece di prendere la terra di nessuno
 // più comoda. Ogni interesse ha un peso, una finestra d'epoca, prerequisiti leggeri e più vie per ottenerlo:
 // occupazione, trattato di protettorato, acquisto, subentro con assenso, guerra.
@@ -575,9 +576,9 @@ export function sendExpedition(w: World, tag: Tag, targets: number[], sink: Game
   const pool = abroad.length ? abroad : idle.filter((u) => u.location !== cap || idle.length === 1);
   const unit = [...pool].sort((a, b) => a.strength - b.strength)[0];
   if (!unit) return false;
-  const [ux, uy] = w.map.provinces[unit.location].c;
+  const here = w.map.provinces[unit.location].lonlat;
   const val = (p: number) => { const pv = w.map.provinces[p]; return (1 + Math.log10(pv.pop + 1000) / 2) * (pv.coast ? 1.3 : 1); };
-  const cand = targets.map((p) => { const [x, y] = w.map.provinces[p].c; return { p, sc: val(p) / (1 + Math.hypot(x - ux, y - uy) / 800) }; }).sort((a, b) => b.sc - a.sc).slice(0, 4);
+  const cand = targets.map((p) => { return { p, sc: val(p) / (1 + geoKm(w.map.provinces[p].lonlat, here) / 800) }; }).sort((a, b) => b.sc - a.sc).slice(0, 4);
   let best: { p: number; v: number } | null = null;
   for (const c of cand) {
     const plan = planPath(w, unit, c.p, false);

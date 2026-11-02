@@ -1,3 +1,4 @@
+import { geoKm } from './map';
 import { techEffects } from './research';
 import { level } from './construction';
 import { TERRAIN_SPEED, type Edge } from './map';
@@ -31,8 +32,7 @@ export function canEmbark(w: World, tag: string, p: number): boolean {
 
 /** Giorni di navigazione fra due province costiere (rotta stimata: 1,25 volte la linea d'aria). */
 export function seaDays(w: World, a: number, b: number): number {
-  const [x1, y1] = w.map.provinces[a].c, [x2, y2] = w.map.provinces[b].c;
-  return Math.round((SEA_BASE + (Math.hypot(x2 - x1, y2 - y1) * 1.25) / SEA_KMDAY) * 10) / 10;
+  return Math.round((SEA_BASE + (geoKm(w.map.provinces[a].lonlat, w.map.provinces[b].lonlat) * 1.25) / SEA_KMDAY) * 10) / 10;
 }
 
 /** Percorso con un tratto per mare: terra fino al porto, nave, terra fino all'obiettivo. */

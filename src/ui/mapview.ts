@@ -17,6 +17,12 @@ const WAX = '#8e2430';
 const SAND = '#ead9ad';      // deserto di nessuno
 const NOMANS = '#d5d0c3';    // oasi e terre di nessuno transitabili (grigio chiaro, distinto dall'Egitto)
 
+/** Nomi dei grandi possedimenti staccati dalla madrepatria, per paese moderno prevalente. */
+const COLONY_LABEL: Record<string, string> = {
+  'GBR:IND': 'India britannica', 'GBR:PAK': 'India britannica', 'GBR:BGD': 'India britannica', 'GBR:ZAF': 'Colonia del Capo', 'GBR:LKA': 'Ceylon',
+  'FRA:DZA': 'Algeria', 'FRA:SEN': 'Senegal', 'POR:AGO': 'Angola', 'POR:MOZ': 'Mozambico', 'EGY:SDN': 'Sudan egiziano', 'TUR:LBY': 'Tripolitania', 'TUR:SAU': 'Hegiaz', 'TUR:YEM': 'Yemen',
+};
+
 interface Camera { x: number; y: number; scale: number } // centro in km, pixel per km
 
 export interface MapCallbacks {
@@ -121,7 +127,7 @@ export class MapView {
     new ResizeObserver(() => this.resize()).observe(canvas);
     this.resize();
     const cap = world.map.provinces[world.state.nations[world.state.player].capital].c;
-    this.cam = { x: cap[0], y: -cap[1] - 150, scale: 0.42 };
+    this.cam = { x: cap[0], y: -cap[1] - 220, scale: 0.28 }; // scala Miller: alle latitudini europee 1,5 unità per km
     const loop = () => { if (this.dirty) { this.dirty = false; this.draw(); } requestAnimationFrame(loop); };
     requestAnimationFrame(loop);
   }
@@ -187,10 +193,11 @@ export class MapView {
       if (s.owner[a] !== s.owner[b]) this.national.addPath(this.arcPaths[i]);
       else this.internal.addPath(this.arcPaths[i]);
     });
-    // etichette: nel blocco di territorio contiguo più popoloso di ogni nazione (la Francia in Francia, non in Algeria)
+    // etichette: nel blocco di territorio contiguo che contiene la capitale (la Francia in Francia, non in Algeria);
+    // i grandi possedimenti staccati (l'India britannica) hanno un'etichetta propria
     const map = this.world.map;
     const seen = new Uint8Array(map.size);
-    const best = new Map<string, { ids: number[]; pop: number; area: number }>();
+    const blocks = new Map<string, { ids: number[]; pop: number; area: number }[]>();
     for (const p of map.provinces) {
       if (seen[p.id]) continue;
       const o = s.owner[p.id];
@@ -199,19 +206,31 @@ export class MapView {
       for (let i = 0; i < ids.length; i++) for (const e of map.adj[ids[i]]) if (!e.strait && !seen[e.to] && s.owner[e.to] === o) { seen[e.to] = 1; ids.push(e.to); }
       const pop = ids.reduce((x, id) => x + map.provinces[id].pop, 0);
       const area = ids.reduce((x, id) => x + map.provinces[id].area, 0);
-      const cur = best.get(o);
-      if (!cur || pop > cur.pop) best.set(o, { ids, pop, area });
+      if (!blocks.has(o)) blocks.set(o, []);
+      blocks.get(o)!.push({ ids, pop, area });
     }
     this.labels = [];
-    for (const [tag, e] of best) {
-      if (tag === 'NUL' || tag === '' || !this.world.profiles[tag]) continue;
+    const place = (text: string, e: { ids: number[]; area: number }, italic = false) => {
       let x = 0, y = 0, wsum = 0;
       for (const id of e.ids) { const pr = map.provinces[id]; const wgt = pr.area + pr.pop / 400; x += pr.c[0] * wgt; y += -pr.c[1] * wgt; wsum += wgt; }
       const cx = x / wsum, cy = y / wsum;
       let anchor = e.ids[0], bd = Infinity;
       for (const id of e.ids) { const c = map.provinces[id].c; const d = (c[0] - cx) ** 2 + (-c[1] - cy) ** 2; if (d < bd) { bd = d; anchor = id; } }
       const c = map.provinces[anchor].c;
-      this.labels.push({ text: this.world.profiles[tag].short[1], x: c[0], y: -c[1], size: Math.min(90, Math.max(14, Math.sqrt(e.area) / 9)) });
+      this.labels.push({ text, x: c[0], y: -c[1], size: Math.min(90, Math.max(14, Math.sqrt(e.area) / 9)) * (italic ? 0.8 : 1) });
+    };
+    for (const [tag, list] of blocks) {
+      if (tag === 'NUL' || tag === '' || !this.world.profiles[tag]) continue;
+      const cap = s.nations[tag]?.capital;
+      const main = list.find((e) => cap !== undefined && e.ids.includes(cap)) ?? list.reduce((a, b) => (b.pop > a.pop ? b : a));
+      place(this.world.profiles[tag].short[1], main);
+      for (const e of list) {
+        if (e === main || e.area < 250000) continue;
+        const modern = new Map<string, number>();
+        for (const id of e.ids) { const m = map.provinces[id].modern; modern.set(m, (modern.get(m) ?? 0) + map.provinces[id].area); }
+        const top = [...modern.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+        place(COLONY_LABEL[`${tag}:${top}`] ?? this.world.profiles[tag].short[1], e, true);
+      }
     }
     this.dirty = true;
   }
@@ -352,7 +371,7 @@ export class MapView {
       }
       ctx.fillStyle = SEA;
       ctx.fill(this.phys.lakes);
-      const maxRank = this.showRelief ? (k > 0.6 ? 12 : 10) : k > 0.9 ? 9 : k > 0.45 ? 7 : 5;
+      const maxRank = this.showRelief ? (k > 0.4 ? 12 : 10) : k > 0.6 ? 9 : k > 0.3 ? 7 : 5;
       ctx.strokeStyle = this.showRelief ? 'rgba(52,104,150,0.9)' : 'rgba(70,112,150,0.55)';
       ctx.lineJoin = 'round'; ctx.lineCap = 'round';
       for (const r of this.phys.rivers) {
@@ -374,7 +393,7 @@ export class MapView {
       }
     }
 
-    if (k > 0.35) {
+    if (k > 0.233) {
       ctx.strokeStyle = 'rgba(31,42,51,0.28)';
       ctx.lineWidth = 0.7 / k;
       ctx.stroke(this.internal);
@@ -443,7 +462,7 @@ export class MapView {
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    if (k < 0.55) {
+    if (k < 0.367) {
       for (const l of this.labels) {
         const size = l.size * k * 2.2;
         if (size < 9) continue;
@@ -456,7 +475,7 @@ export class MapView {
       (ctx as CanvasRenderingContext2D & { letterSpacing?: string }).letterSpacing = '0px';
     } else {
       // nomi delle province: da lontano solo le più estese, senza sovrapposizioni
-      const minArea = k < 0.95 ? 4500 : k < 1.3 ? 2000 : 0;
+      const minArea = k < 0.633 ? 4500 : k < 0.867 ? 2000 : 0;
       const taken: number[][] = [];
       ctx.font = '500 11px "Alegreya Sans", sans-serif';
       ctx.fillStyle = 'rgba(31,42,51,0.75)';
@@ -472,7 +491,7 @@ export class MapView {
     }
 
     // nomi delle regioni del deserto, da lontano e a media distanza
-    if (k < 1.1) {
+    if (k < 0.733) {
       for (const l of this.regionLabels) {
         const size = Math.min(34, l.size * k * 2.2);
         if (size < 10) continue;
@@ -487,12 +506,12 @@ export class MapView {
     // risorse: icone al centro delle province (le strategiche anche da lontano)
     if (this.showResources) {
       const res = this.world.map.resources;
-      const size = k < 0.35 ? 11 : k < 0.8 ? 14 : 17;
+      const size = k < 0.233 ? 11 : k < 0.533 ? 14 : 17;
       ctx.font = `${size}px sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       for (const p of this.world.map.provinces) {
         if (!visible(p.id) || !res[p.id].length) continue;
-        const list = k < 0.55 ? res[p.id].filter((r) => RESOURCES[r].strategic) : res[p.id];
+        const list = k < 0.367 ? res[p.id].filter((r) => RESOURCES[r].strategic) : res[p.id];
         if (!list.length) continue;
         const [x, y] = this.worldToScreen(p.c[0], -p.c[1]);
         const txt = list.map((r) => RESOURCES[r].icon).join('');
@@ -505,7 +524,7 @@ export class MapView {
     }
     if (this.showWorks) {
       const b = buildings(this.world);
-      const size = k < 0.35 ? 11 : k < 0.8 ? 13 : 16;
+      const size = k < 0.233 ? 11 : k < 0.533 ? 13 : 16;
       ctx.font = `${size}px sans-serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       const major: BuildingId[] = ['fortezza', 'porto', 'siderurgia', 'bellica', 'tessile', 'chimica', 'miniera', 'agricoltura'];
@@ -515,8 +534,8 @@ export class MapView {
         const rail = l.ferrovia ?? 0;
         const [x, y0] = this.worldToScreen(p.c[0], -p.c[1]);
         const y = y0 + (this.showResources ? size + 10 : 0); // sotto le icone delle risorse
-        if (rail && k >= 0.3) { ctx.fillStyle = ['', 'rgba(60,60,60,0.35)', 'rgba(60,60,60,0.6)', 'rgba(30,30,30,0.85)'][rail]; ctx.fillRect(x - 9, y + size / 2 + 2, 18 * rail / 3, 3); }
-        const list = major.filter((m) => l[m] && (k >= 0.55 || m === 'fortezza' || m === 'porto' || m === 'siderurgia' || m === 'bellica'));
+        if (rail && k >= 0.2) { ctx.fillStyle = ['', 'rgba(60,60,60,0.35)', 'rgba(60,60,60,0.6)', 'rgba(30,30,30,0.85)'][rail]; ctx.fillRect(x - 9, y + size / 2 + 2, 18 * rail / 3, 3); }
+        const list = major.filter((m) => l[m] && (k >= 0.367 || m === 'fortezza' || m === 'porto' || m === 'siderurgia' || m === 'bellica'));
         if (!list.length) continue;
         const txt = list.map((m) => BUILDINGS[m].icon).join('');
         const tw = ctx.measureText(txt).width;
@@ -527,7 +546,7 @@ export class MapView {
       }
     }
     // nome del canale, da vicino (una volta sola anche se il canale ha più tratti)
-    if (k >= 0.7) {
+    if (k >= 0.467) {
       const seen = new Set<string>();
       ctx.font = 'italic 500 11px Alegreya, Georgia, serif';
       ctx.fillStyle = 'rgba(40,82,120,0.9)';
@@ -546,13 +565,13 @@ export class MapView {
       const p = this.world.map.provinces[id];
       const [x, y] = this.worldToScreen(p.c[0], -p.c[1]);
       if (x < -20 || y < -20 || x > W + 20 || y > H + 20) continue;
-      const r = k < 0.3 ? 3.5 : 5.5;
+      const r = k < 0.2 ? 3.5 : 5.5;
       ctx.fillStyle = prof[s.owner[id]]?.color ?? '#aaa';
       ctx.strokeStyle = this.selectedProvince === id ? BRASS : INK;
       ctx.lineWidth = this.selectedProvince === id ? 3 : 1.4;
       ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
       if (s.controller[id] !== s.owner[id]) { ctx.fillStyle = prof[s.controller[id]]?.color ?? '#000'; ctx.beginPath(); ctx.arc(x, y, r * 0.45, 0, Math.PI * 2); ctx.fill(); }
-      if (k >= 0.5) { ctx.font = '500 10px "Alegreya Sans", sans-serif'; ctx.fillStyle = 'rgba(31,42,51,0.8)'; ctx.fillText(p.name, x, y + r + 8); }
+      if (k >= 0.333) { ctx.font = '500 10px "Alegreya Sans", sans-serif'; ctx.fillStyle = 'rgba(31,42,51,0.8)'; ctx.fillText(p.name, x, y + r + 8); }
     }
 
     // pedine
@@ -562,7 +581,7 @@ export class MapView {
       if (key >= 0 && !u.move?.progress) { const l = stacks.get(key) ?? []; l.push(u); stacks.set(key, l); }
     }
     const offset = (u: Unit) => { const l = stacks.get(u.location); if (!l || this.override || u.move?.progress) return 0; return l.indexOf(u); };
-    const showAll = k > 0.3;
+    const showAll = k > 0.2;
     for (const u of s.units) {
       if (!showAll && u.nation !== s.player) continue;
       const [x, y] = this.unitScreenPos(u);
@@ -591,7 +610,7 @@ export class MapView {
     if (u.type === 'artillery') { ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x, y, 2.6, 0, Math.PI * 2); ctx.fill(); }
     if (u.inBattle) { ctx.fillStyle = WAX; ctx.beginPath(); ctx.arc(x + w / 2, y - h / 2, 4, 0, Math.PI * 2); ctx.fill(); }
     if (u.supply < 0.3) { ctx.fillStyle = '#e0b040'; ctx.beginPath(); ctx.arc(x - w / 2, y - h / 2, 3.5, 0, Math.PI * 2); ctx.fill(); }
-    if (mine || this.cam.scale > 0.8) {
+    if (mine || this.cam.scale > 0.533) {
       ctx.font = '700 10px "Alegreya Sans", sans-serif';
       ctx.fillStyle = INK;
       ctx.textAlign = 'center';
@@ -637,7 +656,7 @@ export class MapView {
     const r = this.canvas.getBoundingClientRect();
     const sx = cx - r.left, sy = cy - r.top;
     const [wx, wy] = this.screenToWorld(sx, sy);
-    this.cam.scale = Math.max(0.08, Math.min(4, this.cam.scale * f));
+    this.cam.scale = Math.max(0.03, Math.min(3, this.cam.scale * f));
     const [nx, ny] = this.screenToWorld(sx, sy);
     this.cam.x += wx - nx; this.cam.y += wy - ny;
     this.dirty = true;
@@ -650,7 +669,7 @@ export class MapView {
     const s = this.world.state;
     let best: Unit | null = null, bd = 20;
     for (const u of s.units) {
-      if (this.cam.scale <= 0.3 && u.nation !== s.player) continue;
+      if (this.cam.scale <= 0.2 && u.nation !== s.player) continue;
       const [x, y] = this.unitScreenPos(u);
       const d = Math.hypot(x - sx, y - sy);
       if (d < bd || (d === bd && u.nation === s.player)) { bd = d; best = u; }

@@ -100,7 +100,7 @@ fs.writeFileSync(path.join(ROOT, 'data-raw/tmp/check-map.json'), JSON.stringify(
 if (args.png) {
   const { chromium } = createRequire(import.meta.url)('playwright');
   const LAT0 = (52 * Math.PI) / 180, LON0 = (10 * Math.PI) / 180, R = 6371;
-  const proj = (lon, lat) => { const l = (lon * Math.PI) / 180, q = (lat * Math.PI) / 180; const k = Math.sqrt(2 / (1 + Math.sin(LAT0) * Math.sin(q) + Math.cos(LAT0) * Math.cos(q) * Math.cos(l - LON0))); return [R * k * Math.cos(q) * Math.sin(l - LON0), R * k * (Math.cos(LAT0) * Math.sin(q) - Math.sin(LAT0) * Math.cos(q) * Math.cos(l - LON0))]; };
+  const proj = (lon, lat) => { const q = (Math.max(-85, Math.min(85, lat)) * Math.PI) / 180; return [(6371 * lon * Math.PI) / 180, 6371 * 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * q))]; };
   const [lo0, la0, lo1, la1] = String(args.box ?? '-30,-36,62,40').split(',').map(Number);
   const corners = [proj(lo0, la0), proj(lo1, la0), proj(lo0, la1), proj(lo1, la1), proj((lo0 + lo1) / 2, la0), proj((lo0 + lo1) / 2, la1)];
   const x0 = Math.min(...corners.map((c) => c[0])), x1 = Math.max(...corners.map((c) => c[0])), y0 = Math.min(...corners.map((c) => c[1])), y1 = Math.max(...corners.map((c) => c[1]));

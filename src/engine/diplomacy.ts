@@ -1,3 +1,4 @@
+import { geoKm } from './map';
 import { followers, subjectOf, warBlock } from './vassals';
 import type { GameEvent, Tag, TreatyType } from './types';
 import { al, allied, atWar, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
@@ -109,8 +110,8 @@ export function relocateStranded(w: World) {
     if (ctrl === u.nation || allied(s, u.nation, ctrl) || atWar(s, u.nation, ctrl) || treatyBetween(s, u.nation, ctrl, 'military_access')) continue;
     const home = w.map.provinces.filter((p) => s.controller[p.id] === u.nation && !p.impassable);
     if (!home.length) continue;
-    const here = w.map.provinces[u.location].c;
-    home.sort((p, q) => Math.hypot(p.c[0] - here[0], p.c[1] - here[1]) - Math.hypot(q.c[0] - here[0], q.c[1] - here[1]));
+    const here = w.map.provinces[u.location].lonlat;
+    home.sort((p, q) => geoKm(p.lonlat, here) - geoKm(q.lonlat, here));
     u.location = home[0].id; u.move = null; u.orders = []; u.inBattle = false;
   }
 }

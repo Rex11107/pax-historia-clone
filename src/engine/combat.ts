@@ -1,3 +1,4 @@
+import { geoKm } from './map';
 import { techEffects } from './research';
 import { level } from './construction';
 import { govEffects } from './politics';
@@ -136,8 +137,8 @@ function retreat(w: World, u: Unit, sink: GameEvent[]) {
     return;
   }
   // verso la capitale (la provincia più vicina ad essa)
-  const cap = w.map.provinces[s.nations[u.nation].capital].c;
-  const dest = options.sort((a, b) => dist(w.map.provinces[a].c, cap) - dist(w.map.provinces[b].c, cap))[0];
+  const cap = w.map.provinces[s.nations[u.nation].capital].lonlat;
+  const dest = options.sort((a, b) => geoKm(w.map.provinces[a].lonlat, cap) - geoKm(w.map.provinces[b].lonlat, cap))[0];
   u.location = dest;
   u.move = null;
   u.orders = [];
@@ -161,6 +162,5 @@ function checkViolation(w: World, a: Tag, d: Tag, sink: GameEvent[]) {
 }
 
 const shortN = (w: World, t: Tag) => w.profiles[t].short[1];
-const dist = (a: [number, number], b: [number, number]) => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const names = (w: World, tags: Tag[]) => tags.map((t) => the(w, t)).join(' e ');
 export const fmt = (n: number) => Math.round(n).toLocaleString('it-IT');
