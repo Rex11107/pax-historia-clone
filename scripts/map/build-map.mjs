@@ -1233,12 +1233,52 @@ async function main() {
     for (const [r, m] of mix) if (new Set([...m.keys()].map((k) => k.split(':')[0])).size > 1) console.log('MIX', gInfo[gid.get(r)].name, JSON.stringify([...m]));
   }
   for (const p of P) p.feat.properties = { g: gid.get(find(p.i)) };
+  // province europee sul vecchio bordo del rettangolo (27° N, 11° O fino a 31° N, 50° E): il bordo è una linea
+  // dritta senza senso storico, quindi si rifanno con le terre esterne (africa.mjs), con confini naturali
+  const freedG = new Set();
+  let freed = null;
+  if (process.env.MAP_SEAM !== '0') {
+    const [x0, y0, x1] = BBOX, EPS = 2e-3, Y_TOP = y0 + 4, E_TOP = Math.min(AF_CLIP[3], BBOX[3]);
+    const onSeam = (a, b) => (Math.abs(a[1] - y0) < EPS && Math.abs(b[1] - y0) < EPS && a[0] >= x0 - EPS && a[0] <= x1 + EPS)
+      || (Math.abs(a[0] - x0) < EPS && Math.abs(b[0] - x0) < EPS && a[1] <= Y_TOP + EPS && b[1] <= Y_TOP + EPS)
+      || (Math.abs(a[0] - x1) < EPS && Math.abs(b[0] - x1) < EPS && a[1] >= y0 - EPS && a[1] <= E_TOP + EPS);
+    const contact = new Map();
+    for (const p of P) {
+      const g = p.feat.geometry; if (!g) continue;
+      const rings = (g.type === 'Polygon' ? [g.coordinates] : g.coordinates).flat();
+      let len = 0;
+      for (const ring of rings) for (let i = 1; i < ring.length; i++) if (onSeam(ring[i - 1], ring[i])) len += turf.distance(ring[i - 1], ring[i]);
+      if (len) { const k = p.feat.properties.g; contact.set(k, (contact.get(k) || 0) + len); }
+    }
+    for (const [k, len] of contact) if (len > 10 && !gInfo[k].prot) freedG.add(k);
+    if (freedG.size) {
+      const regions = [];
+      for (const k of freedG) {
+        const mem = P.filter((p) => p.feat.properties.g === k);
+        const A = mem.reduce((x, p) => x + p.area, 0);
+        const at = [mem.reduce((x, p) => x + cent[p.i][0] * p.area, 0) / A, mem.reduce((x, p) => x + cent[p.i][1] * p.area, 0) / A];
+        const gi = gInfo[k];
+        regions.push({ name: String(gi.lockName || gi.name), at, modern: gi.modern, T: Math.max(4000, A), owner: gi.owner, desert: !!gi.desert, region: gi.region, oasis: gi.oasis && !gi.desert ? gi.oasis : null });
+      }
+      const file = path.join(TMP, 'eu_freed.geojson');
+      // i vertici sul vecchio bordo si spingono un poco fuori: il resto del rettangolo, tolta questa zona, non lascia
+      // strisce sottili lungo il bordo (che taglierebbero gli atomi e farebbero false coste)
+      const push = (c) => [Math.abs(c[0] - x0) < EPS && c[1] <= Y_TOP + EPS ? x0 - 0.02 : Math.abs(c[0] - x1) < EPS ? x1 + 0.02 : c[0], Math.abs(c[1] - y0) < EPS ? y0 - 0.02 : c[1]];
+      const pushed = (g) => ({ type: g.type, coordinates: g.type === 'Polygon' ? g.coordinates.map((r) => r.map(push)) : g.coordinates.map((pl) => pl.map((r) => r.map(push))) });
+      fs.writeFileSync(path.join(TMP, 'eu_freed_src.geojson'), JSON.stringify(turf.featureCollection(P.filter((p) => freedG.has(p.feat.properties.g)).map((p) => ({ type: 'Feature', geometry: pushed(p.feat.geometry), properties: {} })))));
+      ms(path.join(TMP, 'eu_freed_src.geojson'), '-dissolve', '-o', 'geojson-type=FeatureCollection', file);
+      // le oasi liberate tornano come oasi anche fuori (cerchio, padrone, popolazione)
+      freed = { file, regions, oases: OASES.filter((o) => [...freedG].some((k) => gInfo[k].oasis === o.name)) };
+      fs.writeFileSync(path.join(TMP, 'eu_freed_regions.json'), JSON.stringify({ regions, oases: freed.oases }));
+      log(`${freedG.size} province europee sul vecchio bordo rifatte con le terre esterne: ${regions.map((r) => r.name).join(', ')}`);
+    }
+  }
   // Africa e Arabia (fase 1: province storiche e regni), cucite al bordo meridionale della mappa europea
-  const af = buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities });
+  const af = buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed });
   const afOff = gInfo.length;
   for (const g of af.infos) gInfo.push(g);
   const afFeats = af.pieces.map((f) => ({ type: 'Feature', geometry: f.geometry, properties: { g: f.properties.g + afOff } }));
-  const allFeats = [...P.map((p) => p.feat), ...afFeats];
+  const allFeats = [...P.filter((p) => !freedG.has(p.feat.properties.g)).map((p) => p.feat), ...afFeats];
   stitchSeam(allFeats);
   fs.writeFileSync(path.join(TMP, 'grouped.geojson'), JSON.stringify(turf.featureCollection(allFeats)));
   log(`${roots.length} province di gioco in Europa e Mediterraneo, ${af.infos.length} in Africa e Arabia`);
@@ -1246,7 +1286,9 @@ async function main() {
   // 4. dissolve + semplificazione per la visualizzazione
   // quantizzazione fine: con l'Africa il riquadro dei dati è molto più grande e la griglia predefinita (65.536 passi)
   // sposterebbe di 150 m i confini europei
-  ms(path.join(TMP, 'grouped.geojson'), '-dissolve2', 'g', '-simplify', 'interval=3500', 'keep-shapes', '-filter-slivers', 'min-area=40km2',
+  // aggancio e pulizia: lungo l'interfaccia fra le province europee rimaste e quelle rifatte fuori i due bordi
+  // differiscono di qualche decina di metri; senza pulizia restano archi doppi (false coste) e fessure
+  ms('-i', path.join(TMP, 'grouped.geojson'), '-dissolve2', 'g', '-simplify', 'interval=3500', 'keep-shapes', '-clean', 'gap-fill-area=30km2', '-filter-slivers', 'min-area=40km2',
     '-o', 'format=topojson', 'quantization=400000', path.join(TMP, 'final.topo.json'));
 
   // 5. tabella delle province
@@ -1324,8 +1366,8 @@ async function main() {
   const poolOf = (p) => {
     const t = NATION_POP_1881[p.info.owner];
     if (t && t[p.info.modern] !== undefined) return `${p.info.owner}:${p.info.modern}`;
-    if (p.info.af && AF_POP_ISO[p.info.iso] !== undefined) return `I:${p.info.iso}`;
-    if (p.info.af) return AF_HOME[p.info.owner] === p.info.modern ? `${p.info.owner}:*` : `M:${p.info.modern}`;
+    if (p.info.af && !p.info.eu && AF_POP_ISO[p.info.iso] !== undefined) return `I:${p.info.iso}`;
+    if (p.info.af && !p.info.eu) return AF_HOME[p.info.owner] === p.info.modern ? `${p.info.owner}:*` : `M:${p.info.modern}`;
     return `${p.info.owner}:*`;
   };
   const poolTotal = (key) => {

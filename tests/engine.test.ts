@@ -576,10 +576,10 @@ describe('Africa e Arabia', () => {
       ['Tananarive', 'MAD'], ['Pretoria', 'TRA'], ['Aden', 'GBR'], ['Mascate', 'OMA'], ['Saint-Louis', 'FRA'], ['Luanda', 'POR'], ['Monrovia', 'LIB'], ['Debre Tabor', 'ETH']];
     for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
   });
-  it('le province europee del 27° parallelo confinano con quelle africane, senza coste finte', () => {
-    const eu = MAP.provinces.slice(0, EU).filter((p) => p.lonlat[1] < 27.6 && p.lonlat[0] > 0 && p.lonlat[0] < 32);
-    expect(eu.length).toBeGreaterThanOrEqual(4);
-    for (const p of eu) expect(p.n.some((j) => j >= EU), p.name).toBe(true);
+  it('niente province europee sul vecchio bordo del 27° parallelo: sono rifatte con le terre esterne', () => {
+    const eu = MAP.provinces.slice(0, EU).filter((p) => p.lonlat[1] < 27.3 && p.lonlat[0] > -11 && p.lonlat[0] < 50);
+    expect(eu.map((p) => p.name)).toEqual([]);
+    for (const n of ['Tidikelt', 'Gilan', 'Kazan', 'Baku']) expect(MAP.provinces.find((p) => p.name === n)!.id, n).toBeGreaterThanOrEqual(EU);
   });
   it('fase 2a: Egitto-Sudan e Corno d\'Africa per regioni storiche', () => {
     const exp: [string, string][] = [['Assab', 'ITA'], ['Massaua', 'EGY'], ['Hamasien', 'ETH'], ['Harar', 'EGY'], ['Berbera', 'EGY'], ['Benadir', 'ZAN'], ['Scioa', 'ETH'], ['Gojjam (nord)', 'ETH'], ['Ogaden', ''], ['Nogal', '']];
@@ -769,10 +769,11 @@ describe('Arabia, Persia e Asia centrale', () => {
     expect(w.map.provinces[w.state.nations.PER.capital].name).toBe('Teheran');
   });
   it('cucitura sul 50° meridiano: la Persia occidentale confina con quella orientale', () => {
-    const west = MAP.provinces.slice(0, EU).filter((p) => p.owner === 'PER' && p.lonlat[0] > 48.8);
-    expect(west.length).toBeGreaterThan(2);
-    const joined = west.filter((p) => p.n.some((j) => j >= EU && MAP.provinces[j].owner === 'PER'));
-    expect(joined.map((p) => p.name)).toEqual(expect.arrayContaining(['Esfahan', 'Qazvin', 'Gilan']));
+    // le province persiane sul 50° meridiano sono rifatte fuori, con confini naturali; quelle europee confinanti toccano la Persia esterna
+    for (const n of ['Esfahan', 'Gilan', 'Khūzestān']) expect(MAP.provinces.filter((p) => p.name.startsWith(n) && p.id >= EU && p.owner === 'PER').length, n).toBeGreaterThan(0);
+    const west = MAP.provinces.slice(0, EU).filter((p) => p.owner === 'PER' && p.lonlat[0] > 48);
+    expect(west.length).toBeGreaterThan(0);
+    for (const p of west) expect(p.n.some((j) => j >= EU && MAP.provinces[j].owner === 'PER'), p.name).toBe(true);
   });
   it('deserti dell\'Asia centrale intransitabili, frontiere provvisorie non sono coste', () => {
     expect(MAP.provinces.some((p) => p.impassable && /Karakum/.test(p.name))).toBe(true);
