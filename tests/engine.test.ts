@@ -213,7 +213,7 @@ describe('deserto, oasi e piste carovaniere', () => {
   });
   it('nessun deserto passa a chi ne tocca solo il bordo da un altro paese (Gadames e il deserto algerino)', () => {
     const w = newGame(MAP, 'ITA', 'gore');
-    for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'TUR') expect(p.modern).toBe('LBY');
+    for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'TUR') expect(['LBY', 'SAU']).toContain(p.modern); // il Fezzan, e il Rub al-Khali chiuso dall'al-Hasa ottomano
     for (const p of w.map.provinces) if (p.impassable && w.state.owner[p.id] === 'EGY') expect(['EGY', 'SDN', 'SDS', 'ERI']).toContain(p.modern); // il Sudan egiziano
   });
   it('il Sangiaccato di Novi Pazar è ottomano, il Sinai separato dal canale', () => {
@@ -751,4 +751,30 @@ describe('interessi coloniali', () => {
     }
     expect(Object.keys(c.done).length).toBeGreaterThan(4);
   }, 120000);
+});
+
+describe('Arabia, Persia e Asia centrale', () => {
+  const byName = (n: string) => MAP.provinces.find((p) => p.name === n)!;
+  it('padroni del 1881: Turkestan russo, Bukhara e Khiva protettorati, Afghanistan, Persia orientale, Arabia', () => {
+    const exp: [string, string][] = [['Teheran', 'PER'], ['Isfahan', 'PER'], ['Mashhad', 'PER'], ['Kabul', 'AFG'], ['Herat', 'AFG'], ['Bukhara', 'BUK'], ['Khiva', 'KHI'],
+      ['Tashkent', 'RUS'], ['Samarcanda', 'RUS'], ['Verny', 'RUS'], ['Merv', ''], ['Kafiristan', ''], ['La Mecca', 'TUR'], ['Riad', 'ARA'], ['Mascate', 'OMA'], ['Aden', 'GBR']];
+    for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
+    const w = newGame(MAP, 'ITA', 'asia');
+    expect(subjectOf(w, 'BUK')?.overlord).toBe('RUS');
+    expect(subjectOf(w, 'KHI')?.overlord).toBe('RUS');
+    for (const t of ['AFG', 'BUK', 'KHI']) expect(w.state.units.some((u) => u.nation === t), t).toBe(true);
+    // la capitale persiana è Teheran, ora in mappa
+    expect(w.map.provinces[w.state.nations.PER.capital].name).toBe('Teheran');
+  });
+  it('cucitura sul 50° meridiano: la Persia occidentale confina con quella orientale', () => {
+    const west = MAP.provinces.slice(0, 1375).filter((p) => p.owner === 'PER' && p.lonlat[0] > 48.8);
+    expect(west.length).toBeGreaterThan(2);
+    const joined = west.filter((p) => p.n.some((j) => j >= 1375 && MAP.provinces[j].owner === 'PER'));
+    expect(joined.map((p) => p.name)).toEqual(expect.arrayContaining(['Esfahan', 'Qazvin', 'Gilan']));
+  });
+  it('deserti dell\'Asia centrale intransitabili, frontiere provvisorie non sono coste', () => {
+    expect(MAP.provinces.some((p) => p.impassable && /Karakum/.test(p.name))).toBe(true);
+    expect(MAP.provinces.some((p) => p.impassable && /Kyzylkum/.test(p.name))).toBe(true);
+    for (const n of ['Kabul', 'Herat', 'Kandahar', 'Pavlodar']) expect(byName(n)?.coast, n).toBe(false);
+  });
 });

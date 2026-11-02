@@ -1,5 +1,6 @@
 import type { NationProfile } from '../engine/types';
 import { AFRICA_NATIONS, AFRICA_OPINIONS } from './africa1881';
+import { ASIA_NATIONS, ASIA_OPINIONS } from './asia1881';
 
 // Profili statici delle nazioni al 1° gennaio 1881. Scala 0-100.
 // Numeri approssimati da fonti storiche generali (eserciti di pace, debito pubblico);
@@ -132,6 +133,7 @@ export const NATIONS: Record<string, P> = {
   BOS: base({ name: 'Bosnia', short: ['la ', 'Bosnia'], adjective: 'bosniaco', color: '#4b9a6a', capital: [18.41, 43.86], releasable: 'bosgnacchi', industry: 5 }),
   // Africa e Arabia (estensione della mappa, fase 1)
   ...AFRICA_NATIONS,
+  ...ASIA_NATIONS,
 };
 
 /** Trattati in vigore al 1° gennaio 1881. */
@@ -165,6 +167,7 @@ export const INITIAL_OPINIONS: [string, string, number][] = [
   ['DEN', 'GER', -40], ['ROM', 'RUS', -30],
   ['GBR', 'TUR', 15], ['TUR', 'GBR', 20],
   ...AFRICA_OPINIONS,
+  ...ASIA_OPINIONS,
 ];
 
 export const SCENARIO_START = { year: 1881, month: 1, day: 1 };

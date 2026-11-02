@@ -40,6 +40,9 @@ export const ETHNICITIES: Record<string, Ethnicity> = {
   nguni: E('nguni (zulu, xhosa, swazi)', 'ZUL', '#b04fc4'), ndebele: E('matabele', 'NDE', '#7ac44f'), sotho: E('sotho e tswana', 'NGW', '#4f86c4'), shona: E('shona', null, '#8a9a4a'), lozi: E('lozi', 'LOZ', '#c44f86'),
   ovimbundu: E('ovimbundu', 'OVI', '#86d4d4'), boeri: E('boeri (afrikaner)', 'TRA', '#4fc4b0'), khoisan: E('khoi e san', null, '#c4a46a'), ovambo: E('ovambo e herero', null, '#9a7a4a'),
   malgasci: E('malgasci', 'MAD', '#45b84a'), creoli: E('creoli', null, '#a07ab0'), indiani: E('indiani', null, '#d07a3a'),
+  // Asia centrale
+  uzbeki: E('uzbeki', null, '#3a8f8f'), tagiki: E('tagiki', null, '#6a9a5a'), kirghisi: E('kirghisi', null, '#c06a4a'), pashtun: E('afgani (pashtun)', 'AFG', '#8f6a3a'),
+  hazara: E('hazara', null, '#a08a6a'), baluci: E('beluci', null, '#b0904a'),
   altri: E('altri', null, '#999999'),
 };
 
@@ -62,7 +65,7 @@ export const STATE_PEOPLES: Record<Tag, { own: string[]; regional?: string[] }> 
   KNG: { own: ['mande'], regional: ['akan'] }, WAS: { own: ['mande'] }, TUK: { own: ['fulbe'], regional: ['mande'] }, FTO: { own: ['fulbe'], regional: ['wolof'] }, FJA: { own: ['fulbe'] },
   LIB: { own: ['guineani'] }, TRA: { own: ['boeri'] }, OFS: { own: ['boeri'] }, ZUL: { own: ['nguni'] }, SWZ: { own: [], regional: ['nguni'] }, NDE: { own: ['ndebele'], regional: ['nguni'] },
   NGW: { own: ['sotho'] }, LOZ: { own: ['lozi'] }, OVI: { own: ['ovimbundu'] }, MAD: { own: ['malgasci'] }, OMA: { own: ['arabi'] }, TRU: { own: [], regional: ['arabi'] }, BHR: { own: [], regional: ['arabi'] },
-  MAH: { own: [], regional: ['arabi', 'beja', 'nubiani', 'fur'] }, HAR: { own: [], regional: ['oromo', 'somali'] }, OBB: { own: [], regional: ['somali'] }, MIG: { own: [], regional: ['somali'] }, WSG: { own: [], regional: ['somali'] }, AUS: { own: [], regional: ['afar'] }, RAH: { own: [], regional: ['afar'] }, TAG: { own: [], regional: ['afar'] },
+  MAH: { own: [], regional: ['arabi', 'beja', 'nubiani', 'fur'] }, HAR: { own: [], regional: ['oromo', 'somali'] }, AFG: { own: ['pashtun'], regional: ['tagiki', 'hazara', 'uzbeki'] }, BUK: { own: ['uzbeki', 'tagiki'], regional: ['turcomanni'] }, KHI: { own: [], regional: ['uzbeki', 'turcomanni'] }, OBB: { own: [], regional: ['somali'] }, MIG: { own: [], regional: ['somali'] }, WSG: { own: [], regional: ['somali'] }, AUS: { own: [], regional: ['afar'] }, RAH: { own: [], regional: ['afar'] }, TAG: { own: [], regional: ['afar'] },
 };
 
 export interface Match { iso?: string[]; owner?: Tag[]; modern?: string[]; lang?: string[]; name?: string[] }
@@ -346,6 +349,24 @@ export const RULES: Rule[] = [
   [{ iso: ['IR-01', 'IR-02', 'IR-03'] }, 'azeri 80, curdi 10, persiani 10', true],
   [{ iso: ['IR-12'] }, 'curdi 80, persiani 20', true],
   [{ iso: ['IR-10'] }, 'arabi 60, persiani 40', true],
+  // Persia orientale e Asia centrale (stime d'ordine di grandezza)
+  [{ iso: ['IR-13'] }, 'baluci 75, persiani 25', true],
+  [{ iso: ['IR-30', 'IR-31', 'IR-29'] }, 'persiani 70, curdi 10, turcomanni 15, altri 5', true],
+  [{ iso: ['IR-27'] }, 'persiani 60, turcomanni 35, altri 5', true],
+  [{ modern: ['AFG'], iso: ['AF-BAL', 'AF-JOW', 'AF-FYB', 'AF-SAM', 'AF-SAR'] }, 'uzbeki 45, tagiki 30, turcomanni 15, pashtun 10', true],
+  [{ modern: ['AFG'], iso: ['AF-KDZ', 'AF-TAK', 'AF-BGL', 'AF-BDS', 'AF-PAN', 'AF-PAR', 'AF-KAP'] }, 'tagiki 65, uzbeki 20, pashtun 15', true],
+  [{ modern: ['AFG'], iso: ['AF-BAM', 'AF-DAY', 'AF-GHO'] }, 'hazara 75, tagiki 15, pashtun 10', true],
+  [{ modern: ['AFG'], iso: ['AF-HER', 'AF-BDG'] }, 'tagiki 55, pashtun 35, hazara 5, turcomanni 5', true],
+  [{ modern: ['AFG'], iso: ['AF-NIM'] }, 'baluci 60, pashtun 40', true],
+  [{ modern: ['AFG'] }, 'pashtun 80, tagiki 10, hazara 5, baluci 5', true],
+  [{ modern: ['UZB'], iso: ['UZ-QR'] }, 'kazakhi 50, uzbeki 30, turcomanni 20', true],
+  [{ modern: ['UZB'], iso: ['UZ-BU', 'UZ-SA'] }, 'uzbeki 55, tagiki 40, altri 5', true],
+  [{ modern: ['UZB'] }, 'uzbeki 80, tagiki 10, kazakhi 10', true],
+  [{ modern: ['TJK'] }, 'tagiki 75, uzbeki 20, kirghisi 5', true],
+  [{ modern: ['KGZ'] }, 'kirghisi 75, uzbeki 15, kazakhi 10', true],
+  [{ modern: ['TKM'] }, 'turcomanni 90, uzbeki 10', true],
+  [{ modern: ['KAZ'], iso: ['KZ-SEV', 'KZ-KUS'] }, 'kazakhi 70, russi 30', true],
+  [{ modern: ['KAB'] }, 'kazakhi 100', true],
   [{ modern: ['IRN'] }, 'persiani 65, azeri 15, curdi 10, altri 10', true],
   // --- Africa e Arabia (fase 1: stime per paese moderno e Stato d'epoca) ---
   [{ iso: ['ES-GC', 'ES-TF'] }, 'spagnoli 100'],

@@ -42,6 +42,9 @@ const INITIAL: Subject[] = [
   { subject: 'ZUL', overlord: 'GBR', level: 'tributario', liberty: 50, since: -500 }, // assetto di Wolseley dopo il 1879
   { subject: 'DMG', overlord: 'BOR', level: 'tributario', liberty: 70, since: -10000 },
   { subject: 'KGO', overlord: 'POR', level: 'tributario', liberty: 80, since: -8000 },
+  // Asia centrale: Bukhara e Khiva protettorati russi dal 1873
+  { subject: 'BUK', overlord: 'RUS', level: 'protettorato', liberty: 45, since: -2700 },
+  { subject: 'KHI', overlord: 'RUS', level: 'protettorato', liberty: 50, since: -2700 },
 ];
 
 export function subjects(w: World): Subject[] {

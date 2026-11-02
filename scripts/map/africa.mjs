@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_ARAL, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -18,7 +18,8 @@ const LANDFORM_IT = { 'NUBIAN DESERT': 'Deserto nubiano', 'LIBYAN DESERT': 'Dese
   'Grand Erg de Bilma': 'Erg di Bilma', 'Majâbat al Koubrâ': 'Mreyé', 'Tassili-n-Ajjer': 'Tassili', 'Ahaggar': 'Hoggar', 'Tibesti Mts.': 'Tibesti', 'Aïr Mts.': 'Aïr', 'Adrar des Ifoghas': 'Adrar degli Ifoghas',
   'Eastern Desert': 'Deserto orientale', 'WESTERN DESERT': 'Deserto occidentale', 'Ad Dahna': 'Dahna', 'Sarïr Kalanshiyu ar Ramli al Kabi': 'Sarir Calanscio', 'Ramlat as Sab‘atayn': 'Ramlat as-Sabatayn',
   'Erg Chech': 'Erg Chech', '‘Erg Chech': 'Erg Chech', 'Erg Iguidi': 'Erg Iguidi', '‘Erg Iguidi': 'Erg Iguidi', 'Hamada du Draa': 'Hamada del Draa', 'Djourab': 'Giurab', 'Erg du Djourab': 'Giurab',
-  'Sahara al Hijarah': 'Hammada', 'Bayyudah Desert': 'Deserto di Bayuda', 'Hamadat Tinghert': 'Hamada di Tinrhert', 'Massif de l\'Ennedi': 'Ennedi' };
+  'Sahara al Hijarah': 'Hammada', 'Bayyudah Desert': 'Deserto di Bayuda', 'Hamadat Tinghert': 'Hamada di Tinrhert', 'Massif de l\'Ennedi': 'Ennedi',
+  'GARAGUM DESERT': 'Karakum', 'QIZILQUM DESERT': 'Kyzylkum', 'BETPAQDALA DESERT': 'Betpak-Dala', 'Kavir Desert': 'Dasht-e Kavir', 'LUT DESERT': 'Dasht-e Lut', 'Margo Desert': 'Dasht-i Margo', 'Rigestan': 'Registan', 'Ustyurt Plateau': 'Ustyurt' };
 
 const cleanName = (n) => String(n || '?').replace(/^(Région|Region|Province|Provincia|Governatorato) (de |du |di |del |della |of |)/i, '').replace(/ (Region|Province|State)$/i, '').trim();
 
@@ -34,7 +35,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   const excl = JSON.stringify(AF_EXCLUDE);
 
   // 1. livelli: suddivisioni moderne, stati d'epoca, laghi
-  fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection(readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })))));
+  fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection([...readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })), turf.polygon([AF_ARAL])])));
   ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `!${excl}.includes(adm0_a3) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF')`, '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', erase,
     '-each', 'pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=adm0_a3', '-filter-fields', 'pid,iso,pname,modern',
     '-simplify', 'interval=800', 'keep-shapes', '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
@@ -74,7 +75,9 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   // zona di dettaglio: bacini di HydroBASINS livello 6 dentro i paesi della fase in corso
   const detailSet = new Set(AF_DETAIL_MODERN);
   ms(P('adm.geojson'), '-filter', `${JSON.stringify(AF_DETAIL_MODERN)}.includes(modern)`, '-dissolve', '-o', P('detail_land.geojson'));
-  ms(path.join(RAW, 'hydro', 'hybas_af_lev06_v1c.shp'), '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
+  // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
+  const hyb = ['af', 'eu', 'as'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
+  ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
   ms('-i', P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), P('basins.geojson'), 'combine-files', 'snap', 'snap-interval=0.0005', '-union', 'target=adm,hist,cuts,basins',
     '-filter', 'pid != null', 'remove-empty', '-explode', '-o', P('u.geojson'));
 
@@ -357,7 +360,20 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
             const o = owner.get(j), O = cl.get(o);
             border.set(o, (border.get(o) || 0) + l * (O.owner === c.owner ? 3 : 1) * (O.cls === c.cls ? 2 : 1));
           }
-          if (!border.size) continue; // un'isola vera
+          if (!border.size) {
+            // un frammento minuscolo staccato da tutto (un taglio fra confini moderni e bacini): va alla provincia più
+            // vicina, altrimenti verrebbe scartato e lascerebbe un buco; le isole vere sono più grandi o lontane
+            if (comp.area > 80) continue;
+            const cc = turf.centroid(turf.featureCollection(comp.ids.map((k) => turf.point(A[k].c)))).geometry.coordinates;
+            let best = null, bd = 15;
+            for (const b of A) {
+              if (set.has(b.i) || cc[0] < b.bb[0] - 0.2 || cc[0] > b.bb[2] + 0.2 || cc[1] < b.bb[1] - 0.2 || cc[1] > b.bb[3] + 0.2) continue;
+              const d = turf.pointToPolygonDistance(turf.point(cc), b.f, { units: 'kilometers' });
+              if (d < bd) { bd = d; best = b; }
+            }
+            if (!best) continue;
+            border.set(owner.get(best.i), 1);
+          }
           const to = [...border].sort((a, b) => b[1] - a[1])[0][0], T = cl.get(to);
           const mv = new Set(comp.ids);
           c.ids = c.ids.filter((k) => !mv.has(k)); c.A -= comp.area;
@@ -408,7 +424,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
       : ['SAU', 'YEM', 'OMN', 'ARE', 'QAT'].includes(modern) ? 'Rub al-Khali'
       : modern === 'EGY' ? (cx < 31.3 ? 'Deserto Libico' : 'Deserto Arabico')
       : modern === 'SDN' ? (cx < 30 ? 'Deserto Libico' : 'Deserto nubiano')
-      : modern === 'LBY' ? 'Deserto Libico' : 'Sahara';
+      : modern === 'LBY' ? 'Deserto Libico' : ['IRN', 'AFG'].includes(modern) ? 'Deserti persiani' : ['TKM', 'UZB', 'KAZ', 'KGZ', 'TJK'].includes(modern) ? 'Deserti del Turan' : 'Sahara';
     const oasis = c.cls.startsWith('O:') ? c.cls.slice(2) : null;
     let name;
     const towns = townsIn(c.ids);
@@ -451,6 +467,13 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   }
   const atomOf = new Map();
   for (const [id, c] of cl) for (const i of c.ids) atomOf.set(i, id);
-  const pieces = A.map((a) => ({ type: 'Feature', geometry: a.f.geometry, properties: { g: groupOf.get(atomOf.get(a.i)) } }));
+  const raw = A.map((a) => ({ type: 'Feature', geometry: a.f.geometry, properties: { g: groupOf.get(atomOf.get(a.i)) } }));
+  // i pezzi divisi in celle non combaciano al metro: si fondono per provincia e si chiudono le fessure fra province
+  // (vanno alla provincia vicina), così non restano buchi né false coste
+  fs.writeFileSync(P('out_raw.geojson'), JSON.stringify(turf.featureCollection(raw)));
+  ms(P('out_raw.geojson'), '-dissolve2', 'g', '-clean', 'gap-fill-area=25km2', '-o', P('out_clean.geojson'));
+  const clean = readJSON(P('out_clean.geojson')).features.filter((f) => f.geometry && f.properties.g != null);
+  const pieces = clean.length >= infos.length * 0.98 ? clean : raw;
+  if (pieces === raw) log('Africa: pulizia delle fessure non riuscita, uso i pezzi grezzi');
   return { pieces, infos };
 }

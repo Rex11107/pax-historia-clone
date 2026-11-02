@@ -6,7 +6,7 @@
 // Controlli:
 //   exclave   una provincia con un pezzo di terraferma staccato che tocca altre province (non un'isola)
 //   enclave   una provincia chiusa dentro una sola altra provincia, senza costa
-//   dentro    una provincia circondata solo da province di un altro padrone, senza costa (segnalata, spesso è storia)
+//   dentro    una provincia transitabile circondata solo da province di un altro padrone (non di nessuno), senza costa
 //   forma     una provincia molto irregolare (area / inviluppo convesso < 0,38) o sfilacciata
 //   deserto   un deserto intransitabile con molta costa (le coste del deserto di solito si percorrono)
 //   nome      due province con lo stesso nome
@@ -72,7 +72,8 @@ for (const p of P) {
   if (allNb.size === 1 && coast < 1 && !P[[...allNb][0]].impassable) add('enclave', p, `chiusa dentro ${P[[...allNb][0]].name}`, [p.id, ...allNb]);
   else if (allNb.size >= 1 && coast < 1) {
     const owners = new Set([...allNb].map((i) => P[i].owner));
-    if (owners.size === 1 && !owners.has(p.owner) && ![...allNb].every((i) => P[i].impassable)) add('dentro', p, `circondata solo da ${[...owners][0] || 'terra di nessuno'} (padrone ${p.owner || 'nessuno'})`, [p.id]);
+    // un regno fra terre di nessuno, o un deserto fra province di un solo padrone (il gioco glielo assegna), non sono errori
+    if (owners.size === 1 && !owners.has(p.owner) && !owners.has('') && !p.impassable && ![...allNb].every((i) => P[i].impassable)) add('dentro', p, `circondata solo da ${[...owners][0] || 'terra di nessuno'} (padrone ${p.owner || 'nessuno'})`, [p.id]);
   }
   // forma: area rispetto all'inviluppo convesso del pezzo principale
   if (main.area > 3000) {

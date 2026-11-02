@@ -2,12 +2,14 @@
 // Fase 1: province storiche e regni (divisione larga, guidata dagli stati d'epoca e dalla densità).
 
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
-export const AF_EXCLUDE = ['IRN', 'TKM', 'FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'AFG', 'PAK', 'BRA'];
+export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'PAK', 'BRA',
+  // fasi successive: India, Cina, Siberia
+  'IND', 'CHN', 'MNG', 'RUS', 'NPL', 'BGD', 'BTN', 'MMR', 'LKA', 'MDV', 'IOT', 'USA', 'KAS'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
-export const AF_CLIP = [-30, -36, 62, 40];
+export const AF_CLIP = [-30, -36, 88, 56];
 
 // grandi laghi naturali (i bacini artificiali come il Nasser, il Volta o il Kariba nel 1881 non esistevano)
-export const AF_LAKES = ['Lake Albert', 'Lake Malawi', 'Lake Tanganyika', 'Lake Victoria', 'Lake Tana', 'Lac Moeru', 'Lake Bangweulu', 'Lake Kivu', 'Lake Edward', 'Lake Turkana'];
+export const AF_LAKES = ['Lake Balkhash', 'Issyk-Kul', 'Lake Zaysan', 'Alakol', 'Lake Albert', 'Lake Malawi', 'Lake Tanganyika', 'Lake Victoria', 'Lake Tana', 'Lac Moeru', 'Lake Bangweulu', 'Lake Kivu', 'Lake Edward', 'Lake Turkana'];
 
 // stato d'epoca (world_1880) -> tag; '' = terra di nessuno
 export const AF_HIST = {
@@ -28,7 +30,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': '', 'British Raj': '', 'Bokhara Khanate': '',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': '', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': '',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -94,6 +96,8 @@ export const AF_POP = {
   AGO: 2_400_000, ZMB: 900_000, MWI: 900_000, MOZ: 2_500_000, ZWE: 600_000, BWA: 120_000, NAM: 200_000,
   ZAF: 2_600_000, LSO: 150_000, SWZ: 80_000, MDG: 2_500_000, MUS: 360_000, COM: 60_000, SYC: 15_000, SHN: 6_000,
   SAU: 30_000, YEM: 900_000, OMN: 600_000, ARE: 70_000, BHR: 60_000, QAT: 0,
+  // Persia a est del 50° meridiano (l'ovest sta nel bacino della Persia), Afghanistan, Turkestan e steppa kazaka
+  IRN: 4_500_000, AFG: 3_000_000, TKM: 700_000, UZB: 3_200_000, KAZ: 2_400_000, KGZ: 650_000, TJK: 900_000, KAB: 5_000,
   ESP: 280_000, PRT: 395_000, FRA: 180_000,
 };
 // nazioni già presenti con bacino proprio: le loro nuove province attingono al bacino della nazione
@@ -164,15 +168,33 @@ export const AF_ROUTES = [
 // valli fluviali transitabili nel deserto (buffer in km attorno al fiume di Natural Earth)
 export const AF_VALLEYS = [{ names: ['Nile', 'Nilo', 'White Nile', 'Blue Nile'], km: 22, maxLat: 27.2, minLat: 15.0 }, { names: ['Niger'], km: 30, minLat: 14.5, maxLat: 18.0 }, { names: ['Sénégal', 'Senegal'], km: 25, minLat: 14.0, maxLat: 17.0 }];
 // deserti di Natural Earth che diventano intransitabili (con la sola condizione della bassa densità)
+/** Il mare d'Aral del 1881 (circa 66.000 km²): i dati di oggi ne hanno solo i resti. */
+export const AF_ARAL = [[61.0, 46.8], [61.7, 46.4], [61.6, 45.9], [61.4, 45.3], [61.0, 44.7], [60.4, 44.0], [59.9, 43.6], [59.4, 43.5], [58.9, 43.7], [58.3, 44.3], [58.2, 45.0], [58.4, 45.6], [58.8, 46.0], [59.4, 46.1], [59.9, 46.6], [60.4, 46.8], [61.0, 46.8]];
+
 export const AF_ARID = {
   // Sahara: intransitabile solo a nord del Sahel
   sahara: ['SAHARA', 'LIBYAN DESERT', 'NUBIAN DESERT', 'Ténéré', 'Tassili oua-n-Ahaggar', 'Tassili-n-Ajjer', 'El Djouf', '‘Erg Chech', 'Idhän Murzuq', 'Sarïr Kalanshiyu ar Ramli al Kabi', 'Akchâr', 'Hamada du Drâa', '‘Erg Iguidi', 'WESTERN DESERT'],
   // deserti dove contano i dati sulle località (Arabia, Egitto)
-  sparse: ['RUB’ AL KHALI', 'Eastern Desert'],
+  sparse: ['RUB’ AL KHALI', 'Eastern Desert', 'GARAGUM DESERT', 'QIZILQUM DESERT', 'BETPAQDALA DESERT', 'Kavir Desert', 'LUT DESERT', 'Margo Desert', 'Rigestan'],
 };
 
 // località storiche (1881) per il nome delle province: [nome, lon, lat, peso]
 export const AF_TOWNS = [
+  // Persia orientale, Afghanistan, Asia centrale (fase 3)
+  ['Teheran', 51.39, 35.69, 60], ['Isfahan', 51.67, 32.65, 55], ['Shiraz', 52.54, 29.61, 50], ['Mashhad', 59.6, 36.3, 50], ['Yazd', 54.37, 31.9, 40], ['Kerman', 57.08, 30.28, 40], ['Kashan', 51.44, 33.98, 30], ['Qom', 50.88, 34.64, 30],
+  ['Semnan', 53.39, 35.58, 15], ['Damghan', 54.34, 36.17, 10], ['Sari', 53.06, 36.56, 25], ['Barfurush', 52.68, 36.54, 30], ['Astarabad', 54.43, 36.84, 25], ['Sabzevar', 57.68, 36.21, 20], ['Nishapur', 58.8, 36.21, 25], ['Quchan', 58.51, 37.11, 15],
+  ['Bojnurd', 57.33, 37.47, 10], ['Torbat', 59.22, 35.27, 10], ['Birjand', 59.21, 32.87, 15], ['Tabas', 56.92, 33.6, 10], ['Bam', 58.36, 29.1, 15], ['Bandar Abbas', 56.27, 27.18, 20], ['Lar', 54.34, 27.68, 15], ['Bushehr', 50.84, 28.97, 30],
+  ['Kazerun', 51.65, 29.62, 15], ['Fasa', 53.65, 28.94, 10], ['Sirjan', 55.68, 29.45, 10], ['Sistan', 61.5, 31.0, 10], ['Bampur', 60.45, 27.19, 10], ['Behbahan', 50.24, 30.6, 15],
+  ['Kabul', 69.17, 34.53, 55], ['Kandahar', 65.71, 31.61, 45], ['Herat', 62.2, 34.35, 45], ['Ghazni', 68.42, 33.55, 20], ['Jalalabad', 70.45, 34.43, 20], ['Mazar-i Sharif', 67.11, 36.71, 20], ['Balkh', 66.9, 36.76, 15], ['Tashkurgan', 67.69, 36.7, 20],
+  ['Kunduz', 68.86, 36.73, 15], ['Faizabad', 70.58, 37.12, 15], ['Maimana', 64.75, 35.92, 15], ['Farah', 62.12, 32.37, 15], ['Girishk', 64.37, 31.82, 10], ['Bamian', 67.83, 34.82, 10], ['Andkhui', 65.12, 36.95, 10], ['Charikar', 69.17, 35.01, 10], ['Kalat-i Ghilzai', 66.9, 32.1, 10],
+  ['Bukhara', 64.42, 39.77, 55], ['Samarcanda', 66.96, 39.65, 50], ['Tashkent', 69.28, 41.31, 55], ['Khiva', 60.36, 41.38, 40], ['Kokand', 70.94, 40.53, 45], ['Namangan', 71.67, 41.0, 30], ['Andigian', 72.34, 40.78, 30], ['Margilan', 71.72, 40.47, 30],
+  ['Osh', 72.8, 40.52, 20], ['Khogent', 69.62, 40.28, 30], ['Ura-Tyube', 69.0, 39.92, 15], ['Jizzakh', 67.84, 40.12, 15], ['Karshi', 65.79, 38.86, 25], ['Shahrisabz', 66.83, 39.06, 20], ['Kermine', 65.38, 40.15, 10], ['Chardjui', 63.6, 39.08, 15],
+  ['Kerki', 65.21, 37.84, 10], ['Termez', 67.27, 37.22, 5], ['Hissar', 68.55, 38.53, 15], ['Kulob', 69.78, 37.91, 15], ['Garm', 70.37, 39.0, 10], ['Kalai-Khumb', 70.77, 38.45, 5], ['Merv', 61.83, 37.6, 30], ['Geok Tepe', 57.97, 38.15, 20],
+  ['Kyzyl-Arvat', 56.27, 39.0, 10], ['Krasnovodsk', 52.97, 40.02, 15], ['Chikishlyar', 53.8, 37.6, 5], ['Petro-Aleksandrovsk', 61.0, 41.55, 10], ['Kungrad', 58.9, 43.07, 10], ['Chimkent', 69.6, 42.32, 20], ['Aulie-Ata', 71.37, 42.9, 15],
+  ['Turkestan', 68.25, 43.3, 20], ['Perovsk', 65.5, 44.85, 15], ['Kazalinsk', 62.1, 45.76, 15], ['Verny', 76.93, 43.25, 25], ['Kopal', 79.08, 45.13, 10], ['Pishpek', 74.6, 42.87, 10], ['Tokmak', 75.3, 42.84, 10], ['Karakol', 78.39, 42.49, 10],
+  ['Naryn', 75.99, 41.43, 10], ['Semipalatinsk', 80.23, 50.41, 25], ['Ust-Kamenogorsk', 82.61, 49.95, 15], ['Pavlodar', 76.95, 52.29, 10], ['Zaisan', 84.87, 47.47, 10], ['Sergiopol', 80.43, 47.97, 10], ['Karkaralinsk', 75.47, 49.41, 10],
+  ['Akmolinsk', 71.43, 51.17, 15], ['Kokchetav', 69.39, 53.28, 10], ['Petropavlovsk', 69.15, 54.87, 25], ['Atbasar', 68.36, 51.81, 10], ['Nikolaevsk', 63.62, 53.21, 10], ['Turgai', 63.5, 49.63, 5], ['Irgiz', 61.27, 48.62, 5], ['Temir', 57.2, 49.14, 5],
+  ['Gurev', 51.88, 47.11, 15], ['Uralsk', 51.37, 51.23, 30], ['Forte Aleksandrovsk', 50.27, 44.52, 5], ['Najran', 44.13, 17.49, 10], ['Qunfudha', 41.08, 19.13, 10],
   // Egitto e Sudan egiziano
   ['Asiut', 31.18, 27.18, 40], ['Girga', 31.89, 26.34, 30], ['Sohag', 31.7, 26.56, 20], ['Qena', 32.72, 26.16, 30], ['Luxor', 32.64, 25.69, 25], ['Esna', 32.55, 25.29, 20], ['Assuan', 32.9, 24.09, 30], ['Uadi Halfa', 31.33, 21.8, 20], ['Dongola', 30.48, 19.17, 30], ['Berber', 33.98, 18.02, 30], ['Khartum', 32.53, 15.6, 60], ['Sennar', 33.63, 13.55, 35], ['El Obeid', 30.22, 13.18, 45], ['El Fasher', 25.35, 13.63, 40], ['Cassala', 36.4, 15.45, 35], ['Suakin', 37.33, 19.1, 35], ['Massaua', 39.45, 15.61, 40], ['Cheren', 38.47, 15.78, 20], ['Fascioda', 32.1, 9.88, 25], ['Lado', 31.7, 5.03, 25], ['Dem Zubeir', 26.07, 7.73, 20], ['Gondokoro', 31.67, 4.9, 15], ['Fazogli', 34.35, 11.3, 15], ['Gallabat', 36.37, 12.97, 20], ['Ed Damer', 33.97, 17.6, 15], ['Shendi', 33.43, 16.68, 20], ['Darà', 24.3, 11.5, 15], ['Taiscia', 22.0, 11.8, 10], ['Nyala', 24.88, 12.05, 15], ['Kordofan', 30.2, 12.0, 5], ['Zeila', 43.47, 11.35, 35], ['Berbera', 45.03, 10.44, 35], ['Harar', 42.12, 9.31, 50],
   // Etiopia e Corno
@@ -203,7 +225,7 @@ export const AF_TOWNS = [
   ['Riad', 46.72, 24.63, 40], ['Unaiza', 43.99, 26.08, 30], ['Buraida', 43.97, 26.33, 30], ['Hofuf', 49.59, 25.38, 40], ['Qatif', 50.0, 26.56, 25], ['Kharj', 47.3, 24.15, 15], ['Sudair', 45.6, 25.7, 10], ['Uadi Dauasir', 45.0, 20.45, 15], ['Bisha', 42.6, 20.0, 15], ['Ranya', 42.85, 21.25, 5], ['Aflag', 46.0, 22.3, 10], ['Washm', 45.0, 25.4, 10],
 ];
 // nomi per le province del deserto senza una forma del terreno prevalente (il punto più vicino)
-export const AF_DESERT_NAMES = [['Saguia el-Hamra', -12.0, 26.5], ['Río de Oro', -14.8, 23.5], ['Tiris', -12.8, 22.0], ['Mreyé', -6.5, 21.0], ['Tanezruft', 0.0, 23.5], ['Azauad', -2.5, 19.5],
+export const AF_DESERT_NAMES = [['Karakum', 59.0, 39.5], ['Kyzylkum', 64.0, 42.5], ['Betpak-Dala', 70.0, 45.5], ['Dasht-e Kavir', 54.5, 34.5], ['Dasht-e Lut', 58.5, 32.0], ['Registan', 65.0, 30.8], ['Dasht-i Margo', 63.0, 30.6], ['Saguia el-Hamra', -12.0, 26.5], ['Río de Oro', -14.8, 23.5], ['Tiris', -12.8, 22.0], ['Mreyé', -6.5, 21.0], ['Tanezruft', 0.0, 23.5], ['Azauad', -2.5, 19.5],
   ['Adrar degli Ifoghas', 1.5, 19.5], ['Tamesna', 5.0, 18.0], ['Teneré', 10.5, 19.0], ['Kawar', 13.0, 19.5], ['Giado', 12.5, 21.8], ['Giurab', 17.5, 16.7], ['Mourdi', 22.0, 18.5], ['Sarir Tibesti', 18.5, 24.5],
   ['Calanscio', 22.0, 27.0], ['Gilf Kebir', 26.0, 23.5], ['Uadi Hauar', 26.5, 17.5], ['Atmur', 32.5, 20.5], ['Bayuda', 32.8, 17.8], ['Nubia', 31.0, 21.5], ['Etbai', 35.5, 21.0], ['Uadi Allaqi', 33.5, 22.5],
   ['Ahnet', 2.0, 25.0], ['Muydir', 4.0, 25.5], ['Tassili', 7.5, 25.5], ['Fezzan meridionale', 13.0, 24.0], ['Hamada di Murzuk', 12.0, 26.0], ['Erg Chech', -2.5, 25.0], ['Hodh', -8.0, 17.8],
@@ -252,7 +274,9 @@ export const AF_SIZE = { ZAF: 0.55, LSO: 0.6, SWZ: 0.6, EGY: 0.35, ETH: 0.75, ER
 export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM',
   // fase 2b: il resto del continente a sud del 27° parallelo
   'MRT', 'SEN', 'GMB', 'GNB', 'GIN', 'SLE', 'LBR', 'CIV', 'GHA', 'TGO', 'BEN', 'BFA', 'MLI', 'NER', 'NGA', 'CMR', 'TCD', 'CAF', 'GAB', 'GNQ', 'COG', 'COD',
-  'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG', 'SAH', 'MAR'];
+  'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG', 'SAH', 'MAR',
+  // fase 3: Arabia a sud del 27° parallelo, Persia a est del 50° meridiano, Afghanistan e Asia centrale
+  'SAU', 'YEM', 'OMN', 'ARE', 'QAT', 'BHR', 'IRN', 'AFG', 'TKM', 'UZB', 'KAZ', 'KGZ', 'TJK', 'AZE', 'KAB'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
 export const AF_FINE = { ERI: 6000 };
@@ -261,14 +285,14 @@ export const AF_FINE = { ERI: 6000 };
 export const AF_STEPPE = { modern: ['SAH'], boxes: [[-17.5, 18.5, -15.2, 21.4], [-17.5, 20.7, -8.6, 27.7]] };
 
 /** Piccoli possedimenti costieri ritagliati come regione a sé (la baia comprata dalla Rubattino, circa 600 km²). */
-export const AF_ENCLAVES = [{ name: 'Assab', at: [42.7, 13.0], r: 15 }, { name: 'Dakar e Gorea', at: [-17.33, 14.73], r: 16 }, { name: 'Lagos', at: [3.4, 6.5], r: 22 }, { name: 'Walvis Bay', at: [14.55, -22.95], r: 22 }];
+export const AF_ENCLAVES = [{ name: 'Assab', at: [42.7, 13.0], r: 15 }, { name: 'Dakar e Gorea', at: [-17.33, 14.73], r: 16 }, { name: 'Lagos', at: [3.4, 6.5], r: 22 }, { name: 'Walvis Bay', at: [14.55, -22.95], r: 22 }, { name: 'Aden', at: [45.0, 12.8], r: 12 }];
 
 /**
  * Fase 2b: fattore sulla dimensione delle province per paese (primo paese della regione). Dove la popolazione
  * del 1881 è rada (bacino del Congo, Ubangi, Zambesi, Kalahari) le province sono molto più grandi.
  */
 export const AF_DETAIL_SCALE = { COD: 1.7, CAF: 1.7, COG: 1.6, GAB: 1.6, AGO: 1.4, ZMB: 1.6, MWI: 1.3, MOZ: 1.4, NAM: 1.3, BWA: 1.2, TCD: 1.4, MRT: 1.2, MLI: 1.4, NER: 1.4,
-  BFA: 1.3, ZWE: 1.5, TZA: 1.5, KEN: 1.5, UGA: 1.3, CMR: 1.4, GIN: 1.3, SLE: 1.2, LBR: 1.3, CIV: 1.4, GHA: 1.3, TGO: 1.2, BEN: 1.2, NGA: 1.4, SEN: 1.3, MDG: 1.4, ZAF: 1.7 };
+  BFA: 1.3, ZWE: 1.5, TZA: 1.5, KEN: 1.5, UGA: 1.3, CMR: 1.4, GIN: 1.3, SLE: 1.2, LBR: 1.3, CIV: 1.4, GHA: 1.3, TGO: 1.2, BEN: 1.2, NGA: 1.4, SEN: 1.3, MDG: 1.4, ZAF: 1.7, IRN: 1.2, AFG: 1.2, TKM: 1.3, SAU: 1.1, OMN: 1.1 };
 
 export const AF_DETAIL_REGIONS = [
   // Alto Egitto: le mudiriyya del 1881
@@ -394,4 +418,50 @@ export const AF_DETAIL_REGIONS = [
   ['Boina', 46.5, -16.2, ['MDG'], 40000, 'MAD'], ['Antankara', 49.2, -13.2, ['MDG'], 25000, 'MAD'], ['Fort-Dauphin', 46.9, -24.6, ['MDG'], 20000, 'MAD'], ['Costa sud-orientale', 47.8, -22.5, ['MDG'], 25000, 'MAD'],
   ['Menabe', 44.5, -19.8, ['MDG'], 50000, ''], ['Bara', 45.5, -22.6, ['MDG'], 50000, ''], ['Paese antandroy', 45.6, -24.8, ['MDG'], 35000, ''], ['Tuléar', 43.9, -23.0, ['MDG'], 35000, ''],
   ['Sakalava settentrionali', 47.8, -14.7, ['MDG'], 30000, ''],
+  // ===== Fase 3: Arabia meridionale, Persia orientale, Afghanistan, Asia centrale (1881) =====
+  // Arabia: Hegiaz e Asir ottomani, il Neged dei Rashidi (Gebel Shammar), al-Hasa ottomano, l'Oman, la costa della Tregua, lo Yemen
+  ['Medina', 39.4, 24.6, ['SAU'], 35000, 'TUR'], ['La Mecca', 39.9, 21.6, ['SAU'], 25000, 'TUR'], ['Taif', 41.0, 20.9, ['SAU'], 30000, 'TUR'], ['Asir', 42.6, 18.4, ['SAU'], 25000, 'TUR'],
+  ['Tihama dell\'Asir', 42.4, 17.2, ['SAU'], 15000, 'TUR'], ['Bisha', 42.7, 20.0, ['SAU'], 50000, ''], ['Najran', 44.2, 17.6, ['SAU', 'YEM'], 40000, ''],
+  ['Qasim', 43.9, 26.2, ['SAU'], 35000, 'ARA'], ['Sudair', 45.5, 25.6, ['SAU'], 35000, 'ARA'], ['Riad', 46.7, 24.6, ['SAU'], 40000, 'ARA'], ['Kharj', 47.4, 23.9, ['SAU'], 45000, 'ARA'],
+  ['Aflag', 46.0, 22.3, ['SAU'], 60000, 'ARA'], ['Uadi Dauasir', 45.0, 20.5, ['SAU'], 80000, ''], ['Hofuf', 49.4, 25.2, ['SAU'], 35000, 'TUR'], ['Qatif', 50.0, 26.5, ['SAU'], 15000, 'TUR'],
+  ['Qatar', 51.2, 25.3, ['QAT'], 12000, 'TUR'], ['Bahrein', 50.55, 26.0, ['BHR'], 1000, 'BHR'],
+  ['Abu Dhabi', 54.0, 23.8, ['ARE'], 45000, 'TRU'], ['Dubai e Sharja', 55.6, 25.2, ['ARE'], 8000, 'TRU'], ['Ras al-Khaima', 56.0, 25.7, ['ARE'], 5000, 'TRU'],
+  ['Mascate', 58.5, 23.4, ['OMN'], 15000, 'OMA'], ['Batina', 56.9, 24.2, ['OMN', 'ARE'], 12000, 'OMA'], ['Oman interno', 57.5, 22.6, ['OMN'], 30000, 'OMA'], ['Sur e Jaalan', 59.1, 22.0, ['OMN'], 25000, 'OMA'],
+  ['Musandam', 56.2, 26.1, ['OMN'], 3000, 'OMA'], ['Dhofar', 54.0, 17.4, ['OMN'], 40000, 'OMA'], ['Uosta', 56.5, 19.8, ['OMN'], 90000, ''],
+  ['Sana', 44.2, 15.4, ['YEM'], 12000, 'TUR'], ['Saada', 43.8, 16.9, ['YEM'], 15000, 'TUR'], ['Hodeida', 43.1, 15.0, ['YEM'], 12000, 'TUR'], ['Taizz', 44.0, 13.6, ['YEM'], 10000, 'TUR'],
+  ['Ibb', 44.3, 14.1, ['YEM'], 8000, 'TUR'], ['Dhamar', 44.5, 14.7, ['YEM'], 8000, 'TUR'], ['Marib', 45.6, 15.6, ['YEM'], 30000, ''], ['Aden', 45.0, 12.8, ['YEM'], 500, 'GBR'],
+  ['Lahej', 44.9, 13.2, ['YEM'], 6000, ''], ['Bayda', 45.6, 13.9, ['YEM'], 15000, ''], ['Shabwa', 47.0, 14.8, ['YEM'], 35000, ''], ['Hadramaut', 48.8, 15.9, ['YEM'], 30000, ''],
+  ['Mukalla', 49.0, 14.6, ['YEM'], 15000, ''], ['Mahra', 51.5, 16.5, ['YEM'], 40000, ''], ['Socotra', 53.9, 12.5, ['YEM'], 4000, ''],
+  // Persia a est del 50° meridiano: le province dello scià
+  ['Teheran', 51.4, 35.6, ['IRN'], 15000, 'PER'], ['Qom', 50.9, 34.6, ['IRN'], 15000, 'PER'], ['Kashan', 51.5, 33.8, ['IRN'], 18000, 'PER'], ['Isfahan', 51.7, 32.6, ['IRN'], 25000, 'PER'],
+  ['Mazanderan', 52.6, 36.4, ['IRN'], 15000, 'PER'], ['Astarabad', 54.6, 37.0, ['IRN'], 18000, 'PER'], ['Semnan e Damghan', 53.9, 35.8, ['IRN'], 30000, 'PER'],
+  ['Mashhad', 59.4, 36.4, ['IRN'], 20000, 'PER'], ['Nishapur', 58.6, 36.0, ['IRN'], 18000, 'PER'], ['Sabzevar', 57.5, 36.2, ['IRN'], 18000, 'PER'], ['Quchan e Bojnurd', 57.6, 37.4, ['IRN'], 20000, 'PER'],
+  ['Torbat', 59.5, 35.0, ['IRN'], 25000, 'PER'], ['Qaenat', 59.0, 33.2, ['IRN'], 40000, 'PER'], ['Tabas', 56.9, 33.6, ['IRN'], 50000, 'PER'], ['Sistan', 61.5, 30.9, ['IRN'], 25000, 'PER'],
+  ['Yazd', 54.5, 31.8, ['IRN'], 40000, 'PER'], ['Kerman', 57.0, 30.0, ['IRN'], 40000, 'PER'], ['Bam e Narmashir', 58.6, 29.0, ['IRN'], 35000, 'PER'], ['Belucistan persiano', 61.0, 27.0, ['IRN'], 60000, 'PER'],
+  ['Shiraz', 52.6, 29.6, ['IRN'], 25000, 'PER'], ['Kazerun', 51.5, 29.8, ['IRN'], 15000, 'PER'], ['Bushehr', 51.0, 28.8, ['IRN'], 15000, 'PER'], ['Kuhgiluyeh', 50.7, 30.8, ['IRN'], 18000, 'PER'],
+  ['Fasa e Darab', 54.0, 28.8, ['IRN'], 25000, 'PER'], ['Laristan', 54.0, 27.6, ['IRN'], 30000, 'PER'], ['Bandar Abbas', 56.6, 27.4, ['IRN'], 25000, 'PER'], ['Sirjan', 55.7, 29.4, ['IRN'], 25000, 'PER'],
+  // Afghanistan dell'emiro Abdur Rahman (Kandahar inglese fino all'aprile 1881); Maimana e il Kafiristan indipendenti
+  ['Kabul', 69.0, 34.6, ['AFG'], 20000, 'AFG'], ['Jalalabad', 70.6, 34.5, ['AFG'], 12000, 'AFG'], ['Ghazni', 68.2, 33.3, ['AFG'], 30000, 'AFG'], ['Kandahar', 65.6, 31.5, ['AFG'], 40000, 'AFG'],
+  ['Herat', 62.3, 34.4, ['AFG'], 35000, 'AFG'], ['Farah', 62.0, 32.3, ['AFG'], 50000, 'AFG'], ['Helmand', 64.0, 30.4, ['AFG'], 60000, 'AFG'], ['Hazarajat', 66.6, 34.2, ['AFG'], 45000, 'AFG'],
+  ['Balkh', 67.0, 36.6, ['AFG'], 30000, 'AFG'], ['Maimana', 64.8, 35.9, ['AFG'], 25000, ''], ['Kunduz', 68.9, 36.6, ['AFG'], 25000, 'AFG'], ['Badakhshan', 70.9, 37.0, ['AFG'], 35000, 'AFG'],
+  ['Kafiristan', 70.9, 35.4, ['AFG'], 15000, ''], ['Wakhan', 73.0, 37.0, ['AFG'], 12000, 'AFG'],
+  // Turkestan russo, khanati di Bukhara e Khiva (protettorati russi dal 1873), Turkmeni liberi
+  ['Krasnovodsk', 53.8, 40.3, ['TKM'], 50000, 'RUS'], ['Atrek', 55.0, 37.9, ['TKM'], 20000, ''], ['Akhal', 57.8, 38.5, ['TKM'], 30000, ''], ['Merv', 61.8, 37.4, ['TKM'], 40000, ''],
+  ['Chardjui', 63.5, 39.2, ['TKM'], 25000, 'BUK'], ['Kerki', 65.0, 37.8, ['TKM'], 15000, 'BUK'], ['Tashauz', 59.5, 41.8, ['TKM'], 20000, 'KHI'],
+  ['Khiva', 60.4, 41.4, ['UZB'], 20000, 'KHI'], ['Kungrad', 58.9, 43.1, ['UZB'], 35000, 'KHI'], ['Amu Darya', 61.6, 42.3, ['UZB'], 50000, 'RUS'], ['Ustyurt', 56.5, 43.7, ['UZB', 'KAZ'], 100000, 'RUS'],
+  ['Bukhara', 64.3, 39.8, ['UZB'], 20000, 'BUK'], ['Karshi', 65.8, 38.8, ['UZB'], 20000, 'BUK'], ['Shahrisabz', 66.9, 39.0, ['UZB'], 12000, 'BUK'], ['Surkhan', 67.5, 37.9, ['UZB'], 20000, 'BUK'],
+  ['Samarcanda', 67.0, 39.7, ['UZB'], 15000, 'RUS'], ['Jizzakh', 67.9, 40.3, ['UZB'], 15000, 'RUS'], ['Tashkent', 69.4, 41.3, ['UZB'], 15000, 'RUS'],
+  ['Kokand', 70.8, 40.5, ['UZB'], 8000, 'RUS'], ['Namangan', 71.6, 41.0, ['UZB'], 8000, 'RUS'], ['Andigian', 72.3, 40.8, ['UZB'], 8000, 'RUS'],
+  ['Khogent', 69.4, 40.1, ['TJK'], 12000, 'RUS'], ['Hissar', 68.6, 38.6, ['TJK'], 18000, 'BUK'], ['Kulob', 69.8, 37.9, ['TJK'], 15000, 'BUK'], ['Karategin', 70.5, 39.0, ['TJK'], 20000, 'BUK'],
+  ['Darvaz', 71.3, 38.4, ['TJK'], 15000, 'BUK'], ['Pamir', 73.5, 38.0, ['TJK'], 60000, ''],
+  ['Osh', 72.9, 40.4, ['KGZ'], 15000, 'RUS'], ['Alai', 73.2, 39.6, ['KGZ'], 25000, 'RUS'], ['Jalal-Abad', 72.9, 41.3, ['KGZ'], 20000, 'RUS'], ['Talas', 72.2, 42.4, ['KGZ'], 12000, 'RUS'],
+  ['Pishpek', 74.6, 42.7, ['KGZ'], 20000, 'RUS'], ['Naryn', 75.6, 41.4, ['KGZ'], 40000, 'RUS'], ['Issyk-Kul', 78.0, 42.0, ['KGZ'], 30000, 'RUS'],
+  // la steppa kazaka: oblast di Uralsk, Turgai, Akmolinsk, Semipalatinsk, Semirece, Syr Darya, Mangyshlak
+  ['Uralsk', 51.6, 50.6, ['KAZ'], 40000, 'RUS'], ['Gurev', 52.5, 47.3, ['KAZ'], 60000, 'RUS'], ['Mangyshlak', 53.0, 44.0, ['KAZ'], 100000, 'RUS'], ['Temir', 56.5, 48.8, ['KAZ'], 80000, 'RUS'],
+  ['Irgiz', 61.0, 48.0, ['KAZ'], 120000, 'RUS'], ['Turgai', 64.0, 50.0, ['KAZ'], 120000, 'RUS'], ['Kustanai', 63.5, 52.8, ['KAZ'], 70000, 'RUS'],
+  ['Kazalinsk', 62.0, 45.5, ['KAZ', 'KAB'], 80000, 'RUS'], ['Perovsk', 65.5, 44.8, ['KAZ'], 80000, 'RUS'], ['Turkestan', 68.3, 43.5, ['KAZ'], 50000, 'RUS'], ['Cimkent', 69.6, 42.4, ['KAZ'], 25000, 'RUS'],
+  ['Aulie-Ata', 71.5, 43.0, ['KAZ'], 40000, 'RUS'], ['Betpak-Dala', 70.0, 46.0, ['KAZ'], 150000, 'RUS'], ['Akmolinsk', 71.0, 51.0, ['KAZ'], 80000, 'RUS'], ['Kokchetav', 69.4, 53.3, ['KAZ'], 60000, 'RUS'],
+  ['Karkaralinsk', 75.5, 49.0, ['KAZ'], 100000, 'RUS'], ['Pavlodar', 76.8, 52.0, ['KAZ'], 70000, 'RUS'], ['Semipalatinsk', 80.0, 50.2, ['KAZ'], 60000, 'RUS'], ['Ust-Kamenogorsk', 83.0, 49.5, ['KAZ'], 50000, 'RUS'],
+  ['Zaisan', 84.0, 47.6, ['KAZ'], 40000, 'RUS'], ['Sergiopol', 80.5, 47.5, ['KAZ'], 70000, 'RUS'], ['Kopal', 79.0, 45.0, ['KAZ'], 50000, 'RUS'], ['Verny', 76.8, 43.6, ['KAZ'], 40000, 'RUS'],
+  ['Balkhash', 74.5, 46.3, ['KAZ'], 100000, 'RUS'], ['Apsceron', 50.2, 40.4, ['AZE'], 3000, 'RUS'],
 ];

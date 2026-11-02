@@ -457,16 +457,17 @@ function terrainOf(lon, lat, owner) {
 // niente coste finte). Si allineano i vertici a meno di 100 m dal bordo e si inseriscono in ogni segmento del
 // bordo i vertici dell'altro lato: le forme non cambiano (punti sulla stessa retta).
 function stitchSeam(features) {
-  const [x0, y0, x1] = BBOX, EPS = 1e-3, Y_TOP = y0 + 4;
-  const xs = new Set(), ys = new Set();
+  const [x0, y0, x1] = BBOX, EPS = 1e-3, Y_TOP = y0 + 4, E_TOP = AF_CLIP[3];
+  const xs = new Set(), ys = new Set(), es = new Set(); // es: il bordo orientale (50° E, Persia e Asia centrale)
   const ringsOf = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []).flat();
   let snapped = 0;
   for (const f of features) for (const ring of ringsOf(f.geometry)) for (let i = 0; i < ring.length; i++) {
     const pt = ring[i];
     if (Math.abs(pt[1] - y0) < EPS && pt[0] >= x0 - EPS && pt[0] <= x1 + EPS) { if (pt[1] !== y0) { ring[i] = [pt[0], y0]; snapped++; } xs.add(ring[i][0]); }
     if (Math.abs(pt[0] - x0) < EPS && pt[1] >= y0 - EPS && pt[1] <= Y_TOP) { if (ring[i][0] !== x0) { ring[i] = [x0, ring[i][1]]; snapped++; } ys.add(ring[i][1]); }
+    if (Math.abs(ring[i][0] - x1) < EPS && ring[i][1] >= y0 - EPS && ring[i][1] <= E_TOP) { if (ring[i][0] !== x1) { ring[i] = [x1, ring[i][1]]; snapped++; } es.add(ring[i][1]); }
   }
-  const sx = [...xs].sort((a, b) => a - b), sy = [...ys].sort((a, b) => a - b);
+  const sx = [...xs].sort((a, b) => a - b), sy = [...ys].sort((a, b) => a - b), se = [...es].sort((a, b) => a - b);
   const between = (arr, a, b) => { const lo = Math.min(a, b), hi = Math.max(a, b); const out = arr.filter((v) => v > lo && v < hi); return a < b ? out : out.reverse(); };
   let added = 0;
   for (const f of features) {
@@ -480,6 +481,7 @@ function stitchSeam(features) {
         if (!b) continue;
         if (a[1] === y0 && b[1] === y0) for (const x of between(sx, a[0], b[0])) { out.push([x, y0]); added++; }
         else if (a[0] === x0 && b[0] === x0 && a[1] <= Y_TOP && b[1] <= Y_TOP) for (const y of between(sy, a[1], b[1])) { out.push([x0, y]); added++; }
+        else if (a[0] === x1 && b[0] === x1 && a[1] >= y0 && b[1] >= y0 && a[1] <= E_TOP && b[1] <= E_TOP) for (const y of between(se, a[1], b[1])) { out.push([x1, y]); added++; }
       }
       poly[r] = out;
     }
@@ -507,9 +509,12 @@ async function main() {
   ms(path.join(RAW, 'ne_10m_geography_regions_polys.geojson'), '-filter', "['Range/mtn','Plateau','Desert','Wetlands','Foothills'].includes(FEATURECLA)",
     '-each', 'cls=FEATURECLA, name=NAME', '-filter-fields', 'cls,name', '-clip', `bbox=${AF_CLIP}`, '-o', path.join(TMP, 'phys_af.geojson'));
   // livelli da disegnare: Europa e Mediterraneo (il rettangolo) più Africa, Arabia e isole atlantiche
-  const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], AF_CLIP[2], BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], AF_CLIP[3]]];
+  // Persia orientale e Asia centrale: solo sulle terre incluse (niente fiumi dell'India o della Siberia nel vuoto)
+  const EAST_MASK = path.join(TMP, 'draw_mask_east.geojson');
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${BBOX[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
+  const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], 62, BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], 40], EAST_MASK];
   const drawLayer = (out, src, pre, post) => {
-    const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', `bbox=${b}`, '-o', o); return o; });
+    const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', typeof b === 'string' ? b : `bbox=${b}`, '-o', o); return o; });
     ms('-i', ...parts, 'combine-files', '-merge-layers', 'force', ...post, '-o', path.join(TMP, out));
   };
   drawLayer('phys_draw.geojson', [path.join(RAW, 'ne_10m_geography_regions_polys.geojson')], ['-filter', "['Range/mtn','Plateau'].includes(FEATURECLA)", '-each', 'cls=FEATURECLA, name=NAME', '-filter-fields', 'cls,name'],
@@ -1260,6 +1265,16 @@ async function main() {
   fgeoms.forEach((g, k) => walkArcs(g, (a) => arcUse[a < 0 ? ~a : a].push(k)));
   // bordo della mappa: solo i lati del rettangolo europeo (le coste africane vicine al 50° E o al 27° N restano coste)
   const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
+  // frontiere provvisorie verso le terre non ancora in mappa (Siberia, Cina, Pakistan, India): non sono coste
+  const FRONTIER = path.join(TMP, 'frontier.geojson');
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['RUS','CHN','PAK','IND','NPL','MNG','KAS'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
+  const frontierFc = readJSON(FRONTIER);
+  const frontier = (frontierFc.features ?? frontierFc.geometries.map((g) => ({ type: 'Feature', geometry: g, properties: {} }))).filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) }));
+  const onFrontier = (arc) => {
+    const pts = [0.1, 0.3, 0.5, 0.7, 0.9].map((t) => arc[Math.min(arc.length - 1, Math.floor(t * arc.length))]);
+    return pts.filter(([x, y]) => frontier.some(({ f, bb }) => x > bb[0] - 0.1 && x < bb[2] + 0.1 && y > bb[1] - 0.1 && y < bb[3] + 0.1
+      && (turf.booleanPointInPolygon([x, y], f) || turf.pointToPolygonDistance([x, y], f, { units: 'kilometers' }) < 8))).length >= 3;
+  };
 
   const provinces = fgeoms.map((g, k) => {
     const info = gInfo[g.properties.g];
@@ -1273,7 +1288,8 @@ async function main() {
       if (!turf.booleanPointInPolygon(pt, big)) pt = turf.pointOnFeature(big).geometry.coordinates;
     }
     let coastLen = 0;
-    walkArcs(g, (a) => { const idx = a < 0 ? ~a : a; if (arcUse[idx].length === 1 && !onClip(arcs[idx])) coastLen += turf.length(turf.lineString(arcs[idx].length > 1 ? arcs[idx] : [arcs[idx][0], arcs[idx][0]])); });
+    walkArcs(g, (a) => { const idx = a < 0 ? ~a : a; if (arcUse[idx].length === 1 && !onClip(arcs[idx]) && !onFrontier(arcs[idx])) coastLen += turf.length(turf.lineString(arcs[idx].length > 1 ? arcs[idx] : [arcs[idx][0], arcs[idx][0]])); });
+    if (process.env.DEBUG_COAST && info.name === process.env.DEBUG_COAST) walkArcs(g, (a) => { const idx = a < 0 ? ~a : a; if (arcUse[idx].length === 1 && !onClip(arcs[idx]) && !onFrontier(arcs[idx])) { const arc = arcs[idx]; log('COSTA', info.name, arc.length, Math.round(turf.length(turf.lineString(arc.length > 1 ? arc : [arc[0], arc[0]]))), JSON.stringify(arc[0]), JSON.stringify(arc[Math.floor(arc.length / 2)])); } });
     return { k, info, f, pt, coast: coastLen > 15, modernPop: 0 };
   });
 
