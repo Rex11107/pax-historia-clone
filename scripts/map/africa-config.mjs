@@ -252,10 +252,13 @@ export const AF_SIZE = { ZAF: 0.55, LSO: 0.6, SWZ: 0.6, EGY: 0.35, ETH: 0.75, ER
 export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM',
   // fase 2b: il resto del continente a sud del 27° parallelo
   'MRT', 'SEN', 'GMB', 'GNB', 'GIN', 'SLE', 'LBR', 'CIV', 'GHA', 'TGO', 'BEN', 'BFA', 'MLI', 'NER', 'NGA', 'CMR', 'TCD', 'CAF', 'GAB', 'GNQ', 'COG', 'COD',
-  'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG'];
+  'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG', 'SAH', 'MAR'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
 export const AF_FINE = { ERI: 6000 };
+
+/** Deserto percorso dai nomadi, non intransitabile: il Sahara occidentale (spagnolo dal 1884) e la costa mauritana. */
+export const AF_STEPPE = { modern: ['SAH'], boxes: [[-17.5, 18.5, -15.2, 21.4], [-17.5, 20.7, -8.6, 27.7]] };
 
 /** Piccoli possedimenti costieri ritagliati come regione a sé (la baia comprata dalla Rubattino, circa 600 km²). */
 export const AF_ENCLAVES = [{ name: 'Assab', at: [42.7, 13.0], r: 15 }, { name: 'Dakar e Gorea', at: [-17.33, 14.73], r: 16 }, { name: 'Lagos', at: [3.4, 6.5], r: 22 }, { name: 'Walvis Bay', at: [14.55, -22.95], r: 22 }];
@@ -296,6 +299,9 @@ export const AF_DETAIL_REGIONS = [
   ['Obbia', 48.3, 5.5, ['SOM'], 49000, 'OBB'], ['Mudugh', 47.2, 6.2, ['SOM'], 49000, ''], ['Hiran', 45.4, 4.6, ['SOM', 'ETH'], 42000, ''], ['Benadir', 45.4, 2.3, ['SOM'], 15000, 'ZAN'],
   ['Basso Scebeli', 44.3, 1.6, ['SOM'], 18000], ['Bai', 43.6, 2.8, ['SOM'], 35000, ''], ['Lugh', 42.3, 3.6, ['SOM', 'ETH'], 42000, ''], ['Oltregiuba', 41.8, -0.2, ['SOM'], 42000],
   // ===== Fase 2b: il resto del continente (1881) =====
+  // Sahara occidentale: terre dei Reguibat e degli Ulad Delim, costa di Río de Oro (Villa Cisneros spagnola dal 1884)
+  ['Saguia el-Hamra', -12.3, 26.6, ['SAH', 'MAR'], 90000, ''], ['Río de Oro', -15.4, 23.4, ['SAH', 'MAR'], 80000, ''], ['Tiris', -13.0, 22.6, ['SAH', 'MAR'], 90000, ''],
+  ['Capo Bianco', -16.3, 20.2, ['MRT'], 40000, ''],
   // Mauritania: gli emirati mauri
   ['Trarza', -15.3, 17.6, ['MRT'], 60000, ''], ['Brakna', -13.6, 17.3, ['MRT'], 55000, ''], ['Tagant', -11.4, 18.4, ['MRT'], 90000, ''], ['Adrar mauro', -12.8, 20.6, ['MRT'], 150000, ''],
   ['Assaba', -11.6, 16.6, ['MRT'], 45000, ''], ['Guidimaka', -12.0, 15.3, ['MRT'], 25000, ''], ['Hodh', -8.0, 16.5, ['MRT', 'MLI'], 90000, ''],

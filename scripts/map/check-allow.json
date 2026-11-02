@@ -1,0 +1,5 @@
+{
+  "_": "eccezioni accettate dal controllo della mappa (nome della provincia): solo dove la storia o la geografia le giustificano",
+  "deserto": ["Deserto nubiano", "Deserto orientale"],
+  "dentro": ["Altopiano di Jos", "Najran", "Bayuda"]
+}

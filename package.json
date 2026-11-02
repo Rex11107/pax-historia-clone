@@ -8,9 +8,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "map": "node scripts/map/build-map.mjs",
+    "map": "node scripts/map/build-map.mjs && node scripts/map/check-map.mjs --from=1375",
     "cap:sync": "cap sync android",
-    "icons": "node scripts/icons/make-icons.cjs"
+    "icons": "node scripts/icons/make-icons.cjs",
+    "map:check": "node scripts/map/check-map.mjs --from=1375"
   },
   "repository": {
     "type": "git",

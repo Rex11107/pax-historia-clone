@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -193,6 +193,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
       if (hit(AF_ARID.sahara, a.c) && a.c[1] > sahel(a.c[0])) d = true;
       else if (hit(AF_ARID.sparse, a.c) && per10k < 1.2) d = true; // Rub al-Khali, deserti egiziani: dove i dati sono fitti
     }
+    // coste e steppe percorse dai nomadi (Sahara occidentale, costa mauritana): non sono deserto intransitabile
+    if (d && (AF_STEPPE.modern.includes(a.modern) || AF_STEPPE.boxes.some((b) => inBox(a.c, b)))) d = false;
     a.desert = d;
     if (a.desert) a.owner = '';
   }
@@ -330,6 +332,43 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     }
   }
   if (process.env.DEBUG_REG) for (const [id, c] of cl) if (c.reg && process.env.DEBUG_REG.split(',').includes(c.reg)) log('DBG', id, c.reg, c.owner, c.key, Math.round(c.A), c.T, [...c.nb].map(([o, l]) => `${cl.get(o).reg || cl.get(o).key}:${o}:${Math.round(l)}`).join(' '));
+  // niente exclavi: ogni provincia tiene il suo pezzo connesso più grande (e le isole); gli altri pezzi di terraferma
+  // passano alla provincia confinante con cui condividono più confine (meglio se dello stesso padrone e della stessa classe)
+  {
+    const owner = new Map(); // atomo -> provincia
+    for (const [id, c] of cl) for (const i of c.ids) owner.set(i, id);
+    for (let it = 0; it < 6; it++) {
+      let moved = 0;
+      for (const [id, c] of cl) {
+        if (c.ids.length < 2) continue;
+        const set = new Set(c.ids), seen = new Set(), comps = [];
+        for (const i of c.ids) {
+          if (seen.has(i)) continue;
+          const q = [i], comp = { ids: [], area: 0 }; seen.add(i);
+          while (q.length) { const k = q.pop(); comp.ids.push(k); comp.area += A[k].area; for (const j of shared[k].keys()) if (set.has(j) && !seen.has(j)) { seen.add(j); q.push(j); } }
+          comps.push(comp);
+        }
+        if (comps.length < 2) continue;
+        comps.sort((a, b) => b.area - a.area);
+        for (const comp of comps.slice(1)) {
+          const border = new Map();
+          for (const k of comp.ids) for (const [j, l] of shared[k]) {
+            if (set.has(j)) continue;
+            const o = owner.get(j), O = cl.get(o);
+            border.set(o, (border.get(o) || 0) + l * (O.owner === c.owner ? 3 : 1) * (O.cls === c.cls ? 2 : 1));
+          }
+          if (!border.size) continue; // un'isola vera
+          const to = [...border].sort((a, b) => b[1] - a[1])[0][0], T = cl.get(to);
+          const mv = new Set(comp.ids);
+          c.ids = c.ids.filter((k) => !mv.has(k)); c.A -= comp.area;
+          T.ids.push(...comp.ids); T.A += comp.area;
+          for (const k of comp.ids) owner.set(k, to);
+          moved++;
+        }
+      }
+      if (!moved) break;
+    }
+  }
   log(`Africa: ${cl.size} province`);
 
   // 6. informazioni di provincia
@@ -410,6 +449,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
       used.add(g.name);
     }
   }
-  const pieces = A.map((a) => ({ type: 'Feature', geometry: a.f.geometry, properties: { g: groupOf.get(find(a.i)) } }));
+  const atomOf = new Map();
+  for (const [id, c] of cl) for (const i of c.ids) atomOf.set(i, id);
+  const pieces = A.map((a) => ({ type: 'Feature', geometry: a.f.geometry, properties: { g: groupOf.get(atomOf.get(a.i)) } }));
   return { pieces, infos };
 }
