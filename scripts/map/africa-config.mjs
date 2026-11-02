@@ -4,12 +4,28 @@
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
 export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'PAK', 'BRA',
   // fasi successive: India, Cina, Siberia
-  'IND', 'CHN', 'MNG', 'RUS', 'NPL', 'BGD', 'BTN', 'MMR', 'LKA', 'MDV', 'IOT', 'USA', 'KAS'];
+  'IND', 'CHN', 'MNG', 'NPL', 'BGD', 'BTN', 'MMR', 'LKA', 'MDV', 'IOT', 'USA', 'KAS'];
+/**
+ * Popolazione del 1881 per unità amministrativa moderna (stima dai censimenti del 1881-1897 dei governatorati).
+ * Ha la precedenza sul bacino del paese moderno: in Siberia la popolazione di oggi (Vladivostok, Kuzbass) non dice
+ * niente di quella del 1881, concentrata negli Urali e lungo la via della Siberia.
+ */
+export const AF_POP_ISO = {
+  'RU-BA': 1_400_000, 'RU-ORE': 700_000, 'RU-CHE': 550_000, 'RU-SVE': 1_000_000, 'RU-PER': 1_000_000, 'RU-UD': 600_000, 'RU-TA': 600_000,
+  'RU-SAM': 500_000, 'RU-KIR': 400_000, 'RU-KO': 90_000, 'RU-ARK': 20_000, 'RU-NEN': 8_000,
+  'RU-KGN': 450_000, 'RU-TYU': 400_000, 'RU-KHM': 30_000, 'RU-YAN': 20_000, 'RU-OMS': 350_000,
+  'RU-NVS': 300_000, 'RU-TOM': 250_000, 'RU-KEM': 250_000, 'RU-ALT': 450_000, 'RU-AL': 50_000,
+  'RU-KYA': 400_000, 'RU-KK': 80_000, 'RU-TY': 50_000, 'RU-IRK': 350_000, 'RU-BU': 200_000, 'RU-ZAB': 300_000,
+  'RU-SA': 240_000, 'RU-AMU': 40_000, 'RU-YEV': 5_000, 'RU-KHA': 30_000, 'RU-PRI': 50_000, 'RU-SAK': 20_000,
+  'RU-KAM': 10_000, 'RU-MAG': 10_000, 'RU-CHU': 12_000,
+};
+/** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
+export const AF_FAR_KEEP = ['RUS'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
-export const AF_CLIP = [-30, -36, 88, 56];
+export const AF_CLIP = [-30, -36, 180, 78];
 
 // grandi laghi naturali (i bacini artificiali come il Nasser, il Volta o il Kariba nel 1881 non esistevano)
-export const AF_LAKES = ['Lake Balkhash', 'Issyk-Kul', 'Lake Zaysan', 'Alakol', 'Lake Albert', 'Lake Malawi', 'Lake Tanganyika', 'Lake Victoria', 'Lake Tana', 'Lac Moeru', 'Lake Bangweulu', 'Lake Kivu', 'Lake Edward', 'Lake Turkana'];
+export const AF_LAKES = ['Lake Baikal', 'Lake Khanka', 'Lake Taymyr', 'Lake Chany', 'Lake Balkhash', 'Issyk-Kul', 'Lake Zaysan', 'Alakol', 'Lake Albert', 'Lake Malawi', 'Lake Tanganyika', 'Lake Victoria', 'Lake Tana', 'Lac Moeru', 'Lake Bangweulu', 'Lake Kivu', 'Lake Edward', 'Lake Turkana'];
 
 // stato d'epoca (world_1880) -> tag; '' = terra di nessuno
 export const AF_HIST = {
@@ -30,7 +46,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': '', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': '',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': '', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': '', 'Imperial Japan': '',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -97,6 +113,8 @@ export const AF_POP = {
   ZAF: 2_600_000, LSO: 150_000, SWZ: 80_000, MDG: 2_500_000, MUS: 360_000, COM: 60_000, SYC: 15_000, SHN: 6_000,
   SAU: 30_000, YEM: 900_000, OMN: 600_000, ARE: 70_000, BHR: 60_000, QAT: 0,
   // Persia a est del 50° meridiano (l'ovest sta nel bacino della Persia), Afghanistan, Turkestan e steppa kazaka
+  // Russia a est del 50° meridiano: Urali e Siberia (circa 5 milioni negli Urali, 4 in Siberia, poche centinaia di migliaia in Estremo Oriente)
+  RUS: 9_000_000,
   IRN: 4_500_000, AFG: 3_000_000, TKM: 700_000, UZB: 3_200_000, KAZ: 2_400_000, KGZ: 650_000, TJK: 900_000, KAB: 5_000,
   ESP: 280_000, PRT: 395_000, FRA: 180_000,
 };
@@ -180,6 +198,23 @@ export const AF_ARID = {
 
 // località storiche (1881) per il nome delle province: [nome, lon, lat, peso]
 export const AF_TOWNS = [
+  ['Kamen', 81.35, 53.8, 3], ['Zmeinogorsk', 82.2, 51.15, 8], ['Kolyvan', 82.75, 55.3, 8], ['Sretensk', 117.7, 52.25, 5], ['Nercinskij Zavod', 119.6, 51.3, 5], ['Aksa', 113.3, 50.3, 3],
+  ['Tunka', 102.0, 51.7, 3], ['Zima', 102.0, 53.9, 3], ['Tulun', 100.6, 54.6, 3], ['Zeiskaja Pristan', 127.3, 53.7, 3], ['Albazin', 124.2, 53.4, 2], ['Michailo-Semenovskoe', 133.0, 47.9, 2],
+  ['Kamen-Rybolov', 132.0, 44.75, 2], ['Nikolsk', 131.95, 43.8, 5], ['Posiet', 130.8, 42.65, 2], ['Olga', 135.3, 43.75, 2], ['Imperatorskaja Gavan', 140.3, 48.97, 1], ['Mariinsk sull\'Amur', 140.4, 51.1, 2],
+  ['Zigansk', 123.4, 66.77, 1], ['Bulun', 127.3, 70.75, 1], ['Ust-Maia', 134.5, 60.4, 1], ['Amga', 131.98, 60.9, 2], ['Niznekolymsk', 160.9, 68.55, 1], ['Kuznetsk Siberiano', 0, 0, 0],
+  // Russia asiatica (fase 4)
+  ['Ufa', 55.96, 54.74, 40], ['Orenburg', 55.1, 51.77, 45], ['Perm', 56.25, 58.0, 40], ['Ekaterinburg', 60.6, 56.84, 40], ['Celiabinsk', 61.4, 55.16, 20], ['Troitsk', 61.56, 54.09, 20], ['Zlatoust', 59.65, 55.17, 20],
+  ['Sterlitamak', 55.93, 53.63, 15], ['Birsk', 55.53, 55.42, 10], ['Menzelinsk', 53.1, 55.72, 10], ['Belebei', 54.1, 54.1, 10], ['Orsk', 58.57, 51.2, 15], ['Verchneuralsk', 59.22, 53.88, 10], ['Buzuluk', 52.25, 52.79, 15],
+  ['Buguruslan', 52.44, 53.66, 10], ['Bugulma', 52.79, 54.54, 10], ['Cistopol', 50.65, 55.37, 15], ['Sarapul', 53.8, 56.47, 20], ['Glazov', 52.66, 58.14, 10], ['Elabuga', 52.06, 55.76, 15], ['Osa', 55.45, 57.29, 10],
+  ['Kungur', 56.94, 57.43, 15], ['Krasnoufimsk', 57.76, 56.61, 10], ['Solikamsk', 56.77, 59.65, 15], ['Cerdyn', 56.48, 60.4, 10], ['Verchoture', 60.81, 58.86, 10], ['Kamyslov', 62.71, 56.85, 10], ['Sadrinsk', 63.63, 56.08, 15],
+  ['Irbit', 63.07, 57.68, 15], ['Ust-Sysolsk', 50.84, 61.67, 15], ['Ust-Cilma', 52.15, 65.44, 5], ['Tiumen', 65.53, 57.15, 30], ['Tobolsk', 68.25, 58.2, 35], ['Kurgan', 65.34, 55.44, 15], ['Ialutorovsk', 66.3, 56.65, 10],
+  ['Isim', 69.48, 56.11, 15], ['Tiukalinsk', 72.2, 55.87, 5], ['Tara', 74.37, 56.9, 10], ['Turinsk', 63.71, 58.04, 10], ['Omsk', 73.37, 54.98, 35], ['Berezov', 65.06, 63.93, 5], ['Surgut', 73.4, 61.25, 5], ['Obdorsk', 66.6, 66.53, 5],
+  ['Tomsk', 84.97, 56.49, 45], ['Mariinsk', 87.75, 56.21, 10], ['Kainsk', 78.33, 55.43, 10], ['Barnaul', 83.78, 53.35, 25], ['Biisk', 85.21, 52.54, 15], ['Kuznetsk', 87.12, 53.76, 10], ['Narym', 81.96, 58.95, 5],
+  ['Krasnoiarsk', 92.87, 56.01, 30], ['Acinsk', 90.5, 56.27, 10], ['Minusinsk', 91.69, 53.71, 15], ['Kansk', 95.7, 56.2, 10], ['Eniseisk', 92.17, 58.45, 15], ['Turuchansk', 87.98, 65.8, 5], ['Dudinka', 86.18, 69.4, 1],
+  ['Irkutsk', 104.28, 52.29, 45], ['Balagansk', 103.0, 54.0, 5], ['Nizneudinsk', 98.99, 54.9, 10], ['Ilimsk', 103.7, 56.77, 5], ['Kirensk', 108.11, 57.78, 10], ['Verchneudinsk', 107.6, 51.83, 20], ['Kiachta', 106.45, 50.36, 25],
+  ['Barguzin', 109.62, 53.62, 5], ['Cita', 113.5, 52.03, 20], ['Nercinsk', 116.52, 51.99, 15], ['Blagovescensk', 127.53, 50.27, 20], ['Vladivostok', 131.89, 43.12, 20], ['Chabarovka', 135.07, 48.48, 15], ['Nikolaevsk', 140.73, 53.14, 15],
+  ['Ochotsk', 143.24, 59.36, 5], ['Ajan', 138.17, 56.45, 1], ['Gizhiga', 160.4, 62.05, 5], ['Petropavlovsk', 158.65, 53.02, 10], ['Aleksandrovsk', 142.16, 50.9, 10], ['Iakutsk', 129.73, 62.03, 25], ['Olekminsk', 120.4, 60.37, 5],
+  ['Viliuisk', 121.63, 63.75, 5], ['Verchoiansk', 133.39, 67.55, 5], ['Srednekolymsk', 153.7, 67.45, 5], ['Anadyr', 177.5, 64.73, 1],
   // Persia orientale, Afghanistan, Asia centrale (fase 3)
   ['Teheran', 51.39, 35.69, 60], ['Isfahan', 51.67, 32.65, 55], ['Shiraz', 52.54, 29.61, 50], ['Mashhad', 59.6, 36.3, 50], ['Yazd', 54.37, 31.9, 40], ['Kerman', 57.08, 30.28, 40], ['Kashan', 51.44, 33.98, 30], ['Qom', 50.88, 34.64, 30],
   ['Semnan', 53.39, 35.58, 15], ['Damghan', 54.34, 36.17, 10], ['Sari', 53.06, 36.56, 25], ['Barfurush', 52.68, 36.54, 30], ['Astarabad', 54.43, 36.84, 25], ['Sabzevar', 57.68, 36.21, 20], ['Nishapur', 58.8, 36.21, 25], ['Quchan', 58.51, 37.11, 15],
@@ -276,7 +311,9 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   'MRT', 'SEN', 'GMB', 'GNB', 'GIN', 'SLE', 'LBR', 'CIV', 'GHA', 'TGO', 'BEN', 'BFA', 'MLI', 'NER', 'NGA', 'CMR', 'TCD', 'CAF', 'GAB', 'GNQ', 'COG', 'COD',
   'AGO', 'NAM', 'BWA', 'ZAF', 'LSO', 'SWZ', 'MOZ', 'ZWE', 'ZMB', 'MWI', 'TZA', 'KEN', 'UGA', 'RWA', 'BDI', 'MDG', 'SAH', 'MAR',
   // fase 3: Arabia a sud del 27° parallelo, Persia a est del 50° meridiano, Afghanistan e Asia centrale
-  'SAU', 'YEM', 'OMN', 'ARE', 'QAT', 'BHR', 'IRN', 'AFG', 'TKM', 'UZB', 'KAZ', 'KGZ', 'TJK', 'AZE', 'KAB'];
+  'SAU', 'YEM', 'OMN', 'ARE', 'QAT', 'BHR', 'IRN', 'AFG', 'TKM', 'UZB', 'KAZ', 'KGZ', 'TJK', 'AZE', 'KAB',
+  // fase 4: la Russia a est del 50° meridiano
+  'RUS'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
 export const AF_FINE = { ERI: 6000 };
@@ -466,4 +503,35 @@ export const AF_DETAIL_REGIONS = [
   ['Karkaralinsk', 75.5, 49.0, ['KAZ'], 100000, 'RUS'], ['Pavlodar', 76.8, 52.0, ['KAZ'], 70000, 'RUS'], ['Semipalatinsk', 80.0, 50.2, ['KAZ'], 60000, 'RUS'], ['Ust-Kamenogorsk', 83.0, 49.5, ['KAZ'], 50000, 'RUS'],
   ['Zaisan', 84.0, 47.6, ['KAZ'], 40000, 'RUS'], ['Sergiopol', 80.5, 47.5, ['KAZ'], 70000, 'RUS'], ['Kopal', 79.0, 45.0, ['KAZ'], 50000, 'RUS'], ['Verny', 76.8, 43.6, ['KAZ'], 40000, 'RUS'],
   ['Balkhash', 74.5, 46.3, ['KAZ'], 100000, 'RUS'], ['Apsceron', 50.2, 40.4, ['AZE'], 3000, 'RUS'],
+  // ===== Fase 4: Russia imperiale a est del 50° meridiano (governatorati e uezd del 1881) =====
+  // Urali: governatorati di Ufa, Orenburg, Perm, e le parti orientali di Samara, Kazan, Vjatka, Vologda, Arcangelo
+  ['Ufa', 55.9, 54.7, ['RUS'], 25000, 'RUS'], ['Sterlitamak', 56.0, 53.4, ['RUS'], 35000, 'RUS'], ['Birsk', 55.5, 55.6, ['RUS'], 25000, 'RUS'], ['Zlatoust', 58.8, 55.2, ['RUS'], 25000, 'RUS'],
+  ['Menzelinsk', 53.1, 55.7, ['RUS'], 20000, 'RUS'], ['Belebei', 54.1, 54.1, ['RUS'], 20000, 'RUS'], ['Orenburg', 55.1, 51.8, ['RUS'], 30000, 'RUS'], ['Orsk', 58.6, 51.2, ['RUS'], 30000, 'RUS'],
+  ['Verchneuralsk', 59.2, 53.9, ['RUS'], 30000, 'RUS'], ['Troitsk', 61.6, 54.1, ['RUS'], 25000, 'RUS'], ['Celiabinsk', 61.4, 55.3, ['RUS'], 20000, 'RUS'],
+  ['Buzuluk', 52.2, 52.8, ['RUS'], 35000, 'RUS'], ['Buguruslan', 52.4, 53.6, ['RUS'], 20000, 'RUS'], ['Bugulma', 52.8, 54.6, ['RUS'], 15000, 'RUS'], ['Cistopol', 50.7, 55.4, ['RUS'], 18000, 'RUS'],
+  ['Sarapul', 53.8, 56.5, ['RUS'], 20000, 'RUS'], ['Glazov', 52.7, 58.1, ['RUS'], 35000, 'RUS'], ['Elabuga', 52.1, 55.8, ['RUS'], 15000, 'RUS'],
+  ['Perm', 56.2, 58.0, ['RUS'], 30000, 'RUS'], ['Osa', 55.5, 57.3, ['RUS'], 25000, 'RUS'], ['Kungur', 57.0, 57.4, ['RUS'], 20000, 'RUS'], ['Krasnoufimsk', 57.8, 56.6, ['RUS'], 25000, 'RUS'],
+  ['Solikamsk', 56.8, 59.6, ['RUS'], 40000, 'RUS'], ['Cerdyn', 56.5, 61.0, ['RUS'], 90000, 'RUS'], ['Verchoture', 60.6, 59.3, ['RUS'], 70000, 'RUS'], ['Ekaterinburg', 60.6, 56.8, ['RUS'], 30000, 'RUS'],
+  ['Kamyslov', 62.7, 56.8, ['RUS'], 25000, 'RUS'], ['Sadrinsk', 63.6, 56.1, ['RUS'], 25000, 'RUS'], ['Irbit', 63.1, 57.7, ['RUS'], 25000, 'RUS'],
+  ['Ust-Sysolsk', 51.5, 61.5, ['RUS'], 90000, 'RUS'], ['Pecora', 55.5, 64.5, ['RUS'], 150000, 'RUS'], ['Tundra dei Samoiedi', 59.5, 67.5, ['RUS'], 150000, 'RUS'], ['Novaja Zemlja', 56.0, 73.5, ['RUS'], 100000, 'RUS'],
+  // Siberia occidentale: governatorati di Tobolsk e Tomsk
+  ['Tiumen', 65.5, 57.2, ['RUS'], 30000, 'RUS'], ['Tobolsk', 68.3, 58.2, ['RUS'], 90000, 'RUS'], ['Kurgan', 65.3, 55.4, ['RUS'], 40000, 'RUS'], ['Ialutorovsk', 66.3, 56.6, ['RUS'], 25000, 'RUS'],
+  ['Isim', 69.5, 56.1, ['RUS'], 45000, 'RUS'], ['Tiukalinsk', 72.2, 56.0, ['RUS'], 40000, 'RUS'], ['Tara', 74.4, 56.9, ['RUS'], 60000, 'RUS'], ['Turinsk', 63.7, 58.0, ['RUS'], 30000, 'RUS'],
+  ['Omsk', 73.4, 55.0, ['RUS'], 40000, 'RUS'], ['Berezov', 65.1, 63.9, ['RUS'], 250000, 'RUS'], ['Surgut', 73.4, 61.3, ['RUS'], 250000, 'RUS'], ['Obdorsk', 70.0, 67.5, ['RUS'], 300000, 'RUS'],
+  ['Tomsk', 85.0, 56.5, ['RUS'], 60000, 'RUS'], ['Mariinsk', 87.8, 56.2, ['RUS'], 50000, 'RUS'], ['Kainsk', 78.2, 55.4, ['RUS'], 90000, 'RUS'], ['Barnaul', 83.8, 53.3, ['RUS'], 90000, 'RUS'],
+  ['Biisk', 85.2, 52.5, ['RUS'], 50000, 'RUS'], ['Kuznetsk', 87.1, 53.8, ['RUS'], 50000, 'RUS'], ['Narym', 82.0, 59.0, ['RUS'], 300000, 'RUS'], ['Altai', 87.0, 50.5, ['RUS'], 90000, 'RUS'],
+  // Siberia centrale: governatorati dello Enisej e di Irkutsk; l'Uriankhai (Tuva) è dei Qing
+  ['Krasnoiarsk', 92.9, 56.0, ['RUS'], 50000, 'RUS'], ['Acinsk', 90.5, 56.3, ['RUS'], 50000, 'RUS'], ['Minusinsk', 91.7, 53.7, ['RUS'], 80000, 'RUS'], ['Kansk', 95.7, 56.2, ['RUS'], 80000, 'RUS'],
+  ['Eniseisk', 92.2, 58.8, ['RUS'], 300000, 'RUS'], ['Turuchansk', 88.0, 65.8, ['RUS'], 400000, 'RUS'], ['Taimyr', 95.0, 72.0, ['RUS'], 550000, 'RUS'], ['Tunguska', 100.0, 63.0, ['RUS'], 550000, 'RUS'],
+  ['Uriankhai', 94.5, 51.7, ['RUS'], 170000, ''],
+  ['Irkutsk', 104.3, 52.3, ['RUS'], 70000, 'RUS'], ['Balagansk', 103.0, 54.0, ['RUS'], 80000, 'RUS'], ['Nizneudinsk', 99.0, 54.9, ['RUS'], 110000, 'RUS'], ['Ilimsk', 103.7, 57.0, ['RUS'], 150000, 'RUS'],
+  ['Kirensk', 108.1, 57.8, ['RUS'], 300000, 'RUS'],
+  // Transbajkalia, Amur, Litorale, Iacuzia, Kamciatka, Sachalin (russa dal 1875; le Curili giapponesi)
+  ['Verchneudinsk', 107.6, 51.8, ['RUS'], 80000, 'RUS'], ['Barguzin', 109.6, 53.6, ['RUS'], 110000, 'RUS'], ['Cita', 113.5, 52.0, ['RUS'], 90000, 'RUS'], ['Nercinsk', 116.5, 52.0, ['RUS'], 90000, 'RUS'],
+  ['Argun', 119.5, 51.5, ['RUS'], 60000, 'RUS'], ['Blagovescensk', 127.5, 50.3, ['RUS'], 130000, 'RUS'], ['Alto Amur', 123.5, 54.0, ['RUS'], 250000, 'RUS'],
+  ['Vladivostok', 131.9, 43.8, ['RUS'], 50000, 'RUS'], ['Ussuri', 133.5, 45.5, ['RUS'], 60000, 'RUS'], ['Chabarovka', 135.1, 48.5, ['RUS'], 110000, 'RUS'], ['Nikolaevsk', 139.5, 52.5, ['RUS'], 200000, 'RUS'],
+  ['Ochotsk', 140.0, 58.0, ['RUS'], 300000, 'RUS'], ['Gizhiga', 159.0, 62.0, ['RUS'], 300000, 'RUS'], ['Kamciatka', 159.0, 55.0, ['RUS'], 150000, 'RUS'], ['Anadyr', 172.0, 65.5, ['RUS'], 550000, 'RUS'],
+  ['Sachalin', 142.5, 50.0, ['RUS'], 60000, 'RUS'], ['Curili', 148.0, 45.5, ['RUS'], 15000, ''],
+  ['Iakutsk', 129.7, 62.0, ['RUS'], 300000, 'RUS'], ['Olekminsk', 120.4, 60.4, ['RUS'], 300000, 'RUS'], ['Viliuisk', 121.6, 64.0, ['RUS'], 450000, 'RUS'], ['Verchoiansk', 133.4, 67.5, ['RUS'], 600000, 'RUS'],
+  ['Kolyma', 153.7, 67.5, ['RUS'], 400000, 'RUS'],
 ];

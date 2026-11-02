@@ -31,7 +31,7 @@ import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORR
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
 import { buildAfrica } from './africa.mjs';
-import { AF_POP, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
+import { AF_POP, AF_POP_ISO, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
 import { AFRICA_MODERN, atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -457,7 +457,7 @@ function terrainOf(lon, lat, owner) {
 // niente coste finte). Si allineano i vertici a meno di 100 m dal bordo e si inseriscono in ogni segmento del
 // bordo i vertici dell'altro lato: le forme non cambiano (punti sulla stessa retta).
 function stitchSeam(features) {
-  const [x0, y0, x1] = BBOX, EPS = 1e-3, Y_TOP = y0 + 4, E_TOP = AF_CLIP[3];
+  const [x0, y0, x1] = BBOX, EPS = 1e-3, Y_TOP = y0 + 4, E_TOP = Math.min(AF_CLIP[3], BBOX[3]);
   const xs = new Set(), ys = new Set(), es = new Set(); // es: il bordo orientale (50° E, Persia e Asia centrale)
   const ringsOf = (g) => (g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : []).flat();
   let snapped = 0;
@@ -511,7 +511,7 @@ async function main() {
   // livelli da disegnare: Europa e Mediterraneo (il rettangolo) più Africa, Arabia e isole atlantiche
   // Persia orientale e Asia centrale: solo sulle terre incluse (niente fiumi dell'India o della Siberia nel vuoto)
   const EAST_MASK = path.join(TMP, 'draw_mask_east.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${BBOX[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${BBOX[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
   const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], 62, BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], 40], EAST_MASK];
   const drawLayer = (out, src, pre, post) => {
     const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', typeof b === 'string' ? b : `bbox=${b}`, '-o', o); return o; });
@@ -1269,7 +1269,7 @@ async function main() {
   const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
   // frontiere provvisorie verso le terre non ancora in mappa (Siberia, Cina, Pakistan, India): non sono coste
   const FRONTIER = path.join(TMP, 'frontier.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['RUS','CHN','PAK','IND','NPL','MNG','KAS'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['CHN','PAK','IND','NPL','MNG','KAS','PRK','BTN'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
   const frontierFc = readJSON(FRONTIER);
   const frontier = (frontierFc.features ?? frontierFc.geometries.map((g) => ({ type: 'Feature', geometry: g, properties: {} }))).filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) }));
   const onFrontier = (arc) => {
@@ -1324,12 +1324,14 @@ async function main() {
   const poolOf = (p) => {
     const t = NATION_POP_1881[p.info.owner];
     if (t && t[p.info.modern] !== undefined) return `${p.info.owner}:${p.info.modern}`;
+    if (p.info.af && AF_POP_ISO[p.info.iso] !== undefined) return `I:${p.info.iso}`;
     if (p.info.af) return AF_HOME[p.info.owner] === p.info.modern ? `${p.info.owner}:*` : `M:${p.info.modern}`;
     return `${p.info.owner}:*`;
   };
   const poolTotal = (key) => {
     const [o, m] = key.split(':');
     if (o === 'M') return AF_POP[m] ?? null;
+    if (o === 'I') return AF_POP_ISO[m] ?? null;
     const t = NATION_POP_1881[o]; if (!t) return null;
     if (m !== '*') return t[m];
     return t.total - Object.entries(t).filter(([k]) => k !== 'total').reduce((s, [, v]) => s + v, 0);

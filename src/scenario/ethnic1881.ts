@@ -43,6 +43,9 @@ export const ETHNICITIES: Record<string, Ethnicity> = {
   // Asia centrale
   uzbeki: E('uzbeki', null, '#3a8f8f'), tagiki: E('tagiki', null, '#6a9a5a'), kirghisi: E('kirghisi', null, '#c06a4a'), pashtun: E('afgani (pashtun)', 'AFG', '#8f6a3a'),
   hazara: E('hazara', null, '#a08a6a'), baluci: E('beluci', null, '#b0904a'),
+  // Siberia ed Estremo Oriente
+  iacuti: E('iacuti', null, '#4a8ab0'), buriati: E('buriati', null, '#b08a3a'), tungusi: E('tungusi (evenchi)', null, '#7ab07a'), ostiachi: E('ostiachi e voguli', null, '#8a7ab0'),
+  samoiedi: E('samoiedi (nenec)', null, '#6ab0b0'), altaici: E('altaici e chakassi', null, '#b07a8a'), tuvani: E('tuvani (urianchai)', null, '#a0a05a'), paleosiberiani: E('ciukci, coriachi e itelmeni', null, '#9a6a4a'), cinesi: E('cinesi', null, '#c04a4a'),
   altri: E('altri', null, '#999999'),
 };
 
@@ -296,6 +299,23 @@ export const RULES: Rule[] = [
   [{ iso: ['RU-SMO', 'RU-BRY'] }, 'russi 88, bielorussi 8, ebrei 4'],
   [{ iso: ['RU-PER', 'RU-KIR'] }, 'russi 85, udmurti 6, komi 4, tatari 5'],
   [{ iso: ['RU-CHE'] }, 'russi 75, baschiri 15, tatari 10'],
+  [{ iso: ['RU-NEN'] }, 'samoiedi 60, komi 25, russi 15'],
+  [{ iso: ['RU-SVE'] }, 'russi 88, tatari 5, baschiri 4, altri 3'],
+  [{ iso: ['RU-TYU', 'RU-KGN', 'RU-OMS'] }, 'russi 85, tatari 10, kazakhi 5'],
+  [{ iso: ['RU-KHM'] }, 'ostiachi 50, russi 40, samoiedi 10', true],
+  [{ iso: ['RU-YAN'] }, 'samoiedi 60, ostiachi 25, russi 15', true],
+  [{ iso: ['RU-NVS', 'RU-TOM', 'RU-KEM', 'RU-ALT'] }, 'russi 88, tatari 4, altaici 5, altri 3'],
+  [{ iso: ['RU-AL'] }, 'altaici 75, russi 25', true],
+  [{ iso: ['RU-KK'] }, 'altaici 60, russi 40', true],
+  [{ iso: ['RU-KYA'] }, 'russi 70, tungusi 12, samoiedi 8, iacuti 5, altri 5', true],
+  [{ iso: ['RU-TY'] }, 'tuvani 95, russi 5', true],
+  [{ iso: ['RU-IRK'] }, 'russi 72, buriati 20, tungusi 8'],
+  [{ iso: ['RU-BU'] }, 'buriati 55, russi 40, tungusi 5'],
+  [{ iso: ['RU-ZAB'] }, 'russi 58, buriati 32, tungusi 10'],
+  [{ iso: ['RU-SA'] }, 'iacuti 85, tungusi 10, russi 5', true],
+  [{ iso: ['RU-AMU', 'RU-YEV', 'RU-KHA', 'RU-PRI'] }, 'tungusi 45, russi 35, cinesi 15, altri 5', true],
+  [{ iso: ['RU-SAK'] }, 'paleosiberiani 70, russi 30', true],
+  [{ iso: ['RU-MAG', 'RU-KAM', 'RU-CHU'] }, 'paleosiberiani 75, tungusi 10, russi 15', true],
   [{ iso: ['RU-ARK', 'RU-NEN'] }, 'russi 95, komi 5'],
   [{ modern: ['RUS'] }, 'russi 97, altri 3'],
   [{ modern: ['KAZ'] }, 'kazakhi 85, russi 10, tatari 5'],

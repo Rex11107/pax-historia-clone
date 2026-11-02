@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_ARAL, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_ARAL, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -36,7 +36,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
 
   // 1. livelli: suddivisioni moderne, stati d'epoca, laghi
   fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection([...readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })), turf.polygon([AF_ARAL])])));
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `!${excl}.includes(adm0_a3) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF')`, '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', erase,
+  // oltre il vecchio riquadro (est dell'88° meridiano, nord del 56° parallelo) entrano solo i paesi della fase in corso
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `!${excl}.includes(adm0_a3) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && ((this.centroidX <= 88 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3))`, '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', erase,
     '-each', 'pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=adm0_a3', '-filter-fields', 'pid,iso,pname,modern',
     '-simplify', 'interval=800', 'keep-shapes', '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
   ms(path.join(RAW, 'world_1880.geojson'), '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', erase, '-each', 'hist=NAME', '-filter-fields', 'hist', '-o', P('hist.geojson'));
@@ -76,7 +77,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
   const detailSet = new Set(AF_DETAIL_MODERN);
   ms(P('adm.geojson'), '-filter', `${JSON.stringify(AF_DETAIL_MODERN)}.includes(modern)`, '-dissolve', '-o', P('detail_land.geojson'));
   // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
-  const hyb = ['af', 'eu', 'as'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
+  const hyb = ['af', 'eu', 'as', 'si'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
   ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
   ms('-i', P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), P('basins.geojson'), 'combine-files', 'snap', 'snap-interval=0.0005', '-union', 'target=adm,hist,cuts,basins',
     '-filter', 'pid != null', 'remove-empty', '-explode', '-o', P('u.geojson'));
@@ -89,7 +90,9 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities }) {
     const hist = pr.hist ?? 'null';
     if (AF_HIST[hist] === undefined) throw new Error(`stato africano senza tag: ${hist}`);
     return { f, pid: pr.pid, iso: pr.iso, pname: pr.pname, modern: pr.modern, hist, owner: AF_HIST[hist], oasis: pr.oasis || null, enclave: pr.enclave || null, valley: !!pr.valley, area: km2(f), c: turf.centroid(f).geometry.coordinates, detail: detailSet.has(pr.modern) };
-  }).filter((a) => a.area > 0.5);
+  }).filter((a) => a.area > 0.5)
+    // la punta orientale dell'isola di Kolguev oltre il 50° meridiano: resta con il resto dell'isola, in Europa
+    .filter((a) => !(a.c[0] < 50.6 && a.c[1] > 68.6 && a.c[1] < 69.6));
   for (const a of A) for (const o of AF_OVERRIDES) {
     if (o.modern && o.modern !== a.modern) continue;
     if (o.iso && !o.iso.includes(a.iso)) continue;
