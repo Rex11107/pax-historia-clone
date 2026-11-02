@@ -6,6 +6,8 @@ export type Terrain = 'plain' | 'hills' | 'mountain' | 'forest' | 'desert' | 'ma
 
 /** Dati statici della mappa (generati da scripts/map/build-map.mjs). */
 export interface MapData {
+  /** numero di province del rettangolo europeo (le prime); le altre sono le terre aggiunte dopo */
+  euCount?: number;
   version: number;
   scenario: string;
   arcs: number[][];

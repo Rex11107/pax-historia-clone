@@ -43,6 +43,11 @@ const SANDZAK_SRB = [[19.22, 43.62], [19.48, 43.66], [19.72, 43.56], [19.95, 43.
 const PRESEVO = [[21.45, 42.22], [21.98, 42.22], [21.98, 42.43], [21.78, 42.5], [21.55, 42.47], [21.45, 42.22]];
 export const OVERRIDES = [
   { modern: 'CYP', to: 'GBR' }, // Cipro amministrata dal Regno Unito dal 1878
+  // Arabia e deserto siriano (rivisti il 2 novembre 2026): padroni per provincia moderna intera, niente tagli lungo la linea
+  // dritta del dataset 1880 (da Gaza al Kuwait). Ottomani: Iraq (vilayet di Baghdad e Bassora), Kuwait, Transgiordania, deserto
+  // siriano, Hegiaz con Tabuk, al-Hasa; Gebel Shammar dei Rashidi: Hail, al-Giauf, i confini settentrionali, Qasim, Riad.
+  { modern: 'IRQ', to: 'TUR' }, { modern: 'KWT', to: 'TUR' }, { modern: 'JOR', to: 'TUR' }, { modern: 'SYR', from: 'ARA', to: 'TUR' },
+  { iso: ['SA-07', 'SA-03', 'SA-04', 'SA-02'], to: 'TUR' }, { iso: ['SA-06', 'SA-12', 'SA-08', 'SA-05', 'SA-01'], to: 'ARA' },
   { modern: 'CYN', to: 'GBR' }, { modern: 'ESB', to: 'GBR' }, { modern: 'WSB', to: 'GBR' }, // basi di Dhekelia e Akrotiri: Cipro
   { modern: 'TUN', to: 'TUN' }, // Beilicato di Tunisi (protettorato francese solo da maggio 1881)
   { modern: 'ISL', to: 'DEN' }, { modern: 'FRO', to: 'DEN' },

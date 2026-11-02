@@ -12,6 +12,8 @@ import * as C from '../src/engine/colonial';
 import { subjectOf } from '../src/engine/vassals';
 
 const MAP: MapData = JSON.parse(fs.readFileSync('public/data/europe1881.json', 'utf8'));
+/** prima provincia fuori dal rettangolo europeo */
+const EU = MAP.euCount ?? 1375;
 const find = (w: ReturnType<typeof newGame>, name: string, owner?: string) => {
   const p = w.map.provinces.find((x) => x.name === name && (!owner || x.owner === owner)) ?? w.map.provinces.find((x) => x.name.startsWith(name) && (!owner || x.owner === owner));
   if (!p) throw new Error(`provincia ${name} non trovata`);
@@ -575,14 +577,14 @@ describe('Africa e Arabia', () => {
     for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
   });
   it('le province europee del 27° parallelo confinano con quelle africane, senza coste finte', () => {
-    const eu = MAP.provinces.slice(0, 1375).filter((p) => p.lonlat[1] < 27.6 && p.lonlat[0] > 0 && p.lonlat[0] < 32);
+    const eu = MAP.provinces.slice(0, EU).filter((p) => p.lonlat[1] < 27.6 && p.lonlat[0] > 0 && p.lonlat[0] < 32);
     expect(eu.length).toBeGreaterThanOrEqual(4);
-    for (const p of eu) expect(p.n.some((j) => j >= 1375), p.name).toBe(true);
+    for (const p of eu) expect(p.n.some((j) => j >= EU), p.name).toBe(true);
   });
   it('fase 2a: Egitto-Sudan e Corno d\'Africa per regioni storiche', () => {
     const exp: [string, string][] = [['Assab', 'ITA'], ['Massaua', 'EGY'], ['Hamasien', 'ETH'], ['Harar', 'EGY'], ['Berbera', 'EGY'], ['Benadir', 'ZAN'], ['Scioa', 'ETH'], ['Gojjam (nord)', 'ETH'], ['Ogaden', ''], ['Nogal', '']];
     for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
-    const zone = MAP.provinces.filter((p) => p.id >= 1375 && ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'].includes(p.modern));
+    const zone = MAP.provinces.filter((p) => p.id >= EU && ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL', 'SOM'].includes(p.modern));
     expect(zone.length).toBeGreaterThan(140);
     expect(zone.length).toBeLessThan(210);
   });
@@ -746,7 +748,7 @@ describe('interessi coloniali', () => {
     expect(w.state.owner[find(w, 'Massaua')]).toBe('ITA');
     for (const tag of ['ITA', 'FRA', 'GER', 'BEL', 'POR', 'SPA']) {
       const mine = new Set(C.interestsOf(tag).flatMap((x) => C.interestProvinces(w, x)));
-      const stray = w.map.provinces.filter((p) => p.id >= 1375 && w.state.owner[p.id] === tag && p.owner !== tag && !p.impassable && !mine.has(p.id));
+      const stray = w.map.provinces.filter((p) => p.id >= EU && w.state.owner[p.id] === tag && p.owner !== tag && !p.impassable && !mine.has(p.id));
       expect(stray.map((p) => p.name), tag).toEqual([]);
     }
     expect(Object.keys(c.done).length).toBeGreaterThan(4);
@@ -767,9 +769,9 @@ describe('Arabia, Persia e Asia centrale', () => {
     expect(w.map.provinces[w.state.nations.PER.capital].name).toBe('Teheran');
   });
   it('cucitura sul 50° meridiano: la Persia occidentale confina con quella orientale', () => {
-    const west = MAP.provinces.slice(0, 1375).filter((p) => p.owner === 'PER' && p.lonlat[0] > 48.8);
+    const west = MAP.provinces.slice(0, EU).filter((p) => p.owner === 'PER' && p.lonlat[0] > 48.8);
     expect(west.length).toBeGreaterThan(2);
-    const joined = west.filter((p) => p.n.some((j) => j >= 1375 && MAP.provinces[j].owner === 'PER'));
+    const joined = west.filter((p) => p.n.some((j) => j >= EU && MAP.provinces[j].owner === 'PER'));
     expect(joined.map((p) => p.name)).toEqual(expect.arrayContaining(['Esfahan', 'Qazvin', 'Gilan']));
   });
   it('deserti dell\'Asia centrale intransitabili, frontiere provvisorie non sono coste', () => {

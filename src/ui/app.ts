@@ -865,7 +865,7 @@ export class App {
     listSaves().then((all) => saves.replaceChildren(...all.map((m) => h('li', null,
       h('div', { class: 'row' }, h('b', null, m.label), h('span', { class: 'sub' }, formatDate(m.day))),
       h('div', { class: 'buttons' },
-        h('button', { onclick: async () => { const state = await loadGame(m.slot); if (state) this.start(Game.fromState(this.mapData, state, this.settings)); } }, 'Carica'),
+        h('button', { onclick: async () => { const state = await loadGame(m.slot); if (!state) return; try { this.start(Game.fromState(this.mapData, state, this.settings)); } catch (e) { this.toast((e as Error).message); } } }, 'Carica'),
         m.slot !== 'auto' ? h('button', { class: 'quiet', onclick: async () => { await deleteSave(m.slot); this.render(); } }, 'Elimina') : null),
     ))));
     return h('div', null,
@@ -946,7 +946,7 @@ export class App {
     const ta = h('textarea', { rows: 6, placeholder: 'Incolla qui il salvataggio esportato' }) as HTMLTextAreaElement;
     this.dialog('Importa una partita', [ta], 'Importa', () => {
       try { const state = JSON.parse(ta.value); if (state?.version !== 1) throw new Error(); this.start(Game.fromState(this.mapData, state, this.settings)); }
-      catch { this.toast('Il testo incollato non è un salvataggio valido.'); }
+      catch (e) { this.toast((e as Error).message.startsWith('Questo salvataggio') ? (e as Error).message : 'Il testo incollato non è un salvataggio valido.'); }
     });
   }
 

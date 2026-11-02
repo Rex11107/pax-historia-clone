@@ -420,17 +420,19 @@ export const AF_DETAIL_REGIONS = [
   ['Sakalava settentrionali', 47.8, -14.7, ['MDG'], 30000, ''],
   // ===== Fase 3: Arabia meridionale, Persia orientale, Afghanistan, Asia centrale (1881) =====
   // Arabia: Hegiaz e Asir ottomani, il Neged dei Rashidi (Gebel Shammar), al-Hasa ottomano, l'Oman, la costa della Tregua, lo Yemen
-  ['Medina', 39.4, 24.6, ['SAU'], 35000, 'TUR'], ['La Mecca', 39.9, 21.6, ['SAU'], 25000, 'TUR'], ['Taif', 41.0, 20.9, ['SAU'], 30000, 'TUR'], ['Asir', 42.6, 18.4, ['SAU'], 25000, 'TUR'],
+  // Hegiaz ottomano: le città sante, la costa, Taif; l'interno oltre le montagne è delle tribù beduine
+  ['Medina', 39.5, 24.5, ['SAU'], 55000, 'TUR'], ['Yanbu', 38.3, 24.4, ['SAU'], 45000, 'TUR'], ['La Mecca', 39.8, 21.5, ['SAU'], 40000, 'TUR'], ['Taif', 40.5, 21.0, ['SAU'], 35000, 'TUR'],
+  ['Paese degli Harb', 41.3, 24.4, ['SAU'], 50000, ''], ['Paese degli Utaiba', 42.4, 22.5, ['SAU'], 60000, ''], ['Asir', 42.6, 18.4, ['SAU'], 35000, 'TUR'],
   ['Tihama dell\'Asir', 42.4, 17.2, ['SAU'], 15000, 'TUR'], ['Bisha', 42.7, 20.0, ['SAU'], 50000, ''], ['Najran', 44.2, 17.6, ['SAU', 'YEM'], 40000, ''],
   ['Qasim', 43.9, 26.2, ['SAU'], 35000, 'ARA'], ['Sudair', 45.5, 25.6, ['SAU'], 35000, 'ARA'], ['Riad', 46.7, 24.6, ['SAU'], 40000, 'ARA'], ['Kharj', 47.4, 23.9, ['SAU'], 45000, 'ARA'],
-  ['Aflag', 46.0, 22.3, ['SAU'], 60000, 'ARA'], ['Uadi Dauasir', 45.0, 20.5, ['SAU'], 80000, ''], ['Hofuf', 49.4, 25.2, ['SAU'], 35000, 'TUR'], ['Qatif', 50.0, 26.5, ['SAU'], 15000, 'TUR'],
+  ['Aflag', 46.0, 22.3, ['SAU'], 60000, 'ARA'], ['Uadi Dauasir', 45.0, 20.5, ['SAU'], 80000, ''], ['Hofuf', 49.5, 25.3, ['SAU'], 60000, 'TUR'], ['Qatif', 49.9, 26.5, ['SAU'], 20000, 'TUR'], ['Summan', 47.8, 25.6, ['SAU'], 60000, ''],
   ['Qatar', 51.2, 25.3, ['QAT'], 12000, 'TUR'], ['Bahrein', 50.55, 26.0, ['BHR'], 1000, 'BHR'],
   ['Abu Dhabi', 54.0, 23.8, ['ARE'], 45000, 'TRU'], ['Dubai e Sharja', 55.6, 25.2, ['ARE'], 8000, 'TRU'], ['Ras al-Khaima', 56.0, 25.7, ['ARE'], 5000, 'TRU'],
   ['Mascate', 58.5, 23.4, ['OMN'], 15000, 'OMA'], ['Batina', 56.9, 24.2, ['OMN', 'ARE'], 12000, 'OMA'], ['Oman interno', 57.5, 22.6, ['OMN'], 30000, 'OMA'], ['Sur e Jaalan', 59.1, 22.0, ['OMN'], 25000, 'OMA'],
   ['Musandam', 56.2, 26.1, ['OMN'], 3000, 'OMA'], ['Dhofar', 54.0, 17.4, ['OMN'], 40000, 'OMA'], ['Uosta', 56.5, 19.8, ['OMN'], 90000, ''],
-  ['Sana', 44.2, 15.4, ['YEM'], 12000, 'TUR'], ['Saada', 43.8, 16.9, ['YEM'], 15000, 'TUR'], ['Hodeida', 43.1, 15.0, ['YEM'], 12000, 'TUR'], ['Taizz', 44.0, 13.6, ['YEM'], 10000, 'TUR'],
+  ['Sana', 44.2, 15.4, ['YEM'], 20000, 'TUR'], ['Saada', 43.8, 16.9, ['YEM'], 25000, ''], ['Hodeida', 43.1, 15.0, ['YEM'], 12000, 'TUR'], ['Taizz', 44.0, 13.6, ['YEM'], 10000, 'TUR'],
   ['Ibb', 44.3, 14.1, ['YEM'], 8000, 'TUR'], ['Dhamar', 44.5, 14.7, ['YEM'], 8000, 'TUR'], ['Marib', 45.6, 15.6, ['YEM'], 30000, ''], ['Aden', 45.0, 12.8, ['YEM'], 500, 'GBR'],
-  ['Lahej', 44.9, 13.2, ['YEM'], 6000, ''], ['Bayda', 45.6, 13.9, ['YEM'], 15000, ''], ['Shabwa', 47.0, 14.8, ['YEM'], 35000, ''], ['Hadramaut', 48.8, 15.9, ['YEM'], 30000, ''],
+  ['Lahej', 44.9, 13.2, ['YEM'], 15000, ''], ['Bayda', 45.6, 13.9, ['YEM'], 15000, ''], ['Shabwa', 47.0, 14.8, ['YEM'], 35000, ''], ['Hadramaut', 48.8, 15.9, ['YEM'], 30000, ''],
   ['Mukalla', 49.0, 14.6, ['YEM'], 15000, ''], ['Mahra', 51.5, 16.5, ['YEM'], 40000, ''], ['Socotra', 53.9, 12.5, ['YEM'], 4000, ''],
   // Persia a est del 50° meridiano: le province dello scià
   ['Teheran', 51.4, 35.6, ['IRN'], 15000, 'PER'], ['Qom', 50.9, 34.6, ['IRN'], 15000, 'PER'], ['Kashan', 51.5, 33.8, ['IRN'], 18000, 'PER'], ['Isfahan', 51.7, 32.6, ['IRN'], 25000, 'PER'],

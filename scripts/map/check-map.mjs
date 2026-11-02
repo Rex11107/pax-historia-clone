@@ -21,7 +21,8 @@ const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../.
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, v] = a.replace(/^--/, '').split('='); return [k, v ?? true]; }));
 const M = JSON.parse(fs.readFileSync(path.join(ROOT, 'public/data/europe1881.json'), 'utf8'));
 const allow = (() => { try { return JSON.parse(fs.readFileSync(path.join(ROOT, 'scripts/map/check-allow.json'), 'utf8')); } catch { return {}; } })();
-const FROM = +(args.from ?? 0);
+// --from=eu: dalla prima provincia fuori dal rettangolo europeo
+const FROM = args.from === 'eu' ? (M.euCount ?? 1375) : +(args.from ?? 0);
 
 // archi in km (y verso l'alto)
 const arcs = M.arcs.map((flat) => { const out = []; let x = 0, y = 0; for (let i = 0; i < flat.length; i += 2) { x += flat[i]; y += flat[i + 1]; out.push([x / 10, y / 10]); } return out; });
@@ -115,7 +116,7 @@ if (args.png) {
     const d = polysOf(p).map((poly) => poly.map((ring) => 'M' + ringPts(ring).map((pt) => tx(pt).map((v) => v.toFixed(1)).join(',')).join('L') + 'Z').join('')).join('');
     const f = flag.get(p.id);
     svg += `<path d="${d}" fill="${f ? col[f] : p.impassable ? '#f1e6c4' : p.owner ? '#e4ddd0' : '#d0cabd'}" stroke="#666" stroke-width="0.5" fill-rule="evenodd"/>`;
-    if (f) { const [lx, ly] = tx(p.c ? [p.c[0], -p.c[1]] : [0, 0]); labels.push(`<text x="${lx.toFixed(0)}" y="${ly.toFixed(0)}" font-size="11" font-family="sans-serif" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${p.id} ${p.name.replace(/&/g, '&amp;')}</text>`); }
+    if (f) { const [lx, ly] = tx(p.c ?? [0, 0]); labels.push(`<text x="${lx.toFixed(0)}" y="${ly.toFixed(0)}" font-size="11" font-family="sans-serif" text-anchor="middle" stroke="#fff" stroke-width="3" paint-order="stroke">${p.id} ${p.name.replace(/&/g, '&amp;')}</text>`); }
   }
   svg += labels.join('') + `<g font-family="sans-serif" font-size="14">${order.filter((c) => c !== 'nome').map((c, i) => `<rect x="10" y="${10 + i * 22}" width="16" height="16" fill="${col[c]}"/><text x="32" y="${23 + i * 22}">${c} (${counts[c]})</text>`).join('')}</g></svg>`;
   const b = await chromium.launch(); const pg = await b.newPage({ viewport: { width: W, height: H } });

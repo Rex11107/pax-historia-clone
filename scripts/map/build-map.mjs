@@ -861,7 +861,9 @@ async function main() {
       { const h = {}; for (const i of zoneIdx) { const p = P[i]; if (!p.acls) continue; const k = p.acls.startsWith('oasi') ? 'oasi' : p.acls; h[k] = (h[k] || 0) + Math.round(p.area); } log('classi Nord Africa (km²)', JSON.stringify(h)); }
       // nazioni approvate: stessa divisione della mappa di riferimento (scripts/map/lock)
       const lock = process.env.MAP_LOCK === '0' ? null : loadLock(LOCK_FILE);
-      const lockable = (p) => LOCK_OWNERS.has(p.owner);
+      // Arabia, Transgiordania, Iraq centro-meridionale e deserto siriano: rifatti (2 novembre 2026), non più bloccati
+      const arabiaFree = (p) => { const [x, y] = cent[p.i]; return ['SAU', 'KWT', 'JOR'].includes(p.modern) || (p.modern === 'IRQ' && (y < 33.6 || x < 42.5)) || (p.modern === 'SYR' && x > 36.9 && y < 35.0); };
+      const lockable = (p) => LOCK_OWNERS.has(p.owner) && !arabiaFree(p);
       const lockOf = new Map();
       if (lock) {
         for (const i of zoneIdx) {
@@ -1641,6 +1643,8 @@ async function main() {
   // identificativi stabili: prima le province europee (con quelle-simbolo), poi le africane
   {
     const order = [...out.provinces.filter((p) => !p._af), ...out.provinces.filter((p) => p._af)];
+    // le province europee (il rettangolo approvato) sono le prime euCount: da lì in poi le terre aggiunte dopo
+    out.euCount = out.provinces.filter((p) => !p._af).length;
     const nid = new Map(order.map((p, i) => [p.id, i]));
     const tinyNames = [...tiny].map((k) => out.provinces[k].name);
     for (const p of order) { p.id = nid.get(p.id); p.n = p.n.map((x) => nid.get(x)); delete p._af; }

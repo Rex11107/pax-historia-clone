@@ -31,7 +31,8 @@ async function boot() {
     if (auto) {
       choices.append(h('button', { class: 'primary', onclick: async () => {
         const state = await loadGame('auto');
-        if (state) app.start(Game.fromState(mapData, state, settings));
+        if (!state) return;
+        try { app.start(Game.fromState(mapData, state, settings)); } catch (e) { status.textContent = (e as Error).message; }
       } }, `Continua: ${auto.label}`));
     }
     const majors = Object.entries(NATIONS).filter(([, p]) => p.major);

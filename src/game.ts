@@ -39,6 +39,8 @@ export class Game {
   }
 
   static fromState(map: MapData, state: GameState, config: LLMConfig): Game {
+    // un salvataggio fatto con un'altra versione della mappa ha province diverse: non si può riprendere
+    if (state.owner?.length !== map.provinces.length) throw new Error('Questo salvataggio è stato fatto con una versione precedente della mappa e non si può riprendere: inizia una nuova partita.');
     state.dispatches ??= [];
     return new Game({ map: new GameMap(map), profiles: profilesFor(), state }, config);
   }
