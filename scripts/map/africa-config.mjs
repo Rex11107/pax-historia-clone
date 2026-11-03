@@ -280,16 +280,24 @@ export const AF_POP_FIXED = { Bombay: 773_000, Calcutta: 870_000 };
  * fra il 1913 e il 1965 (Arabia saudita, Giordania, Iraq, Kuwait), che nel 1881 non esistevano.
  */
 export const AF_FREE_EU = ['Al-Hudud al-Shamaliyya', 'Al-Jawf', 'Al-Muthanna', 'Al Mafraq', 'Mafraq (est)', 'Ar Rutbah', 'Al-Anbar (sud) I', 'Al-Anbar (ovest) I',
-  'Al-Anbar (sud) II', 'Al-Anbar (ovest) II', 'Najaf (sud)', 'Aqaba', "Ma'an", 'Governatorato della Capitale', 'Al-Ahmad', 'Al-Jahra'];
+  'Al-Anbar (sud) II', 'Al-Anbar (ovest) II', 'Al-Anbar (sud)', 'Najaf (sud)', 'Aqaba', "Ma'an", 'Governatorato della Capitale', 'Al-Ahmad', 'Al-Jahra'];
 /** Regioni aggiunte alla zona rifatta: [nome, lon, lat, paese moderno, dimensione, padrone]. */
 export const AF_FREED_EXTRA = [
-  ['Uadi Sirhan', 37.9, 31.0, 'SAU', 35000, 'TUR'], ['Uadi Arar', 41.2, 31.0, 'SAU', 40000, 'TUR'],
+  // Uadi Sirhan: rivendicato da Damasco ma tenuto da Ruwala e Bani Sakhr; la parte sud con il Giauf è dei Rashidi
+  ['Uadi Sirhan', 37.9, 31.0, 'SAU', 35000, 'ARA'],
+  // pascoli di Shammar e Anaza fra Baghdad e Ha'il: nessuna presenza statale
+  ['Uadi Arar', 41.2, 31.0, 'SAU', 40000, ''],
+  // il deserto a sud di Samawa: tribù Dhafir e Shammar (Samawa città resta ottomana, sangiaccato del Muntafiq)
+  ['Paese dei Dhafir', 45.0, 29.9, 'IRQ', 35000, ''],
 ];
 
 /** Correzioni alle province europee rifatte fuori (nome, padrone, dimensione). */
 export const AF_FREED_FIX = {
   // il deserto siriaco meridionale (Hamad): tribù Anaza e Shammar, sotto una sovranità ottomana nominale
-  'Al-Hudud al-Shamaliyya': { name: 'Hamad', owner: 'TUR', T: 90000 },
+  // il deserto siriaco centrale (Anaza): ottomano solo sulla carta
+  'Al-Hudud al-Shamaliyya': { name: 'Hamad', owner: '', T: 90000 },
+  // deserto meridionale iracheno (Dhafir, Shammar): il controllo ottomano si fermava all'Eufrate
+  'Al-Anbar (sud)': { name: 'Deserto di Anbar', owner: '', T: 30000 }, 'Najaf (sud)': { owner: '' },
   // il Giauf dei Rashidi è l'oasi e i suoi dintorni; il Uadi Sirhan e il nord del Nefud restano ottomani (Bartholomew 1871)
   'Al-Jawf': { name: 'Giauf', at: [39.87, 29.81], T: 45000 },
   // Aqaba resta egiziana fino al 1892, come il Midian
@@ -297,7 +305,7 @@ export const AF_FREED_FIX = {
   'Al-Sharqiyya': { name: 'Giubail' },
   'Governatorato della Capitale': { name: 'Kuwait' },
   'Al-Ahmad': { name: 'Fahahil' },
-  'Al-Muthanna': { name: 'Samawa' },
+  'Al-Muthanna': { name: 'Samawa', at: [45.29, 31.31], T: 15000 },
   // l'interno del Golfo fra il Neged e al-Hasa: sabbie del Dahna e del Summan, tribù Mutair e Agiman
   'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
 };
