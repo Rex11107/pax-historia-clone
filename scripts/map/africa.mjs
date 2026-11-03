@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_ARAL, AF_FREED_FIX, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_ARAL, AF_FREED_EXTRA, AF_FREED_FIX, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -96,11 +96,15 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     }
     return all ? turf.intersect(turf.featureCollection([all, sauLand])) : null;
   };
-  const midian = coastBand(([x, y]) => x < 37.2 && y > 26.15 && y < 29.25, 40);
-  let hejaz = coastBand(([x, y]) => x < 43.3 && y > 20.2 && y < 28.4, 170);
+  // il golfo di Aqaba (costa saudita fino a 29,36° N) conta per il Midian e per l'Hegiaz; l'Asir (fino al confine
+  // yemenita) è una fascia sua, così la costa ottomana non si interrompe fra Taif e lo Yemen
+  const gulfAqaba = ([x, y]) => x < 35.2 && y < 29.36;
+  const midian = coastBand(([x, y]) => x < 37.2 && y > 26.15 && (y < 28.3 || gulfAqaba([x, y])), 40);
+  let hejaz = coastBand(([x, y]) => x < 43.3 && y > 20.2 && (y < 28.4 || gulfAqaba([x, y])), 170);
+  const asir = coastBand(([x, y]) => x < 43.3 && y > 16.35 && y <= 20.2, 120);
   if (hejaz && midian) hejaz = turf.difference(turf.featureCollection([hejaz, midian]));
   const hasa = coastBand(([x, y]) => x > 47.8 && y > 24.3 && y < 28.4 && !(x > 50.7 && y < 24.9), 110);
-  const ARZ = [['midian', midian], ['hejaz', hejaz], ['hasa', hasa]].filter(([, g]) => g).map(([zone, g]) => ({ zone, g, bb: turf.bbox(g) }));
+  const ARZ = [['midian', midian], ['hejaz', hejaz], ['asir', asir], ['hasa', hasa]].filter(([, g]) => g).map(([zone, g]) => ({ zone, g, bb: turf.bbox(g) }));
   // le fasce si tagliano lungo gli spartiacque (non a tasselli di 1°, che lascerebbero linee dritte): vedi sotto
   fs.writeFileSync(P('arz.geojson'), JSON.stringify(turf.featureCollection(ARZ.map((z) => ({ ...z.g, properties: { arz: z.zone } })))));
   fs.writeFileSync(P('cuts.geojson'), JSON.stringify(turf.featureCollection(cuts)));
@@ -113,11 +117,12 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const regZone = (r) => {
     if (!(r.mods ?? []).includes('SAU') && r.modern !== 'SAU') return null;
     if (r.owner === 'EGY') return 'midian';
+    if (r.owner === 'TUR' && r.at[1] < 20.3) return 'asir';
     if (r.owner === 'TUR' && r.at[1] >= 20.3 && r.at[1] < 28.8) return r.at[0] < 45 ? 'hejaz' : 'hasa';
     return null;
   };
   const FREED_REG = [];
-  for (const fr of freed?.regions ?? []) {
+  for (const fr of [...(freed?.regions ?? []), ...(freed ? AF_FREED_EXTRA.map(([name, lon, lat, modern, T, owner]) => ({ name, at: [lon, lat], modern, T, owner, desert: false, region: null })) : [])]) {
     if (fr.oasis) continue; // un'oasi liberata torna come cerchio d'oasi, non come regione
     const fix = AF_FREED_FIX[fr.name];
     if (fix) Object.assign(fr, fix);
@@ -212,7 +217,31 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     // la punta orientale dell'isola di Kolguev oltre il 50° meridiano: resta con il resto dell'isola, in Europa
     .filter((a) => !(!freed && a.c[0] < 50.6 && a.c[1] > 68.6 && a.c[1] < 69.6));
   const zoneAt = (c) => ARZ.find((z) => c[0] >= z.bb[0] && c[0] <= z.bb[2] && c[1] >= z.bb[1] && c[1] <= z.bb[3] && turf.booleanPointInPolygon(c, z.g))?.zone ?? null;
-  for (const a of A) a.arz = a.modern === 'SAU' ? zoneAt(a.c) : null;
+  // il golfo di Aqaba fino a 30 km dalla costa: Midian egiziano anche per le schegge che cadono fuori dalla fascia
+  // atomi sauditi tagliati sulle fasce (l'unione non sempre li divide): ogni pezzo sa in quale fascia sta
+  if (ARZ.length) {
+    const out = [];
+    const push = (a, f, zone) => { for (const poly of f.geometry.type === 'MultiPolygon' ? f.geometry.coordinates : [f.geometry.coordinates]) { const g = turf.polygon(poly); const ar = km2(g); if (ar >= 0.5) out.push({ ...a, f: g, area: ar, c: turf.centroid(g).geometry.coordinates, arzFix: zone }); } };
+    for (const a of A) {
+      if (a.modern !== 'SAU') { out.push(a); continue; }
+      const bb = turf.bbox(a.f);
+      let rest = a.f, done = false;
+      for (const z of ARZ) {
+        if (!rest || bb[2] < z.bb[0] || bb[0] > z.bb[2] || bb[3] < z.bb[1] || bb[1] > z.bb[3]) continue;
+        let inter = null;
+        try { inter = turf.intersect(turf.featureCollection([rest, z.g])); } catch { inter = null; }
+        if (!inter) continue;
+        const ia = km2(inter), ra = km2(rest);
+        if (ia < 0.5) continue;
+        if (ra - ia < 0.5) { push(a, rest, z.zone); rest = null; done = true; break; }
+        push(a, inter, z.zone);
+        try { rest = turf.difference(turf.featureCollection([rest, z.g])); } catch { rest = null; }
+      }
+      if (!done && rest && km2(rest) >= 0.5) push(a, rest, null);
+    }
+    A = out;
+  }
+  for (const a of A) a.arz = a.modern !== 'SAU' ? null : a.arzFix !== undefined ? a.arzFix : a.c[0] < 35.25 && a.c[1] > 27.9 && a.c[1] < 29.4 ? 'midian' : zoneAt(a.c);
   // atomi delle province europee liberate dal vecchio bordo
   if (freed) for (const a of A) if (inFreed(a.c)) { a.freed = true; a.detail = true; }
   for (const a of A) for (const o of AF_OVERRIDES) {
@@ -355,6 +384,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     // il padrone della regione storica vale per tutte le sue terre abitate (niente schegge di confine del dataset)
     if (best && best.owner !== undefined && !a.desert && !a.oasis ) a.owner = best.owner;
   }
+  if (process.env.DEBUG_BOX) { const b = process.env.DEBUG_BOX.split(",").map(Number); for (const a of A) if (a.c[0] > b[0] && a.c[0] < b[2] && a.c[1] > b[1] && a.c[1] < b[3]) log("BOX", a.c.map((v) => v.toFixed(2)).join(","), Math.round(a.area), a.modern, a.arz, a.region?.name, a.freed ? "freed" : "", a.owner); }
+  if (process.env.DEBUG_ARZ) { const m = {}; for (const a of A) if (a.arz) { const k = a.arz + "->" + (a.region?.name ?? "-") + (a.freed ? "*" : ""); m[k] = Math.round((m[k] || 0) + a.area); } log(JSON.stringify(m)); }
   if (process.env.DEBUG_DIST) { const m = {}; for (const a of A) if (a.region && process.env.DEBUG_DIST.split(",").includes(a.region.name)) { const k = a.region.name + " <- " + (a.dist || "nodist:" + a.modern); m[k] = (m[k] || 0) + a.area; } log(JSON.stringify(m)); }
   // contiguità: ogni regione tiene il suo pezzo connesso più grande; gli altri pezzi (exclavi del "centro più
   // vicino") passano alla regione confinante con cui condividono più confine. Le isole restano dove sono.

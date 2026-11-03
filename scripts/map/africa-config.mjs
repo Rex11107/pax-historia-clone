@@ -281,11 +281,17 @@ export const AF_POP_FIXED = { Bombay: 773_000, Calcutta: 870_000 };
  */
 export const AF_FREE_EU = ['Al-Hudud al-Shamaliyya', 'Al-Jawf', 'Al-Muthanna', 'Al Mafraq', 'Mafraq (est)', 'Ar Rutbah', 'Al-Anbar (sud) I', 'Al-Anbar (ovest) I',
   'Al-Anbar (sud) II', 'Al-Anbar (ovest) II', 'Najaf (sud)', 'Aqaba', "Ma'an", 'Governatorato della Capitale', 'Al-Ahmad', 'Al-Jahra'];
+/** Regioni aggiunte alla zona rifatta: [nome, lon, lat, paese moderno, dimensione, padrone]. */
+export const AF_FREED_EXTRA = [
+  ['Uadi Sirhan', 37.9, 31.0, 'SAU', 35000, 'TUR'], ['Uadi Arar', 41.2, 31.0, 'SAU', 40000, 'TUR'],
+];
+
 /** Correzioni alle province europee rifatte fuori (nome, padrone, dimensione). */
 export const AF_FREED_FIX = {
   // il deserto siriaco meridionale (Hamad): tribù Anaza e Shammar, sotto una sovranità ottomana nominale
   'Al-Hudud al-Shamaliyya': { name: 'Hamad', owner: 'TUR', T: 90000 },
-  'Al-Jawf': { name: 'Giauf' },
+  // il Giauf dei Rashidi è l'oasi e i suoi dintorni; il Uadi Sirhan e il nord del Nefud restano ottomani (Bartholomew 1871)
+  'Al-Jawf': { name: 'Giauf', at: [39.87, 29.81], T: 45000 },
   // Aqaba resta egiziana fino al 1892, come il Midian
   'Aqaba': { owner: 'EGY' },
   'Al-Sharqiyya': { name: 'Giubail' },
@@ -745,7 +751,7 @@ export const AF_DETAIL_REGIONS = [
   ['Abu Dhabi', 54.0, 23.8, ['ARE'], 45000, 'TRU'], ['Dubai e Sharja', 55.6, 25.2, ['ARE'], 8000, 'TRU'], ['Ras al-Khaima', 56.0, 25.7, ['ARE'], 5000, 'TRU'],
   ['Mascate', 58.5, 23.4, ['OMN'], 15000, 'OMA'], ['Batina', 56.9, 24.2, ['OMN', 'ARE'], 12000, 'OMA'], ['Oman interno', 57.5, 22.6, ['OMN'], 30000, 'OMA'], ['Sur e Jaalan', 59.1, 22.0, ['OMN'], 25000, 'OMA'],
   ['Musandam', 56.2, 26.1, ['OMN'], 3000, 'OMA'], ['Dhofar', 54.0, 17.4, ['OMN'], 40000, 'OMA'], ['Uosta', 56.5, 19.8, ['OMN'], 90000, ''],
-  ['Sana', 44.2, 15.4, ['YEM'], 20000, 'TUR'], ['Saada', 43.8, 16.9, ['YEM'], 25000, ''], ['Hodeida', 43.1, 15.0, ['YEM'], 12000, 'TUR'], ['Taizz', 44.0, 13.6, ['YEM'], 10000, 'TUR'],
+  ['Sana', 44.2, 15.4, ['YEM'], 20000, 'TUR'], ['Luhayya', 42.7, 15.7, ['YEM'], 15000, 'TUR'], ['Saada', 43.8, 16.9, ['YEM'], 25000, ''], ['Hodeida', 43.1, 15.0, ['YEM'], 12000, 'TUR'], ['Taizz', 44.0, 13.6, ['YEM'], 10000, 'TUR'],
   ['Ibb', 44.3, 14.1, ['YEM'], 8000, 'TUR'], ['Dhamar', 44.5, 14.7, ['YEM'], 8000, 'TUR'], ['Marib', 45.6, 15.6, ['YEM'], 30000, ''], ['Aden', 45.0, 12.8, ['YEM'], 500, 'GBR'],
   ['Lahej', 44.9, 13.2, ['YEM'], 15000, ''], ['Bayda', 45.6, 13.9, ['YEM'], 15000, ''], ['Shabwa', 47.0, 14.8, ['YEM'], 35000, ''], ['Hadramaut', 48.8, 15.9, ['YEM'], 30000, ''],
   ['Mukalla', 49.0, 14.6, ['YEM'], 15000, ''], ['Mahra', 51.5, 16.5, ['YEM'], 40000, ''], ['Socotra', 53.9, 12.5, ['YEM'], 4000, ''],
