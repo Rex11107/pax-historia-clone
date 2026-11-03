@@ -512,7 +512,7 @@ async function main() {
   // livelli da disegnare: Europa e Mediterraneo (il rettangolo) più Africa, Arabia e isole atlantiche
   // Persia orientale e Asia centrale: solo sulle terre incluse (niente fiumi dell'India o della Siberia nel vuoto)
   const EAST_MASK = path.join(TMP, 'draw_mask_east.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS','IND','PAK','BGD','NPL','BTN','LKA','KAS'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${AF_CLIP[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS','IND','PAK','BGD','NPL','BTN','LKA','KAS','MMR','THA','LAO','KHM','VNM','SGP'].includes(adm0_a3) || (adm0_a3 == 'MYS' && this.centroidX < 105)", '-clip', `bbox=${BBOX[2]},${AF_CLIP[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
   const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], 62, BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], 40], EAST_MASK];
   const drawLayer = (out, src, pre, post) => {
     const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', typeof b === 'string' ? b : `bbox=${b}`, '-o', o); return o; });
@@ -1314,7 +1314,7 @@ async function main() {
   const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
   // frontiere provvisorie verso le terre non ancora in mappa (Siberia, Cina, Pakistan, India): non sono coste
   const FRONTIER = path.join(TMP, 'frontier.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['CHN','MNG','PRK','MMR'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['CHN','MNG','PRK'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
   const frontierFc = readJSON(FRONTIER);
   const frontier = (frontierFc.features ?? frontierFc.geometries.map((g) => ({ type: 'Feature', geometry: g, properties: {} }))).filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) }));
   const onFrontier = (arc) => {

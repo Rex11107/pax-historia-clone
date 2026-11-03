@@ -52,6 +52,10 @@ export const ETHNICITIES: Record<string, Ethnicity> = {
   oriya: E('oriya', null, '#60a0a0'), sindhi: E('sindhi', null, '#9080c0'), rajasthani: E('rajasthani', null, '#e08080'), kashmiri: E('kashmiri e dogra', null, '#4a90b8'), nepalesi: E('nepalesi (gorkhali)', 'NEP', '#c8603a'),
   cingalesi: E('cingalesi', null, '#d0a060'), assamesi: E('assamesi', null, '#70b090'), tibetani: E('tibetani, bhutanesi e ladakhi', null, '#b09060'), adivasi: E('adivasi (gond, santal, bhil)', null, '#8a6a4a'),
   tribali_ne: E('naga, mizo e khasi', null, '#6a8a5a'), manipuri: E('manipuri (meitei)', 'MNP', '#50c8c0'),
+  // Indocina e Malesia
+  birmani: E('birmani', 'BRM', '#b8862e'), arakanesi: E('arakanesi', null, '#c09a50'), mon: E('mon', null, '#8a9a4a'), karen: E('karen', null, '#6a8a3a'), shan: E('shan', null, '#a0b060'),
+  kachin: E('kachin e chin', null, '#7a6a4a'), siamesi: E('siamesi (thai)', 'SIA', '#c8708a'), lanna: E('thai del nord (lanna)', null, '#6a90c0'), lao: E('lao', null, '#7ab0c0'), khmer: E('khmer', 'CAM', '#7a4ab0'),
+  vietnamiti: E('vietnamiti', 'ANN', '#c8a838'), montagnard: E('popoli delle montagne (moi, thai neri, hmong)', null, '#8a7a5a'), malesi: E('malesi', null, '#3a9a6a'),
   altri: E('altri', null, '#999999'),
 };
 
@@ -74,7 +78,7 @@ export const STATE_PEOPLES: Record<Tag, { own: string[]; regional?: string[] }> 
   KNG: { own: ['mande'], regional: ['akan'] }, WAS: { own: ['mande'] }, TUK: { own: ['fulbe'], regional: ['mande'] }, FTO: { own: ['fulbe'], regional: ['wolof'] }, FJA: { own: ['fulbe'] },
   LIB: { own: ['guineani'] }, TRA: { own: ['boeri'] }, OFS: { own: ['boeri'] }, ZUL: { own: ['nguni'] }, SWZ: { own: [], regional: ['nguni'] }, NDE: { own: ['ndebele'], regional: ['nguni'] },
   NGW: { own: ['sotho'] }, LOZ: { own: ['lozi'] }, OVI: { own: ['ovimbundu'] }, MAD: { own: ['malgasci'] }, OMA: { own: ['arabi'] }, TRU: { own: [], regional: ['arabi'] }, BHR: { own: [], regional: ['arabi'] },
-  MAH: { own: [], regional: ['arabi', 'beja', 'nubiani', 'fur'] }, HAR: { own: [], regional: ['oromo', 'somali'] }, AFG: { own: ['pashtun'], regional: ['tagiki', 'hazara', 'uzbeki'] }, BUK: { own: ['uzbeki', 'tagiki'], regional: ['turcomanni'] }, NJD: { own: ['arabi'] }, KUW: { own: ['arabi'] }, QAT: { own: ['arabi'] }, HYD: { own: ['indostani'], regional: ['telugu', 'marathi', 'kannada'] }, MYS: { own: ['kannada'], regional: ['telugu', 'tamil'] }, KSH: { own: ['kashmiri'], regional: ['tibetani', 'punjabi'] }, BRD: { own: ['gujarati', 'marathi'] }, GWA: { own: ['marathi'], regional: ['indostani'] }, HOL: { own: ['marathi'], regional: ['indostani'] }, BHO: { own: ['indostani'] }, REW: { own: ['indostani'], regional: ['adivasi'] }, JAI: { own: ['rajasthani'] }, JOD: { own: ['rajasthani'] }, UDA: { own: ['rajasthani'], regional: ['adivasi'] }, BIK: { own: ['rajasthani'] }, TVC: { own: ['malayali'], regional: ['tamil'] }, COC: { own: ['malayali'] }, PAT: { own: ['punjabi'] }, BAH: { own: ['punjabi'], regional: ['sindhi'] }, KAL: { own: ['baluci'], regional: ['pashtun', 'sindhi'] }, KHP: { own: ['sindhi'] }, KUT: { own: ['gujarati'], regional: ['sindhi'] }, MNP: { own: ['manipuri'], regional: ['tribali_ne'] }, TRP: { own: ['tribali_ne'], regional: ['bengalesi'] }, SIK: { own: ['tibetani'], regional: ['nepalesi'] }, NEP: { own: ['nepalesi'], regional: ['tibetani', 'indostani'] }, BHU: { own: ['tibetani'], regional: ['nepalesi'] },  KHI: { own: [], regional: ['uzbeki', 'turcomanni'] }, OBB: { own: [], regional: ['somali'] }, MIG: { own: [], regional: ['somali'] }, WSG: { own: [], regional: ['somali'] }, AUS: { own: [], regional: ['afar'] }, RAH: { own: [], regional: ['afar'] }, TAG: { own: [], regional: ['afar'] },
+  MAH: { own: [], regional: ['arabi', 'beja', 'nubiani', 'fur'] }, HAR: { own: [], regional: ['oromo', 'somali'] }, AFG: { own: ['pashtun'], regional: ['tagiki', 'hazara', 'uzbeki'] }, BUK: { own: ['uzbeki', 'tagiki'], regional: ['turcomanni'] }, BRM: { own: ['birmani'], regional: ['shan', 'mon', 'karen', 'arakanesi'] }, SIA: { own: ['siamesi'], regional: ['lanna', 'lao', 'malesi'] }, ANN: { own: ['vietnamiti'], regional: ['montagnard'] }, CAM: { own: ['khmer'] }, PRK: { own: ['malesi'] }, SEL: { own: ['malesi'] }, JOH: { own: ['malesi'] }, PAH: { own: ['malesi'] }, TRG: { own: ['malesi'] }, KEL: { own: ['malesi'] }, KED: { own: ['malesi'] }, NJD: { own: ['arabi'] }, KUW: { own: ['arabi'] }, QAT: { own: ['arabi'] }, HYD: { own: ['indostani'], regional: ['telugu', 'marathi', 'kannada'] }, MYS: { own: ['kannada'], regional: ['telugu', 'tamil'] }, KSH: { own: ['kashmiri'], regional: ['tibetani', 'punjabi'] }, BRD: { own: ['gujarati', 'marathi'] }, GWA: { own: ['marathi'], regional: ['indostani'] }, HOL: { own: ['marathi'], regional: ['indostani'] }, BHO: { own: ['indostani'] }, REW: { own: ['indostani'], regional: ['adivasi'] }, JAI: { own: ['rajasthani'] }, JOD: { own: ['rajasthani'] }, UDA: { own: ['rajasthani'], regional: ['adivasi'] }, BIK: { own: ['rajasthani'] }, TVC: { own: ['malayali'], regional: ['tamil'] }, COC: { own: ['malayali'] }, PAT: { own: ['punjabi'] }, BAH: { own: ['punjabi'], regional: ['sindhi'] }, KAL: { own: ['baluci'], regional: ['pashtun', 'sindhi'] }, KHP: { own: ['sindhi'] }, KUT: { own: ['gujarati'], regional: ['sindhi'] }, MNP: { own: ['manipuri'], regional: ['tribali_ne'] }, TRP: { own: ['tribali_ne'], regional: ['bengalesi'] }, SIK: { own: ['tibetani'], regional: ['nepalesi'] }, NEP: { own: ['nepalesi'], regional: ['tibetani', 'indostani'] }, BHU: { own: ['tibetani'], regional: ['nepalesi'] },  KHI: { own: [], regional: ['uzbeki', 'turcomanni'] }, OBB: { own: [], regional: ['somali'] }, MIG: { own: [], regional: ['somali'] }, WSG: { own: [], regional: ['somali'] }, AUS: { own: [], regional: ['afar'] }, RAH: { own: [], regional: ['afar'] }, TAG: { own: [], regional: ['afar'] },
 };
 
 export interface Match { iso?: string[]; owner?: Tag[]; modern?: string[]; lang?: string[]; name?: string[] }
@@ -385,6 +389,26 @@ export const RULES: Rule[] = [
   [{ modern: ['AFG'], iso: ['AF-HER', 'AF-BDG'] }, 'tagiki 55, pashtun 35, hazara 5, turcomanni 5', true],
   [{ modern: ['AFG'], iso: ['AF-NIM'] }, 'baluci 60, pashtun 40', true],
   [{ modern: ['AFG'] }, 'pashtun 80, tagiki 10, hazara 5, baluci 5', true],
+  [{ iso: ['MM-16'] }, 'arakanesi 85, birmani 10, altri 5'],
+  [{ iso: ['MM-17'] }, 'shan 75, kachin 10, birmani 10, cinesi 5', true],
+  [{ iso: ['MM-11', 'MM-14'] }, 'kachin 80, shan 10, birmani 10', true],
+  [{ iso: ['MM-12', 'MM-13'] }, 'karen 75, mon 10, birmani 10, shan 5', true],
+  [{ iso: ['MM-15'] }, 'mon 50, birmani 30, karen 20'],
+  [{ iso: ['MM-05'] }, 'birmani 55, mon 20, karen 15, malesi 5, altri 5', true],
+  [{ modern: ['MMR'] }, 'birmani 85, karen 8, mon 4, altri 3'],
+  [{ iso: ['TH-50', 'TH-51', 'TH-52', 'TH-54', 'TH-55', 'TH-56', 'TH-57', 'TH-58'] }, 'lanna 85, shan 5, montagnard 5, siamesi 5', true],
+  [{ iso: ['TH-94', 'TH-95', 'TH-96'] }, 'malesi 85, siamesi 10, cinesi 5', true],
+  [{ iso: ['TH-30', 'TH-31', 'TH-32', 'TH-33', 'TH-34', 'TH-35', 'TH-36', 'TH-37', 'TH-38', 'TH-39', 'TH-40', 'TH-41', 'TH-42', 'TH-43', 'TH-44', 'TH-45', 'TH-46', 'TH-47', 'TH-48', 'TH-49'] }, 'lao 80, siamesi 10, khmer 10', true],
+  [{ modern: ['THA'] }, 'siamesi 82, cinesi 10, mon 3, malesi 2, altri 3'],
+  [{ modern: ['LAO'] }, 'lao 60, montagnard 40', true],
+  [{ modern: ['KHM'] }, 'khmer 88, vietnamiti 5, cinesi 5, altri 2'],
+  [{ iso: ['VN-28', 'VN-30', 'VN-33', 'VN-72', 'VN-35', 'VN-01', 'VN-71', 'VN-05', 'VN-02', 'VN-03'] }, 'montagnard 85, vietnamiti 10, cinesi 5', true],
+  [{ iso: ['VN-44', 'VN-47', 'VN-52', 'VN-51', 'VN-55', 'VN-59'] }, 'vietnamiti 70, khmer 25, cinesi 5', true],
+  [{ modern: ['VNM'] }, 'vietnamiti 90, montagnard 5, cinesi 5'],
+  [{ modern: ['SGP'] }, 'cinesi 60, malesi 25, tamil 10, altri 5'],
+  [{ iso: ['MY-07', 'MY-04'] }, 'cinesi 50, malesi 35, tamil 10, altri 5', true],
+  [{ iso: ['MY-08', 'MY-10'] }, 'malesi 55, cinesi 40, altri 5', true],
+  [{ modern: ['MYS'] }, 'malesi 85, cinesi 10, altri 5', true],
   [{ name: ['Mahé', 'Karikal', 'Yanaon', 'Chandernagor', 'Pondichery'] }, 'tamil 85, telugu 5, bengalesi 5, francesi 5', true],
   [{ name: ['Diu', 'Damão', 'Nagar Aveli'] }, 'gujarati 85, adivasi 10, portoghesi 5', true],
   // subcontinente indiano (lingue madri; i dati del censimento del 1881 per lingua sono per provincia)

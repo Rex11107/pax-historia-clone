@@ -80,6 +80,31 @@ export const ASIA_NATIONS: Record<string, P> = {
     cohesion: 55, finance: 4, armyPeace: 1000, naval: 1, temperament: 'porto di mercanti e pescatori di perle, autonomo sotto una sovranità ottomana nominale dal 1871', goals: ['commercio', 'autonomia'], rivals: [], friends: ['TUR'] }),
   QAT: base({ name: 'Qatar', short: ['il ', 'Qatar'], adjective: 'qatariota', color: '#8a3a5a', capital: [51.53, 25.29], government: 'sceiccato', leader: 'Sceicco Jasim ibn Muhammad Al Thani (qaimmaqam ottomano)',
     cohesion: 45, finance: 3, armyPeace: 1500, naval: 1, temperament: 'gli Al Thani accettano un presidio ottomano a Doha dal 1872 ma guardano con sospetto Istanbul e il Bahrein', goals: ['autonomia', 'perle'], rivals: ['BHR'], friends: [] }),
+  // ===== Indocina e penisola malese (fase 5) =====
+  BRM: base({ name: 'Regno di Birmania', short: ['la ', 'Birmania'], adjective: 'birmano', color: '#b8862e', capital: [96.08, 21.97], government: 'regno', leader: 'Re Thibaw Min',
+    militaryQuality: 25, cohesion: 30, finance: 6, armyPeace: 15000, temperament: 'regno di Mandalay ridotto all\'interno dopo le guerre del 1824 e del 1852, diffidente verso gli inglesi e in cerca dell\'amicizia francese',
+    goals: ['riavere la Bassa Birmania', 'tenere gli stati shan'], rivals: ['GBR', 'SIA'], friends: ['FRA'] }),
+  SIA: base({ name: 'Regno del Siam', short: ['il ', 'Siam'], adjective: 'siamese', color: '#c8708a', capital: [100.5, 13.75], government: 'regno', leader: 'Re Chulalongkorn (Rama V)',
+    militaryQuality: 25, cohesion: 50, finance: 12, armyPeace: 20000, naval: 3, temperament: 'monarchia riformatrice che gioca inglesi contro francesi per restare indipendente; sovrana di Lanna, del Laos e dei sultanati malesi del nord',
+    goals: ['restare indipendente', 'tenere il Laos e la Cambogia occidentale'], rivals: ['ANN', 'BRM', 'FRA'], friends: ['GBR'] }),
+  ANN: base({ name: 'Impero del Dai Nam', short: ['l\'', 'Annam'], adjective: 'annamita', color: '#c8a838', capital: [107.58, 16.46], government: 'impero', leader: 'Imperatore Tu Duc',
+    militaryQuality: 20, cohesion: 40, finance: 8, armyPeace: 30000, naval: 2, temperament: 'corte confuciana di Hue, tributaria della Cina, che ha perso la Cocincina e subisce le Bandiere nere nel Tonchino', goals: ['tenere il Tonchino', 'liberarsi dei francesi'], rivals: ['FRA', 'SIA'], friends: [] }),
+  CAM: base({ name: 'Regno di Cambogia', short: ['la ', 'Cambogia'], adjective: 'cambogiano', color: '#7a4ab0', capital: [104.92, 11.56], government: 'regno', leader: 'Re Norodom',
+    cohesion: 35, finance: 4, armyPeace: 3000, temperament: 'protettorato francese dal 1863, stretto fra Siam e Annam', goals: ['riavere Battambang e Angkor'], rivals: ['SIA'], friends: ['FRA'] }),
+  PRK: base({ name: 'Sultanato di Perak', short: ['il ', 'Perak'], adjective: 'perakese', color: '#d4c040', capital: [100.95, 4.76], government: 'sultanato', leader: 'Sultano Yusuf (reggente); residente britannico',
+    cohesion: 35, finance: 6, armyPeace: 500, temperament: 'miniere di stagno e residente britannico dal trattato di Pangkor (1874)', goals: ['stagno'], friends: ['GBR'] }),
+  SEL: base({ name: 'Sultanato di Selangor', short: ['il ', 'Selangor'], adjective: 'selangorese', color: '#c84040', capital: [101.45, 3.04], government: 'sultanato', leader: 'Sultano Abdul Samad; residente britannico',
+    cohesion: 35, finance: 5, armyPeace: 300, temperament: 'stagno e minatori cinesi, residente britannico dal 1874', goals: ['stagno'], friends: ['GBR'] }),
+  JOH: base({ name: 'Sultanato di Johor', short: ['il ', 'Johor'], adjective: 'johorese', color: '#3a6ab0', capital: [103.76, 1.46], government: 'sultanato', leader: 'Maharaja Abu Bakar',
+    cohesion: 50, finance: 6, armyPeace: 500, temperament: 'principato modernizzatore e anglofilo, alle porte di Singapore', goals: ['piantagioni'], friends: ['GBR'] }),
+  PAH: base({ name: 'Sultanato di Pahang', short: ['il ', 'Pahang'], adjective: 'pahangese', color: '#3a9a6a', capital: [103.33, 3.53], government: 'sultanato', leader: 'Bendahara Wan Ahmad',
+    cohesion: 35, finance: 3, armyPeace: 1000, temperament: 'il più grande stato malese, indipendente e chiuso', goals: ['indipendenza'], friends: [] }),
+  TRG: base({ name: 'Sultanato di Terengganu', short: ['il ', 'Terengganu'], adjective: 'terengganese', color: '#e0e0a0', capital: [103.13, 5.33], government: 'sultanato', leader: 'Sultano Zainal Abidin III',
+    cohesion: 45, finance: 3, armyPeace: 500, temperament: 'tributario del Siam con la bunga mas', goals: ['autonomia'], friends: [] }),
+  KEL: base({ name: 'Sultanato di Kelantan', short: ['il ', 'Kelantan'], adjective: 'kelantanese', color: '#b0b0e0', capital: [102.24, 6.13], government: 'sultanato', leader: 'Sultano Ahmad',
+    cohesion: 45, finance: 3, armyPeace: 500, temperament: 'tributario del Siam con la bunga mas', goals: ['autonomia'], friends: [] }),
+  KED: base({ name: 'Sultanato di Kedah', short: ['il ', 'Kedah'], adjective: 'kedahese', color: '#e0a060', capital: [100.37, 6.12], government: 'sultanato', leader: 'Sultano Zainal Rashid II',
+    cohesion: 45, finance: 3, armyPeace: 500, temperament: 'risaie e tributo al Siam; ha ceduto Penang agli inglesi', goals: ['autonomia'], friends: ['SIA'] }),
 };
 
 /** Opinioni iniziali (A verso B). */
@@ -87,5 +112,6 @@ export const ASIA_OPINIONS: [string, string, number][] = [
   ['AFG', 'GBR', -50], ['GBR', 'AFG', -20], ['AFG', 'RUS', -30], ['AFG', 'PER', -30], ['PER', 'AFG', -20],
   ['GBR', 'NEP', 20], ['NEP', 'GBR', 30], ['BHU', 'GBR', -20], ['GBR', 'BHU', -10], ['SIK', 'GBR', 0], ['KAL', 'AFG', -30], ['GWA', 'HOL', -20], ['HOL', 'GWA', -20], ['HYD', 'GBR', 20], ['JOD', 'JAI', -10], ['JAI', 'JOD', -10],
   ['ARA', 'NJD', -40], ['NJD', 'ARA', -50], ['NJD', 'TUR', -40], ['TUR', 'NJD', -20], ['KUW', 'TUR', 10], ['QAT', 'TUR', -10], ['QAT', 'BHR', -30], ['BHR', 'QAT', -30],
+  ['BRM', 'GBR', -40], ['GBR', 'BRM', -30], ['ANN', 'FRA', -50], ['FRA', 'ANN', -20], ['SIA', 'FRA', -20], ['SIA', 'BRM', -20], ['ANN', 'SIA', -20], ['CAM', 'SIA', -20], ['BRM', 'FRA', 20], ['SIA', 'GBR', 20],
   ['BUK', 'RUS', 10], ['KHI', 'RUS', -10], ['RUS', 'BUK', 20], ['RUS', 'KHI', 10], ['BUK', 'AFG', -30], ['BUK', 'KHI', -20],
 ];

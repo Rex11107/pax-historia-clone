@@ -4,7 +4,7 @@
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
 export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
   // fasi successive: India, Cina, Siberia
-  'CHN', 'MNG', 'MMR', 'MDV', 'IOT', 'USA'];
+  'CHN', 'MNG', 'MDV', 'IOT', 'USA', 'BRN', 'IDN', 'PHL', 'TLS', 'PNG'];
 /**
  * Popolazione del 1881 per unità amministrativa moderna (stima dai censimenti del 1881-1897 dei governatorati).
  * Ha la precedenza sul bacino del paese moderno: in Siberia la popolazione di oggi (Vladivostok, Kuzbass) non dice
@@ -310,7 +310,7 @@ export const AF_FREED_FIX = {
   'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
 };
 /** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
-export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA'];
+export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
 export const AF_CLIP = [-30, -36, 180, 78];
 
@@ -336,7 +336,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Imperial Japan': '',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': '', 'Imperial Japan': '',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -406,6 +406,8 @@ export const AF_POP = {
   // Russia a est del 50° meridiano: Urali e Siberia (circa 5 milioni negli Urali, 4 in Siberia, poche centinaia di migliaia in Estremo Oriente)
   RUS: 9_000_000,
   // subcontinente indiano (censimenti del 1881: 254 milioni con la Birmania; Ceylon 2,76)
+  // Indocina e Malesia peninsulare (stime 1881: censimento della Bassa Birmania 3,7 milioni; Siam circa 6)
+  MMR: 7_000_000, THA: 5_500_000, LAO: 800_000, KHM: 1_000_000, VNM: 10_000_000, MYS: 600_000, SGP: 140_000,
   IND: 200_000_000, PAK: 20_000_000, BGD: 27_000_000, NPL: 3_000_000, BTN: 200_000, LKA: 2_760_000, KAS: 5_000,
   IRN: 4_500_000, AFG: 3_000_000, TKM: 700_000, UZB: 3_200_000, KAZ: 2_400_000, KGZ: 650_000, TJK: 900_000, KAB: 5_000,
   ESP: 280_000, PRT: 395_000, FRA: 180_000,
@@ -605,7 +607,9 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   // fase 3: Arabia a sud del 27° parallelo, Persia a est del 50° meridiano, Afghanistan e Asia centrale
   'SAU', 'YEM', 'OMN', 'ARE', 'QAT', 'BHR', 'IRN', 'AFG', 'TKM', 'UZB', 'KAZ', 'KGZ', 'TJK', 'AZE', 'KAB',
   // fase 4: la Russia a est del 50° meridiano, il subcontinente indiano
-  'RUS', 'IND', 'PAK', 'BGD', 'NPL', 'BTN', 'LKA', 'KAS'];
+  'RUS', 'IND', 'PAK', 'BGD', 'NPL', 'BTN', 'LKA', 'KAS',
+  // fase 5: Indocina e penisola malese
+  'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
 export const AF_FINE = { ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
@@ -1162,4 +1166,138 @@ export const AF_DETAIL_REGIONS = [
   ['Kurunegala', 80.36, 7.49, ['LKA'], 6000, 'GBR'],
   ['Ratnapura', 80.4, 6.68, ['LKA'], 6000, 'GBR'],
   ['Mannar', 80.0, 8.98, ['LKA'], 6000, 'GBR'],
+
+  // ===== Fase 5: Indocina e penisola malese =====
+  ['Akyab', 92.9, 20.15, ['MMR'], 20000, 'GBR'],
+  ['Sandoway', 94.4, 18.4, ['MMR'], 20000, 'GBR'],
+  ['Rangoon', 96.16, 16.8, ['MMR'], 8000, 'GBR'],
+  ['Bassein', 94.73, 16.78, ['MMR'], 20000, 'GBR'],
+  ['Myaungmya', 95.1, 16.3, ['MMR'], 20000, 'GBR'],
+  ['Henzada', 95.46, 17.64, ['MMR'], 20000, 'GBR'],
+  ['Prome', 95.2, 18.8, ['MMR'], 20000, 'GBR'],
+  ['Thayetmyo', 95.0, 19.5, ['MMR'], 20000, 'GBR'],
+  ['Toungoo', 96.43, 18.94, ['MMR'], 20000, 'GBR'],
+  ['Shwegyin', 96.9, 17.9, ['MMR'], 20000, 'GBR'],
+  ['Moulmein', 97.63, 16.49, ['MMR'], 20000, 'GBR'],
+  ['Tavoy', 98.2, 14.08, ['MMR'], 20000, 'GBR'],
+  ['Mergui', 98.6, 12.4, ['MMR'], 20000, 'GBR'],
+  ['Mandalay', 96.08, 21.97, ['MMR'], 20000, 'BRM'],
+  ['Shwebo', 95.7, 22.7, ['MMR'], 20000, 'BRM'],
+  ['Minbu', 94.88, 20.18, ['MMR'], 20000, 'BRM'],
+  ['Pakokku', 94.8, 21.6, ['MMR'], 20000, 'BRM'],
+  ['Meiktila', 95.86, 20.88, ['MMR'], 20000, 'BRM'],
+  ['Yamethin', 96.15, 20.0, ['MMR'], 20000, 'BRM'],
+  ['Katha', 96.33, 24.17, ['MMR'], 20000, 'BRM'],
+  ['Bhamo', 97.23, 24.27, ['MMR'], 20000, 'BRM'],
+  ['Myitkyina', 97.4, 25.38, ['MMR'], 30000, 'BRM'],
+  ['Kindat', 94.6, 23.8, ['MMR'], 30000, 'BRM'],
+  ['Hsipaw', 97.3, 22.6, ['MMR'], 25000, 'BRM'],
+  ['Mong Nai', 97.9, 20.5, ['MMR'], 25000, 'BRM'],
+  ['Kengtung', 99.6, 21.3, ['MMR'], 25000, 'BRM'],
+  ['Yawnghwe', 97.0, 20.6, ['MMR'], 20000, 'BRM'],
+  ['Monywa', 95.1, 22.1, ['MMR'], 20000, 'BRM'],
+  ['Karenni', 97.2, 19.4, ['MMR'], 12000, ''],
+  ['Colline dei Chin', 93.6, 22.4, ['MMR'], 30000, ''],
+  ['Hukawng', 96.5, 26.5, ['MMR'], 35000, ''],
+  ['Bangkok', 100.5, 13.75, ['THA'], 8000, 'SIA'],
+  ['Ayutthaya', 100.57, 14.35, ['THA'], 12000, 'SIA'],
+  ['Nakhon Sawan', 100.12, 15.7, ['THA'], 20000, 'SIA'],
+  ['Phitsanulok', 100.26, 16.82, ['THA'], 20000, 'SIA'],
+  ['Chiang Mai', 98.98, 18.79, ['THA'], 20000, 'SIA'],
+  ['Lampang', 99.5, 18.3, ['THA'], 20000, 'SIA'],
+  ['Nan', 100.77, 18.78, ['THA'], 20000, 'SIA'],
+  ['Phrae', 100.14, 18.0, ['THA'], 20000, 'SIA'],
+  ['Korat', 102.1, 14.97, ['THA'], 20000, 'SIA'],
+  ['Ubon', 104.85, 15.24, ['THA'], 20000, 'SIA'],
+  ['Nong Khai', 102.75, 17.6, ['THA'], 20000, 'SIA'],
+  ['Sakon Nakhon', 104.15, 17.16, ['THA'], 20000, 'SIA'],
+  ['Roi Et', 103.65, 16.05, ['THA'], 20000, 'SIA'],
+  ['Chanthaburi', 102.1, 12.6, ['THA'], 20000, 'SIA'],
+  ['Ratchaburi', 99.8, 13.5, ['THA'], 20000, 'SIA'],
+  ['Phetchaburi', 99.6, 12.6, ['THA'], 20000, 'SIA'],
+  ['Chumphon', 99.18, 10.5, ['THA'], 20000, 'SIA'],
+  ['Nakhon Si Thammarat', 99.96, 8.43, ['THA'], 20000, 'SIA'],
+  ['Songkhla', 100.6, 7.2, ['THA'], 20000, 'SIA'],
+  ['Pattani', 101.25, 6.6, ['THA'], 20000, 'SIA'],
+  ['Phuket', 98.39, 8.2, ['THA'], 20000, 'SIA'],
+  ['Tak', 99.1, 16.9, ['THA'], 20000, 'SIA'],
+  ['Kanchanaburi', 99.2, 14.6, ['THA'], 20000, 'SIA'],
+  ['Chiang Rai', 99.83, 19.9, ['THA'], 20000, 'SIA'],
+  ['Prachinburi', 101.37, 14.05, ['THA'], 20000, 'SIA'],
+  ['Luang Prabang', 102.13, 19.88, ['LAO'], 30000, 'SIA'],
+  ['Vientiane', 102.6, 18.1, ['LAO'], 30000, 'SIA'],
+  ['Xieng Khouang', 103.2, 19.4, ['LAO'], 30000, 'SIA'],
+  ['Champassak', 105.87, 14.9, ['LAO'], 30000, 'SIA'],
+  ['Attapeu', 106.83, 14.8, ['LAO'], 30000, 'SIA'],
+  ['Savannakhet', 105.2, 16.55, ['LAO'], 30000, 'SIA'],
+  ['Khammouane', 104.9, 17.6, ['LAO'], 30000, 'SIA'],
+  ['Muang Sing', 101.2, 21.0, ['LAO'], 30000, 'SIA'],
+  ['Houaphan', 104.0, 20.4, ['LAO'], 30000, 'SIA'],
+  ['Sayaboury', 101.4, 19.0, ['LAO'], 30000, 'SIA'],
+  ['Saravane', 106.4, 15.7, ['LAO'], 30000, 'SIA'],
+  ['Phnom Penh', 104.92, 11.56, ['KHM'], 8000, 'CAM'],
+  ['Kampot', 104.18, 10.75, ['KHM'], 15000, 'CAM'],
+  ['Kampong Cham', 105.46, 12.0, ['KHM'], 15000, 'CAM'],
+  ['Kampong Thom', 104.9, 12.7, ['KHM'], 15000, 'CAM'],
+  ['Pursat', 103.9, 12.53, ['KHM'], 15000, 'CAM'],
+  ['Kratie', 106.0, 12.49, ['KHM'], 15000, 'CAM'],
+  ['Prey Veng', 105.32, 11.3, ['KHM'], 15000, 'CAM'],
+  ['Battambang', 103.2, 13.1, ['KHM'], 15000, 'SIA'],
+  ['Siem Reap', 103.86, 13.6, ['KHM'], 15000, 'SIA'],
+  ['Stung Treng', 106.0, 13.6, ['KHM'], 25000, 'SIA'],
+  ['Koh Kong', 103.5, 11.4, ['KHM'], 15000, 'SIA'],
+  ['Saigon', 106.7, 10.78, ['VNM'], 4000, 'FRA'],
+  ['My Tho', 106.36, 10.36, ['VNM'], 7000, 'FRA'],
+  ['Vinh Long', 106.0, 10.1, ['VNM'], 7000, 'FRA'],
+  ['Chau Doc', 105.12, 10.7, ['VNM'], 7000, 'FRA'],
+  ['Soc Trang', 105.97, 9.6, ['VNM'], 7000, 'FRA'],
+  ['Rach Gia', 105.08, 10.0, ['VNM'], 7000, 'FRA'],
+  ['Ca Mau', 105.15, 9.18, ['VNM'], 7000, 'FRA'],
+  ['Bien Hoa', 106.82, 11.1, ['VNM'], 10000, 'FRA'],
+  ['Tay Ninh', 106.1, 11.3, ['VNM'], 7000, 'FRA'],
+  ['Ba Ria', 107.17, 10.6, ['VNM'], 7000, 'FRA'],
+  ['Kon Tum', 108.0, 14.35, ['VNM'], 25000, ''],
+  ['Darlac', 108.05, 12.7, ['VNM'], 25000, ''],
+  ['Langbian', 108.4, 11.9, ['VNM'], 25000, ''],
+  ['Paese dei Thai neri', 103.2, 22.0, ['VNM'], 25000, ''],
+  ['Lao Cai', 104.0, 22.4, ['VNM'], 15000, ''],
+  ['Hue', 107.58, 16.46, ['VNM'], 12000, 'ANN'],
+  ['Quang Tri', 107.0, 16.8, ['VNM'], 12000, 'ANN'],
+  ['Quang Binh', 106.4, 17.5, ['VNM'], 12000, 'ANN'],
+  ['Ha Tinh', 105.9, 18.34, ['VNM'], 12000, 'ANN'],
+  ['Nghe An', 105.3, 19.0, ['VNM'], 15000, 'ANN'],
+  ['Thanh Hoa', 105.5, 19.9, ['VNM'], 12000, 'ANN'],
+  ['Quang Nam', 108.1, 15.6, ['VNM'], 12000, 'ANN'],
+  ['Quang Ngai', 108.8, 15.0, ['VNM'], 12000, 'ANN'],
+  ['Binh Dinh', 109.0, 14.0, ['VNM'], 12000, 'ANN'],
+  ['Phu Yen', 109.2, 13.1, ['VNM'], 12000, 'ANN'],
+  ['Khanh Hoa', 109.0, 12.25, ['VNM'], 12000, 'ANN'],
+  ['Binh Thuan', 108.0, 11.1, ['VNM'], 12000, 'ANN'],
+  ['Hanoi', 105.85, 21.03, ['VNM'], 5000, 'ANN'],
+  ['Nam Dinh', 106.17, 20.43, ['VNM'], 6000, 'ANN'],
+  ['Hai Duong', 106.33, 20.94, ['VNM'], 6000, 'ANN'],
+  ['Haiphong', 106.68, 20.86, ['VNM'], 5000, 'ANN'],
+  ['Bac Ninh', 106.07, 21.19, ['VNM'], 6000, 'ANN'],
+  ['Son Tay', 105.4, 21.2, ['VNM'], 8000, 'ANN'],
+  ['Hung Hoa', 104.9, 21.5, ['VNM'], 12000, 'ANN'],
+  ['Thai Nguyen', 105.84, 21.7, ['VNM'], 12000, 'ANN'],
+  ['Lang Son', 106.76, 21.85, ['VNM'], 12000, 'ANN'],
+  ['Cao Bang', 106.25, 22.67, ['VNM'], 12000, 'ANN'],
+  ['Tuyen Quang', 105.2, 22.2, ['VNM'], 12000, 'ANN'],
+  ['Son La', 104.0, 21.2, ['VNM'], 15000, 'ANN'],
+  ['Quang Yen', 107.4, 21.3, ['VNM'], 12000, 'ANN'],
+  ['Ninh Binh', 105.9, 20.2, ['VNM'], 6000, 'ANN'],
+  ['Hoa Binh', 105.3, 20.7, ['VNM'], 12000, 'ANN'],
+  ['Penang', 100.4, 5.4, ['MYS'], 1500, 'GBR'],
+  ['Malacca', 102.25, 2.25, ['MYS'], 4000, 'GBR'],
+  ['Singapore', 103.82, 1.35, ['SGP'], 600, 'GBR'],
+  ['Perak', 101.0, 4.6, ['MYS'], 15000, 'PRK'],
+  ['Selangor', 101.5, 3.3, ['MYS'], 15000, 'SEL'],
+  ['Negeri Sembilan', 102.1, 2.8, ['MYS'], 10000, ''],
+  ['Johor', 103.4, 2.0, ['MYS'], 12000, 'JOH'],
+  ['Pahang', 102.7, 3.8, ['MYS'], 18000, 'PAH'],
+  ['Kuala Lipis', 101.9, 4.3, ['MYS'], 18000, 'PAH'],
+  ['Terengganu', 103.0, 4.9, ['MYS'], 15000, 'TRG'],
+  ['Kelantan', 102.0, 5.4, ['MYS'], 15000, 'KEL'],
+  ['Kedah', 100.6, 6.1, ['MYS'], 15000, 'KED'],
 ];
