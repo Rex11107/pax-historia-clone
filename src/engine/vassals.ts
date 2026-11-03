@@ -66,6 +66,8 @@ const INITIAL: Subject[] = [
   { subject: 'MNP', overlord: 'GBR', level: 'protettorato', liberty: 50, since: -15000 },
   { subject: 'TRP', overlord: 'GBR', level: 'protettorato', liberty: 45, since: -20000 },
   { subject: 'SIK', overlord: 'GBR', level: 'protettorato', liberty: 55, since: -7000 },
+  { subject: 'KUW', overlord: 'TUR', level: 'tributario', liberty: 80, since: -3400 }, // qaimmaqam ottomano dal 1871
+  { subject: 'QAT', overlord: 'TUR', level: 'tributario', liberty: 70, since: -3200 }, // presidio a Doha dal 1872
   { subject: 'BUK', overlord: 'RUS', level: 'protettorato', liberty: 45, since: -2700 },
   { subject: 'KHI', overlord: 'RUS', level: 'protettorato', liberty: 50, since: -2700 },
 ];

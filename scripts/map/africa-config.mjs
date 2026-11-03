@@ -275,6 +275,11 @@ export const AF_DISTRICT_REGIONS = {
 };
 /** Popolazione fissa delle grandi città-provincia (censimento del 1881), che i pesi delle località sottostimano. */
 export const AF_POP_FIXED = { Bombay: 773_000, Calcutta: 870_000 };
+/** Correzioni alle province europee rifatte fuori (nome, padrone, dimensione). */
+export const AF_FREED_FIX = {
+  // l'interno del Golfo fra il Neged e al-Hasa: sabbie del Dahna e del Summan, tribù Mutair e Agiman
+  'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
+};
 /** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
 export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
@@ -287,7 +292,7 @@ export const AF_LAKES = ['Lake Baikal', 'Lake Khanka', 'Lake Taymyr', 'Lake Chan
 export const AF_HIST = {
   'null': '',
   'Egypt': 'EGY', 'Harer (Egypt)': 'EGY',
-  'Ottoman Empire': 'TUR', 'Qatar': 'TUR',
+  'Ottoman Empire': 'TUR', 'Qatar': 'QAT',
   'Arabia': 'ARA', 'Oman': 'OMA', 'Trucial Oman': 'TRU',
   'Morocco': 'MOR', 'Spain': 'SPA', 'Spanish Guinea': 'SPA',
   'Ethiopia': 'ETH', 'Sultanate of Zanzibar': 'ZAN', 'Madagascar': 'MAD', 'Imerina': 'MAD', 'Liberia': 'LIB',
@@ -317,7 +322,7 @@ export const AF_OVERRIDES = [
   { modern: 'ARE', to: 'TRU' },
   { modern: 'SAU', from: 'TRU', to: 'ARA' },
   { modern: 'BHR', to: 'BHR' },
-  { modern: 'QAT', to: 'TUR' },
+  { modern: 'QAT', to: 'QAT' },
   // Egitto: il Sudan fino al Darfur (annesso nel 1874), Massaua e il Bogos, Zeila e Berbera, Harar
   { modern: 'SDN', iso: ['SD-DN', 'SD-DW', 'SD-DC', 'SD-DS', 'SD-DE', 'SD-KN', 'SD-KS', 'SD-KW', 'SD-NR', 'SD-RS', 'SD-KA', 'SD-GD', 'SD-SI', 'SD-NB', 'SD-NW', 'SD-GZ', 'SD-KH', 'SD-NO'], from: '', to: 'EGY' },
   { modern: 'ERI', iso: ['ER-SK', 'ER-GB', 'ER-DK', 'ER-AN'], to: 'EGY' },
@@ -367,7 +372,7 @@ export const AF_POP = {
   LBR: 600_000, SLE: 900_000, GIN: 1_400_000, GNB: 250_000, SEN: 1_000_000, GMB: 150_000, CPV: 100_000, STP: 20_000,
   AGO: 2_400_000, ZMB: 900_000, MWI: 900_000, MOZ: 2_500_000, ZWE: 600_000, BWA: 120_000, NAM: 200_000,
   ZAF: 2_600_000, LSO: 150_000, SWZ: 80_000, MDG: 2_500_000, MUS: 360_000, COM: 60_000, SYC: 15_000, SHN: 6_000,
-  SAU: 30_000, YEM: 900_000, OMN: 600_000, ARE: 70_000, BHR: 60_000, QAT: 0,
+  SAU: 30_000, YEM: 900_000, OMN: 600_000, ARE: 70_000, BHR: 60_000, QAT: 25_000,
   // Persia a est del 50° meridiano (l'ovest sta nel bacino della Persia), Afghanistan, Turkestan e steppa kazaka
   // Russia a est del 50° meridiano: Urali e Siberia (circa 5 milioni negli Urali, 4 in Siberia, poche centinaia di migliaia in Estremo Oriente)
   RUS: 9_000_000,
@@ -377,7 +382,7 @@ export const AF_POP = {
   ESP: 280_000, PRT: 395_000, FRA: 180_000,
 };
 // nazioni già presenti con bacino proprio: le loro nuove province attingono al bacino della nazione
-export const AF_HOME = { EGY: 'EGY', ARA: 'SAU', MOR: 'MAR' };
+export const AF_HOME = { EGY: 'EGY', ARA: 'SAU', NJD: 'SAU', MOR: 'MAR' };
 
 // oasi e valli abitate nel deserto: cerchi transitabili (r in km)
 export const AF_OASES = [
@@ -719,9 +724,9 @@ export const AF_DETAIL_REGIONS = [
   ['Medina', 39.5, 24.5, ['SAU'], 55000, 'TUR'], ['Yanbu', 38.3, 24.4, ['SAU'], 45000, 'TUR'], ['La Mecca', 39.8, 21.5, ['SAU'], 40000, 'TUR'], ['Taif', 40.5, 21.0, ['SAU'], 35000, 'TUR'],
   ['Paese degli Harb', 41.3, 24.4, ['SAU'], 50000, ''], ['Paese degli Utaiba', 42.4, 22.5, ['SAU'], 60000, ''], ['Asir', 42.6, 18.4, ['SAU'], 35000, 'TUR'],
   ['Tihama dell\'Asir', 42.4, 17.2, ['SAU'], 15000, 'TUR'], ['Bisha', 42.7, 20.0, ['SAU'], 50000, ''], ['Najran', 44.2, 17.6, ['SAU', 'YEM'], 40000, ''],
-  ['Qasim', 43.9, 26.2, ['SAU'], 35000, 'ARA'], ['Sudair', 45.5, 25.6, ['SAU'], 35000, 'ARA'], ['Riad', 46.7, 24.6, ['SAU'], 40000, 'ARA'], ['Kharj', 47.4, 23.9, ['SAU'], 45000, 'ARA'],
-  ['Aflag', 46.0, 22.3, ['SAU'], 60000, 'ARA'], ['Uadi Dauasir', 45.0, 20.5, ['SAU'], 80000, ''], ['Hofuf', 49.5, 25.3, ['SAU'], 60000, 'TUR'], ['Qatif', 49.9, 26.5, ['SAU'], 20000, 'TUR'], ['Summan', 47.8, 25.6, ['SAU'], 60000, ''],
-  ['Qatar', 51.2, 25.3, ['QAT'], 12000, 'TUR'], ['Bahrein', 50.55, 26.0, ['BHR'], 1000, 'BHR'],
+  ['Qasim', 43.9, 26.2, ['SAU'], 35000, 'NJD'], ['Sudair', 45.5, 25.6, ['SAU'], 35000, 'NJD'], ['Riad', 46.7, 24.6, ['SAU'], 40000, 'NJD'], ['Kharj', 47.4, 23.9, ['SAU'], 45000, 'NJD'],
+  ['Aflag', 46.0, 22.3, ['SAU'], 60000, 'NJD'], ['Uadi Dauasir', 45.0, 20.5, ['SAU'], 80000, 'NJD'], ['Hofuf', 49.5, 25.3, ['SAU'], 60000, 'TUR'], ['Qatif', 49.9, 26.5, ['SAU'], 20000, 'TUR'], ['Summan', 47.8, 25.6, ['SAU'], 60000, ''],
+  ['Qatar', 51.2, 25.3, ['QAT'], 12000, 'QAT'], ['Midian', 35.6, 27.6, ['SAU'], 20000, 'EGY'], ['Taima', 38.5, 27.6, ['SAU'], 40000, 'ARA'], ['Khaibar', 39.3, 25.7, ['SAU'], 30000, 'ARA'], ['Bahrein', 50.55, 26.0, ['BHR'], 1000, 'BHR'],
   ['Abu Dhabi', 54.0, 23.8, ['ARE'], 45000, 'TRU'], ['Dubai e Sharja', 55.6, 25.2, ['ARE'], 8000, 'TRU'], ['Ras al-Khaima', 56.0, 25.7, ['ARE'], 5000, 'TRU'],
   ['Mascate', 58.5, 23.4, ['OMN'], 15000, 'OMA'], ['Batina', 56.9, 24.2, ['OMN', 'ARE'], 12000, 'OMA'], ['Oman interno', 57.5, 22.6, ['OMN'], 30000, 'OMA'], ['Sur e Jaalan', 59.1, 22.0, ['OMN'], 25000, 'OMA'],
   ['Musandam', 56.2, 26.1, ['OMN'], 3000, 'OMA'], ['Dhofar', 54.0, 17.4, ['OMN'], 40000, 'OMA'], ['Uosta', 56.5, 19.8, ['OMN'], 90000, ''],

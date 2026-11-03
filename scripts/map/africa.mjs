@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_ARAL, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_ARAL, AF_FREED_FIX, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -80,15 +80,47 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   }
   // piccoli possedimenti costieri (la baia di Assab): un ritaglio che diventa una regione a sé
   for (const e of AF_ENCLAVES) cuts.push({ ...turf.circle(e.at, e.r, { units: 'kilometers', steps: 32 }), properties: { enclave: e.name } });
+  // Arabia 1881: fasce costiere tenute davvero dagli Ottomani (Hegiaz lungo il Mar Rosso, al-Hasa sul Golfo) e
+  // dall'Egitto (Midian, fino al 1892); l'interno è dei Rashidi, dei Sauditi o delle tribù. Le fasce sono una
+  // distanza dalla costa: il loro bordo segue la costa, non una linea dritta (carte di Letts 1883, Bartholomew 1871)
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "adm0_a3 == 'SAU'", '-dissolve', '-o', 'geojson-type=FeatureCollection', P('sau_land.geojson'));
+  const sauLand = readJSON(P('sau_land.geojson')).features[0];
+  const sauRings = (sauLand.geometry.type === 'Polygon' ? [sauLand.geometry.coordinates] : sauLand.geometry.coordinates).map((pl) => pl[0]);
+  const coastBand = (keep, km) => {
+    let all = null;
+    for (const ring of sauRings) {
+      let run = [];
+      const flush = () => { if (run.length > 1) { const b = turf.buffer(turf.lineString(run), km, { units: 'kilometers', steps: 6 }); all = all ? turf.union(turf.featureCollection([all, b])) : b; } run = []; };
+      for (const c of ring) { if (keep(c)) run.push(c); else flush(); }
+      flush();
+    }
+    return all ? turf.intersect(turf.featureCollection([all, sauLand])) : null;
+  };
+  const midian = coastBand(([x, y]) => x < 37.2 && y > 26.15 && y < 29.25, 40);
+  let hejaz = coastBand(([x, y]) => x < 43.3 && y > 20.2 && y < 28.4, 170);
+  if (hejaz && midian) hejaz = turf.difference(turf.featureCollection([hejaz, midian]));
+  const hasa = coastBand(([x, y]) => x > 47.8 && y > 24.3 && y < 28.4 && !(x > 50.7 && y < 24.9), 110);
+  const ARZ = [['midian', midian], ['hejaz', hejaz], ['hasa', hasa]].filter(([, g]) => g).map(([zone, g]) => ({ zone, g, bb: turf.bbox(g) }));
+  // le fasce si tagliano lungo gli spartiacque (non a tasselli di 1°, che lascerebbero linee dritte): vedi sotto
+  fs.writeFileSync(P('arz.geojson'), JSON.stringify(turf.featureCollection(ARZ.map((z) => ({ ...z.g, properties: { arz: z.zone } })))));
   fs.writeFileSync(P('cuts.geojson'), JSON.stringify(turf.featureCollection(cuts)));
   // zona di dettaglio: bacini di HydroBASINS livello 6 dentro i paesi della fase in corso
   const detailSet = new Set(AF_DETAIL_MODERN);
   const REG = AF_DETAIL_REGIONS.map(([name, lon, lat, mods, T, owner]) => ({ name, at: [lon, lat], mods, T: T * (AF_DETAIL_SCALE[mods[0]] ?? 1), owner }));
   // regioni delle province europee liberate: una per provincia, col suo nome, padrone e dimensione; se una regione
   // esterna ha lo stesso nome (uezd a cavallo del 50° meridiano) diventano una sola
+  // fascia araba di una regione: le regioni ottomane ed egiziane in Arabia (a nord dell'Asir) stanno solo nelle fasce
+  const regZone = (r) => {
+    if (!(r.mods ?? []).includes('SAU') && r.modern !== 'SAU') return null;
+    if (r.owner === 'EGY') return 'midian';
+    if (r.owner === 'TUR' && r.at[1] >= 20.3) return r.at[0] < 45 ? 'hejaz' : 'hasa';
+    return null;
+  };
   const FREED_REG = [];
   for (const fr of freed?.regions ?? []) {
     if (fr.oasis) continue; // un'oasi liberata torna come cerchio d'oasi, non come regione
+    const fix = AF_FREED_FIX[fr.name];
+    if (fix) Object.assign(fr, fix);
     const same = REG.find((r) => r.name === fr.name && r.mods.includes(fr.modern));
     if (same) { same.desert = fr.desert; same.euRegion = fr.region; same.modern = fr.modern; FREED_REG.push(same); continue; }
     if (REG.some((r) => r.name === fr.name)) fr.name = `${fr.name} `; // nome già usato altrove: distinto solo internamente
@@ -103,6 +135,14 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
   const hyb = ['af', 'eu', 'as', 'si'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
   ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
+  if (ARZ.length) {
+    // fasce arabe divise dai bacini: pezzi piccoli che l'unione taglia bene, con i soli bordi della fascia come linee nuove
+    ms(P('basins.geojson'), '-clip', P('arz.geojson'), '-explode', '-filter-fields', 'bas', '-o', 'geojson-type=FeatureCollection', P('arz_pieces.geojson'));
+    const pieces = readJSON(P('arz_pieces.geojson')).features.filter((f) => f.geometry).map((f) => ({ ...f, properties: { arz: 1 } }));
+    const cj = readJSON(P('cuts.geojson'));
+    cj.features.push(...pieces);
+    fs.writeFileSync(P('cuts.geojson'), JSON.stringify(cj));
+  }
   // India: distretti del censimento 2011 (DataMeet, CC BY 4.0) per gli stati principeschi e i possedimenti europei
   const distSrc = path.join(RAW, 'datameet', 'dist.json');
   const distCentroid = new Map();
@@ -148,6 +188,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   }).filter((a) => a.area > 0.5)
     // la punta orientale dell'isola di Kolguev oltre il 50° meridiano: resta con il resto dell'isola, in Europa
     .filter((a) => !(!freed && a.c[0] < 50.6 && a.c[1] > 68.6 && a.c[1] < 69.6));
+  const zoneAt = (c) => ARZ.find((z) => c[0] >= z.bb[0] && c[0] <= z.bb[2] && c[1] >= z.bb[1] && c[1] <= z.bb[3] && turf.booleanPointInPolygon(c, z.g))?.zone ?? null;
+  for (const a of A) a.arz = a.modern === 'SAU' ? zoneAt(a.c) : null;
   // atomi delle province europee liberate dal vecchio bordo
   if (freed) for (const a of A) if (inFreed(a.c)) { a.freed = true; a.detail = true; }
   for (const a of A) for (const o of AF_OVERRIDES) {
@@ -263,7 +305,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     // padrone e deserto, come nella mappa approvata
     if (a.freed) {
       let best = null, bd = Infinity;
-      for (const r of FREED_REG) { const d = turf.distance(a.c, r.at) * (r.modern === a.modern ? 1 : 4); if (d < bd) { bd = d; best = r; } }
+      for (const r of FREED_REG) { if (a.modern === 'SAU' && regZone(r) !== a.arz) continue; const d = turf.distance(a.c, r.at) * (r.modern === a.modern ? 1 : 4); if (d < bd) { bd = d; best = r; } }
       a.fr = best;
       if (best) a.desert = !!best.desert && !a.oasis;
     }
@@ -284,7 +326,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     else {
       // in India il distretto intero va alla regione più vicina (confini sui distretti, non linee di Voronoi)
       const at = (a.dist && distCentroid.get(a.dist)) || a.c;
-      for (const r of REG) { if (!r.mods.includes(a.modern) || ENC.has(r.name) || DIST_NAMES.has(r.name) || (r.euRegion !== undefined && !AF_DETAIL_REGIONS.some((x) => x[0] === r.name))) continue; const d = turf.distance(at, r.at); if (d < bd) { bd = d; best = r; } }
+      for (const r of REG) { if (!r.mods.includes(a.modern) || ENC.has(r.name) || DIST_NAMES.has(r.name) || (r.euRegion !== undefined && !AF_DETAIL_REGIONS.some((x) => x[0] === r.name)) || (a.modern === 'SAU' && regZone(r) !== a.arz)) continue; const d = turf.distance(at, r.at); if (d < bd) { bd = d; best = r; } }
     }
     a.region = best;
     // il padrone della regione storica vale per tutte le sue terre abitate (niente schegge di confine del dataset)

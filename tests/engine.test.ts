@@ -759,7 +759,7 @@ describe('Arabia, Persia e Asia centrale', () => {
   const byName = (n: string) => MAP.provinces.find((p) => p.name === n)!;
   it('padroni del 1881: Turkestan russo, Bukhara e Khiva protettorati, Afghanistan, Persia orientale, Arabia', () => {
     const exp: [string, string][] = [['Teheran', 'PER'], ['Isfahan', 'PER'], ['Mashhad', 'PER'], ['Kabul', 'AFG'], ['Herat', 'AFG'], ['Bukhara', 'BUK'], ['Khiva', 'KHI'],
-      ['Tashkent', 'RUS'], ['Samarcanda', 'RUS'], ['Verny', 'RUS'], ['Merv', ''], ['Kafiristan', ''], ['La Mecca', 'TUR'], ['Riad', 'ARA'], ['Mascate', 'OMA'], ['Aden', 'GBR']];
+      ['Tashkent', 'RUS'], ['Samarcanda', 'RUS'], ['Verny', 'RUS'], ['Merv', ''], ['Kafiristan', ''], ['La Mecca', 'TUR'], ['Riad', 'NJD'], ["Ha'il", 'ARA'], ['Hofuf', 'TUR'], ['Qatar', 'QAT'], ['Midian', 'EGY'], ['Bahrein', 'BHR'], ['Mascate', 'OMA'], ['Aden', 'GBR']];
     for (const [n, o] of exp) expect(byName(n)?.owner, n).toBe(o);
     const w = newGame(MAP, 'ITA', 'asia');
     expect(subjectOf(w, 'BUK')?.overlord).toBe('RUS');

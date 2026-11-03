@@ -46,8 +46,8 @@ export const OVERRIDES = [
   // Arabia e deserto siriano (rivisti il 2 novembre 2026): padroni per provincia moderna intera, niente tagli lungo la linea
   // dritta del dataset 1880 (da Gaza al Kuwait). Ottomani: Iraq (vilayet di Baghdad e Bassora), Kuwait, Transgiordania, deserto
   // siriano, Hegiaz con Tabuk, al-Hasa; Gebel Shammar dei Rashidi: Hail, al-Giauf, i confini settentrionali, Qasim, Riad.
-  { modern: 'IRQ', to: 'TUR' }, { modern: 'KWT', to: 'TUR' }, { modern: 'JOR', to: 'TUR' }, { modern: 'SYR', from: 'ARA', to: 'TUR' },
-  { iso: ['SA-07', 'SA-03', 'SA-04', 'SA-02'], to: 'TUR' }, { iso: ['SA-06', 'SA-12', 'SA-08', 'SA-05', 'SA-01'], to: 'ARA' },
+  { modern: 'IRQ', to: 'TUR' }, { modern: 'KWT', to: 'KUW' }, { modern: 'JOR', to: 'TUR' }, { modern: 'SYR', from: 'ARA', to: 'TUR' },
+  { iso: ['SA-07', 'SA-03', 'SA-04', 'SA-02'], to: 'TUR' }, { iso: ['SA-06', 'SA-12', 'SA-08'], to: 'ARA' }, { iso: ['SA-05', 'SA-01'], to: 'NJD' },
   { modern: 'CYN', to: 'GBR' }, { modern: 'ESB', to: 'GBR' }, { modern: 'WSB', to: 'GBR' }, // basi di Dhekelia e Akrotiri: Cipro
   { modern: 'TUN', to: 'TUN' }, // Beilicato di Tunisi (protettorato francese solo da maggio 1881)
   { modern: 'ISL', to: 'DEN' }, { modern: 'FRO', to: 'DEN' },
@@ -117,7 +117,7 @@ export const NATION_POP_1881 = {
   GBR: { total: 35_100_000, IRL: 4_900_000, CYP: 186_000, CYN: 0, MLT: 150_000 },
   RUS: { total: 84_000_000, POL: 7_300_000, FIN: 2_060_000, GEO: 1_100_000, ARM: 600_000, AZE: 1_200_000 },
   // SAU: Hegiaz, Asir e al-Hasa (con Tabuk e al-Giauf); YEM: lo Yemen ottomano dal 1872; QAT: il Qatar
-  TUR: { total: 25_820_000, TUR: 11_500_000, LBY: 1_000_000, IRQ: 1_400_000, SYR: 1_600_000, LBN: 400_000, ISR: 300_000, PSX: 200_000, JOR: 200_000, SAU: 900_000, YEM: 1_500_000, QAT: 20_000 },
+  TUR: { total: 25_820_000, TUR: 11_500_000, LBY: 1_000_000, IRQ: 1_400_000, SYR: 1_600_000, LBN: 400_000, ISR: 300_000, PSX: 200_000, JOR: 200_000, SAU: 900_000, YEM: 1_500_000 },
   // Egitto (censimento 1882: 6,8 milioni) e il Sudan egiziano fino al Darfur, l'Equatoria, il Bahr el-Ghazal, Massaua e Harar
   EGY: { total: 13_330_000, SDN: 5_000_000, SDS: 1_000_000, ERI: 150_000, SOL: 150_000, ETH: 200_000, SOM: 30_000 },
   SPA: { total: 16_600_000 },
@@ -136,7 +136,9 @@ export const NATION_POP_1881 = {
   MOR: { total: 5_000_000 },
   TUN: { total: 1_100_000 },
   PER: { total: 2_500_000 },
-  ARA: { total: 1_800_000 }, // Gebel Shammar e Neged
+  ARA: { total: 800_000 }, // emirato di Gebel Shammar (Rashidi)
+  NJD: { total: 900_000 }, // emirato del Neged (secondo stato saudita)
+  KUW: { total: 25_000 }, // Kuwait degli al-Sabah
   NUL: { total: 300_000 },
 };
 

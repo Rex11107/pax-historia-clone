@@ -72,11 +72,20 @@ export const ASIA_NATIONS: Record<string, P> = {
     militaryQuality: 45, cohesion: 50, finance: 6, armyPeace: 25000, temperament: 'regno dei Rana, chiuso agli stranieri, fornitore di gurkha all\'esercito indiano', goals: ['restare chiuso agli stranieri', 'conservare il favore britannico'], rivals: [], friends: ['GBR'] }),
   BHU: base({ name: 'Bhutan', short: ['il ', 'Bhutan'], adjective: 'bhutanese', color: '#e0904a', capital: [89.86, 27.6], government: 'regno', leader: 'Druk Desi; penlop di Tongsa Jigme Namgyal',
     cohesion: 30, finance: 1, armyPeace: 3000, temperament: 'diviso fra i penlop, ha perso i Duar nel 1865', goals: ['riavere i Duar'], rivals: [], friends: [] }),
+  // Arabia: il secondo stato saudita in declino, i due porti del Golfo sotto sovranità ottomana nominale
+  NJD: base({ name: 'Emirato del Neged', short: ['il ', 'Neged'], adjective: 'neged', color: '#8f7a4a', capital: [46.72, 24.63], leader: 'Imam Abdallah ibn Faisal Al Saud',
+    cohesion: 25, finance: 3, armyPeace: 6000, temperament: 'secondo stato saudita, logorato dalla guerra fra i figli di Faisal e stretto fra Rashidi e Ottomani (che gli hanno tolto al-Hasa nel 1871)',
+    goals: ['riavere al-Hasa', 'resistere ai Rashidi'], rivals: ['ARA', 'TUR'], friends: [] }),
+  KUW: base({ name: 'Sceiccato del Kuwait', short: ['il ', 'Kuwait'], adjective: 'kuwaitiano', color: '#6a9a8a', capital: [47.98, 29.37], government: 'sceiccato', leader: 'Sceicco Abdallah II al-Sabah (qaimmaqam ottomano)',
+    cohesion: 55, finance: 4, armyPeace: 1000, naval: 1, temperament: 'porto di mercanti e pescatori di perle, autonomo sotto una sovranità ottomana nominale dal 1871', goals: ['commercio', 'autonomia'], rivals: [], friends: ['TUR'] }),
+  QAT: base({ name: 'Qatar', short: ['il ', 'Qatar'], adjective: 'qatariota', color: '#8a3a5a', capital: [51.53, 25.29], government: 'sceiccato', leader: 'Sceicco Jasim ibn Muhammad Al Thani (qaimmaqam ottomano)',
+    cohesion: 45, finance: 3, armyPeace: 1500, naval: 1, temperament: 'gli Al Thani accettano un presidio ottomano a Doha dal 1872 ma guardano con sospetto Istanbul e il Bahrein', goals: ['autonomia', 'perle'], rivals: ['BHR'], friends: [] }),
 };
 
 /** Opinioni iniziali (A verso B). */
 export const ASIA_OPINIONS: [string, string, number][] = [
   ['AFG', 'GBR', -50], ['GBR', 'AFG', -20], ['AFG', 'RUS', -30], ['AFG', 'PER', -30], ['PER', 'AFG', -20],
   ['GBR', 'NEP', 20], ['NEP', 'GBR', 30], ['BHU', 'GBR', -20], ['GBR', 'BHU', -10], ['SIK', 'GBR', 0], ['KAL', 'AFG', -30], ['GWA', 'HOL', -20], ['HOL', 'GWA', -20], ['HYD', 'GBR', 20], ['JOD', 'JAI', -10], ['JAI', 'JOD', -10],
+  ['ARA', 'NJD', -40], ['NJD', 'ARA', -50], ['NJD', 'TUR', -40], ['TUR', 'NJD', -20], ['KUW', 'TUR', 10], ['QAT', 'TUR', -10], ['QAT', 'BHR', -30], ['BHR', 'QAT', -30],
   ['BUK', 'RUS', 10], ['KHI', 'RUS', -10], ['RUS', 'BUK', 20], ['RUS', 'KHI', 10], ['BUK', 'AFG', -30], ['BUK', 'KHI', -20],
 ];
