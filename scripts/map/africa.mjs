@@ -44,7 +44,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   // 1. livelli: suddivisioni moderne, stati d'epoca, laghi
   fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection([...readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })), turf.polygon([AF_ARAL])])));
   // oltre il vecchio riquadro (est dell'88° meridiano, nord del 56° parallelo) entrano solo i paesi della fase in corso
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `!${excl}.includes(adm0_a3) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && ((this.centroidX <= 88 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3))`, '-clip', `bbox=${AF_CLIP.join(',')}`,
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && ((this.centroidX <= 88 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3))`, '-clip', `bbox=${AF_CLIP.join(',')}`,
     '-each', 'pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=adm0_a3', '-filter-fields', 'pid,iso,pname,modern',
     // il taglio dell'Europa dopo la semplificazione: il bordo resta identico a quello delle province europee
     '-simplify', 'interval=800', 'keep-shapes', '-erase', erase, '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
@@ -113,7 +113,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const regZone = (r) => {
     if (!(r.mods ?? []).includes('SAU') && r.modern !== 'SAU') return null;
     if (r.owner === 'EGY') return 'midian';
-    if (r.owner === 'TUR' && r.at[1] >= 20.3) return r.at[0] < 45 ? 'hejaz' : 'hasa';
+    if (r.owner === 'TUR' && r.at[1] >= 20.3 && r.at[1] < 28.8) return r.at[0] < 45 ? 'hejaz' : 'hasa';
     return null;
   };
   const FREED_REG = [];
@@ -153,6 +153,28 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     for (const d of distFeats) if (pt[0] >= d.bb[0] && pt[0] <= d.bb[2] && pt[1] >= d.bb[1] && pt[1] <= d.bb[3] && turf.booleanPointInPolygon(pt, d.f)) return d.dist;
     return null;
   };
+  // nelle terre rifatte attorno all'Arabia i confini moderni (Arabia saudita, Iraq, Giordania, Kuwait: linee rette del
+  // 1913-1965) e quelli del dataset d'epoca non tagliano gli atomi: restano spartiacque, coste e fasce; il paese moderno
+  // di ogni atomo si ricava poi dal suo centro
+  const MIX = ['SAU', 'IRQ', 'JOR'].filter((m) => (freed?.regions ?? []).some((r) => r.modern === m));
+  let admOrig = [];
+  if (MIX.length) {
+    fs.copyFileSync(P('adm.geojson'), P('adm_orig.geojson'));
+    ms(P('adm_orig.geojson'), '-filter', `${JSON.stringify(MIX)}.includes(modern)`, '-dissolve', '-each', "pid='MIX', iso='', pname='', modern='MIX'", '-o', 'geojson-type=FeatureCollection', P('adm_mix.geojson'));
+    const orig = readJSON(P('adm_orig.geojson'));
+    admOrig = orig.features.filter((f) => MIX.includes(f.properties.modern)).map((f) => ({ f, bb: turf.bbox(f) }));
+    fs.writeFileSync(P('adm.geojson'), JSON.stringify(turf.featureCollection([...orig.features.filter((f) => !MIX.includes(f.properties.modern)), ...readJSON(P('adm_mix.geojson')).features])));
+    ms(P('hist.geojson'), '-erase', P('adm_mix.geojson'), '-o', 'geojson-type=FeatureCollection', P('hist2.geojson'));
+    fs.copyFileSync(P('hist2.geojson'), P('hist.geojson'));
+  }
+  const origAt = (c) => {
+    let best = null, bd = Infinity;
+    for (const q of admOrig) {
+      if (c[0] >= q.bb[0] && c[0] <= q.bb[2] && c[1] >= q.bb[1] && c[1] <= q.bb[3] && turf.booleanPointInPolygon(c, q.f)) return q.f.properties;
+      const d = Math.hypot((q.bb[0] + q.bb[2]) / 2 - c[0], (q.bb[1] + q.bb[3]) / 2 - c[1]); if (d < bd) { bd = d; best = q.f.properties; }
+    }
+    return best;
+  };
   const layers = [P('adm.geojson'), P('hist.geojson'), P('cuts.geojson'), P('basins.geojson')];
   if (fs.existsSync(distSrc)) {
     const dj = readJSON(distSrc);
@@ -180,7 +202,8 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const u = readJSON(P('u.geojson')).features.filter((f) => f.geometry);
   const inBox = ([x, y], b) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
   let A = u.map((f) => {
-    const pr = f.properties;
+    let pr = f.properties;
+    if (pr.modern === 'MIX') { const o = origAt(turf.centroid(f).geometry.coordinates); pr = { ...pr, pid: o?.pid ?? 'MIX', iso: o?.iso ?? '', pname: o?.pname ?? '', modern: o?.modern ?? 'SAU' }; }
     const hist = pr.hist ?? 'null';
     // nelle province europee rifatte il padrone viene dalla provincia d'origine: gli stati d'epoca europei non servono
     if (AF_HIST[hist] === undefined && !(freed && inFreed(turf.centroid(f).geometry.coordinates))) throw new Error(`stato africano senza tag: ${hist}`);

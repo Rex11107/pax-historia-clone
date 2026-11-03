@@ -275,8 +275,23 @@ export const AF_DISTRICT_REGIONS = {
 };
 /** Popolazione fissa delle grandi città-provincia (censimento del 1881), che i pesi delle località sottostimano. */
 export const AF_POP_FIXED = { Bombay: 773_000, Calcutta: 870_000 };
+/**
+ * Province europee da rifare fuori anche se non toccano il vecchio bordo: stanno sui confini rettilinei tracciati
+ * fra il 1913 e il 1965 (Arabia saudita, Giordania, Iraq, Kuwait), che nel 1881 non esistevano.
+ */
+export const AF_FREE_EU = ['Al-Hudud al-Shamaliyya', 'Al-Jawf', 'Al-Muthanna', 'Al Mafraq', 'Mafraq (est)', 'Ar Rutbah', 'Al-Anbar (sud) I', 'Al-Anbar (ovest) I',
+  'Al-Anbar (sud) II', 'Al-Anbar (ovest) II', 'Najaf (sud)', 'Aqaba', "Ma'an", 'Governatorato della Capitale', 'Al-Ahmad', 'Al-Jahra'];
 /** Correzioni alle province europee rifatte fuori (nome, padrone, dimensione). */
 export const AF_FREED_FIX = {
+  // il deserto siriaco meridionale (Hamad): tribù Anaza e Shammar, sotto una sovranità ottomana nominale
+  'Al-Hudud al-Shamaliyya': { name: 'Hamad', owner: 'TUR', T: 90000 },
+  'Al-Jawf': { name: 'Giauf' },
+  // Aqaba resta egiziana fino al 1892, come il Midian
+  'Aqaba': { owner: 'EGY' },
+  'Al-Sharqiyya': { name: 'Giubail' },
+  'Governatorato della Capitale': { name: 'Kuwait' },
+  'Al-Ahmad': { name: 'Fahahil' },
+  'Al-Muthanna': { name: 'Samawa' },
   // l'interno del Golfo fra il Neged e al-Hasa: sabbie del Dahna e del Summan, tribù Mutair e Agiman
   'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
 };
@@ -721,7 +736,7 @@ export const AF_DETAIL_REGIONS = [
   // ===== Fase 3: Arabia meridionale, Persia orientale, Afghanistan, Asia centrale (1881) =====
   // Arabia: Hegiaz e Asir ottomani, il Neged dei Rashidi (Gebel Shammar), al-Hasa ottomano, l'Oman, la costa della Tregua, lo Yemen
   // Hegiaz ottomano: le città sante, la costa, Taif; l'interno oltre le montagne è delle tribù beduine
-  ['Medina', 39.5, 24.5, ['SAU'], 55000, 'TUR'], ['Yanbu', 38.3, 24.4, ['SAU'], 45000, 'TUR'], ['La Mecca', 39.8, 21.5, ['SAU'], 40000, 'TUR'], ['Taif', 40.5, 21.0, ['SAU'], 35000, 'TUR'],
+  ['Medina', 39.5, 24.5, ['SAU'], 55000, 'TUR'], ['Yanbu', 38.3, 24.4, ['SAU'], 45000, 'TUR'], ['La Mecca', 39.8, 21.5, ['SAU'], 40000, 'TUR'], ['Gedda', 39.17, 21.6, ['SAU'], 15000, 'TUR'], ['Taif', 40.5, 21.0, ['SAU'], 35000, 'TUR'],
   ['Paese degli Harb', 41.3, 24.4, ['SAU'], 50000, ''], ['Paese degli Utaiba', 42.4, 22.5, ['SAU'], 60000, ''], ['Asir', 42.6, 18.4, ['SAU'], 35000, 'TUR'],
   ['Tihama dell\'Asir', 42.4, 17.2, ['SAU'], 15000, 'TUR'], ['Bisha', 42.7, 20.0, ['SAU'], 50000, ''], ['Najran', 44.2, 17.6, ['SAU', 'YEM'], 40000, ''],
   ['Qasim', 43.9, 26.2, ['SAU'], 35000, 'NJD'], ['Sudair', 45.5, 25.6, ['SAU'], 35000, 'NJD'], ['Riad', 46.7, 24.6, ['SAU'], 40000, 'NJD'], ['Kharj', 47.4, 23.9, ['SAU'], 45000, 'NJD'],

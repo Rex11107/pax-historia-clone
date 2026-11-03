@@ -31,7 +31,7 @@ import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORR
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
 import { buildAfrica } from './africa.mjs';
-import { AF_POP, AF_POP_FIXED, AF_POP_ISO, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
+import { AF_FREE_EU, AF_POP, AF_POP_FIXED, AF_POP_ISO, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
 import { AFRICA_MODERN, atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -1252,6 +1252,8 @@ async function main() {
       if (len) { const k = p.feat.properties.g; contact.set(k, (contact.get(k) || 0) + len); }
     }
     for (const [k, len] of contact) if (len > 10 && !gInfo[k].prot) freedG.add(k);
+    // province europee lungo confini moderni rettilinei che nel 1881 non esistevano (Arabia, Giordania, Iraq, Kuwait)
+    for (const [k, g] of gInfo.entries()) if (AF_FREE_EU.includes(String(g.lockName || g.name)) && !g.prot) freedG.add(k);
     if (freedG.size) {
       const regions = [];
       for (const k of freedG) {
