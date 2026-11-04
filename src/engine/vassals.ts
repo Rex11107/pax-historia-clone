@@ -71,6 +71,8 @@ const INITIAL: Subject[] = [
   { subject: 'CAM', overlord: 'FRA', level: 'protettorato', liberty: 45, since: -9100 }, // trattato del 1863
   { subject: 'PRK', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 }, // Pangkor 1874
   { subject: 'SEL', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 },
+  { subject: 'SUJ', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 }, // residente 1874
+  { subject: 'PHU', overlord: 'SIA', level: 'tributario', liberty: 75, since: -20000 }, // tributo doppio Siam/Annam
   { subject: 'KED', overlord: 'SIA', level: 'tributario', liberty: 70, since: -20000 }, // bunga mas
   { subject: 'KEL', overlord: 'SIA', level: 'tributario', liberty: 75, since: -20000 },
   { subject: 'TRG', overlord: 'SIA', level: 'tributario', liberty: 80, since: -20000 },

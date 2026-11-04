@@ -9,6 +9,7 @@ export type ClaimStrength = 'nucleo' | 'storica' | 'pretesa';
 /** [chi rivendica, forza, dove, perché] */
 export const CLAIMS_1881: [Tag, ClaimStrength, Match, string][] = [
   // Impero ottomano: i deserti fra Siria, Iraq e Arabia, rivendicati sulla carta ma in mano alle tribù beduine
+  ['ANN', 'pretesa', { name: ['Xieng Khouang', 'Houaphan'] }, 'principati lao tributari anche di Hue'],
   ['TUR', 'pretesa', { name: ['Hamad', 'Uadi Arar', 'Uadi Sirhan', 'Paese dei Dhafir', 'Deserto di Anbar', 'Najaf (sud)', 'Dahna', 'Summan'] }, 'deserti beduini dei vilayet di Siria, Baghdad e Bassora'],
   // Francia: la ferita del 1871
   ['FRA', 'storica', { iso: ['FR-67', 'FR-68', 'FR-57'], owner: ['GER'] }, 'Alsazia-Lorena, perse nel 1871'],
