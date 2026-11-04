@@ -71,6 +71,15 @@ const INITIAL: Subject[] = [
   { subject: 'CAM', overlord: 'FRA', level: 'protettorato', liberty: 45, since: -9100 }, // trattato del 1863
   { subject: 'PRK', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 }, // Pangkor 1874
   { subject: 'SEL', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 },
+  { subject: 'SAK', overlord: 'NED', level: 'protettorato', liberty: 45, since: -8000 }, // trattato di Siak 1858
+  { subject: 'YOG', overlord: 'NED', level: 'protettorato', liberty: 35, since: -25000 },
+  { subject: 'SUR', overlord: 'NED', level: 'protettorato', liberty: 35, since: -25000 },
+  { subject: 'KTI', overlord: 'NED', level: 'protettorato', liberty: 50, since: -6500 },
+  { subject: 'BON', overlord: 'NED', level: 'tributario', liberty: 75, since: -7500 }, // trattato del 1860
+  { subject: 'TER', overlord: 'NED', level: 'protettorato', liberty: 45, since: -30000 },
+  { subject: 'TID', overlord: 'NED', level: 'protettorato', liberty: 45, since: -30000 },
+  { subject: 'SUL', overlord: 'SPA', level: 'protettorato', liberty: 70, since: -900 }, // trattato del 1878
+  { subject: 'BNB', overlord: 'GBR', level: 'protettorato', liberty: 70, since: -1200 }, // concessione di Dent
   { subject: 'SUJ', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 }, // residente 1874
   { subject: 'PHU', overlord: 'SIA', level: 'tributario', liberty: 75, since: -20000 }, // tributo doppio Siam/Annam
   { subject: 'KED', overlord: 'SIA', level: 'tributario', liberty: 70, since: -20000 }, // bunga mas

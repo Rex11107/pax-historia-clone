@@ -9,6 +9,11 @@ export type ClaimStrength = 'nucleo' | 'storica' | 'pretesa';
 /** [chi rivendica, forza, dove, perché] */
 export const CLAIMS_1881: [Tag, ClaimStrength, Match, string][] = [
   // Impero ottomano: i deserti fra Siria, Iraq e Arabia, rivendicati sulla carta ma in mano alle tribù beduine
+  ['NED', 'pretesa', { owner: ['ACH'] }, 'Aceh, in guerra dal 1873'],
+  ['NED', 'pretesa', { owner: ['BAL', 'LOM'] }, 'sovranità riconosciuta dai principi balinesi nei trattati del 1841-49'],
+  ['NED', 'pretesa', { modern: ['IDN'], owner: [''] }, 'le Indie fino al 141° meridiano'],
+  ['SPA', 'pretesa', { modern: ['PHL'], owner: [''] }, 'la Cordigliera e Mindanao interno'],
+  ['SUL', 'pretesa', { name: ['Sandakan', 'Darvel Bay', 'Kudat'] }, 'il Borneo nord-orientale, ceduto a Dent nel 1878'],
   ['ANN', 'pretesa', { name: ['Xieng Khouang', 'Houaphan'] }, 'principati lao tributari anche di Hue'],
   ['TUR', 'pretesa', { name: ['Hamad', 'Uadi Arar', 'Uadi Sirhan', 'Paese dei Dhafir', 'Deserto di Anbar', 'Najaf (sud)', 'Dahna', 'Summan'] }, 'deserti beduini dei vilayet di Siria, Baghdad e Bassora'],
   // Francia: la ferita del 1871

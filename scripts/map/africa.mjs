@@ -44,7 +44,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   // 1. livelli: suddivisioni moderne, stati d'epoca, laghi
   fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection([...readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })), turf.polygon([AF_ARAL])])));
   // oltre il vecchio riquadro (est dell'88° meridiano, nord del 56° parallelo) entrano solo i paesi della fase in corso
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && !(adm0_a3 == 'MYS' && this.centroidX > 105) && ((this.centroidX <= 88 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3))`, '-clip', `bbox=${AF_CLIP.join(',')}`,
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && ((this.centroidX <= 88 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3))`, '-clip', `bbox=${AF_CLIP.join(',')}`,
     '-each', 'pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=adm0_a3', '-filter-fields', 'pid,iso,pname,modern',
     // il taglio dell'Europa dopo la semplificazione: il bordo resta identico a quello delle province europee
     '-simplify', 'interval=800', 'keep-shapes', '-erase', erase, '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
@@ -138,7 +138,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const freedGeo = freed ? readJSON(freed.file).features.filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) })) : [];
   const inFreed = (c) => freedGeo.some((q) => c[0] >= q.bb[0] && c[0] <= q.bb[2] && c[1] >= q.bb[1] && c[1] <= q.bb[3] && turf.booleanPointInPolygon(c, q.f));
   // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
-  const hyb = ['af', 'eu', 'as', 'si'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
+  const hyb = ['af', 'eu', 'as', 'si', 'au'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
   ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
   if (ARZ.length) {
     // fasce arabe divise dai bacini: pezzi piccoli che l'unione taglia bene, con i soli bordi della fascia come linee nuove
@@ -275,7 +275,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const split = [];
   for (const a of A) {
     const T = targetOf(a);
-    const k = a.oasis || a.enclave ? 1 : a.freed ? Math.round(a.area / 30000) : a.detail ? Math.round(a.area / (AF_FINE[a.modern] ?? Math.max(T, 60000))) : Math.round(a.area / T);
+    const k = a.oasis || a.enclave ? 1 : a.freed ? Math.round(a.area / 30000) : a.detail ? Math.round(a.area / (AF_FINE[a.iso] ?? AF_FINE[a.modern] ?? Math.max(T, 60000))) : Math.round(a.area / T);
     if (k < 2) { split.push(a); continue; }
     const bb = turf.bbox(a.f);
     const step = Math.sqrt(a.area / (k * 60)) / 111;

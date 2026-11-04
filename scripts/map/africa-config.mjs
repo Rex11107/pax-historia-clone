@@ -4,13 +4,20 @@
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
 export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
   // fasi successive: India, Cina, Siberia
-  'CHN', 'MNG', 'MDV', 'IOT', 'USA', 'BRN', 'IDN', 'PHL', 'TLS', 'PNG'];
+  'CHN', 'MNG', 'MDV', 'IOT', 'USA'];
 /**
  * Popolazione del 1881 per unità amministrativa moderna (stima dai censimenti del 1881-1897 dei governatorati).
  * Ha la precedenza sul bacino del paese moderno: in Siberia la popolazione di oggi (Vladivostok, Kuzbass) non dice
  * niente di quella del 1881, concentrata negli Urali e lungo la via della Siberia.
  */
 export const AF_POP_ISO = {
+  // Indie olandesi: Giava e Madura (censimento 1880) e isole esterne (stime)
+  'ID-BT': 600_000, 'ID-JK': 400_000, 'ID-JB': 5_000_000, 'ID-JT': 7_000_000, 'ID-YO': 700_000, 'ID-JI': 6_300_000,
+  'ID-AC': 500_000, 'ID-SU': 900_000, 'ID-SB': 1_000_000, 'ID-RI': 150_000, 'ID-KR': 100_000, 'ID-JA': 150_000, 'ID-SS': 600_000,
+  'ID-BE': 150_000, 'ID-LA': 150_000, 'ID-BB': 100_000, 'ID-KB': 400_000, 'ID-KT': 200_000, 'ID-KS': 350_000, 'ID-KI': 200_000,
+  'ID-SN': 1_100_000, 'ID-SR': 150_000, 'ID-SG': 200_000, 'ID-ST': 200_000, 'ID-GO': 100_000, 'ID-SA': 250_000,
+  'ID-BA': 800_000, 'ID-NB': 650_000, 'ID-NT': 800_000, 'ID-MA': 300_000, 'ID-MU': 150_000, 'ID-PA': 400_000, 'ID-PB': 100_000,
+  'MY-13': 220_000, 'MY-12': 100_000, 'MY-15': 6_000,
   'RU-BA': 1_400_000, 'RU-ORE': 700_000, 'RU-CHE': 550_000, 'RU-SVE': 1_000_000, 'RU-PER': 1_000_000, 'RU-UD': 600_000, 'RU-TA': 600_000,
   'RU-SAM': 500_000, 'RU-KIR': 400_000, 'RU-KO': 90_000, 'RU-ARK': 20_000, 'RU-NEN': 8_000,
   'RU-KGN': 450_000, 'RU-TYU': 400_000, 'RU-KHM': 30_000, 'RU-YAN': 20_000, 'RU-OMS': 350_000,
@@ -310,7 +317,7 @@ export const AF_FREED_FIX = {
   'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
 };
 /** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
-export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP'];
+export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'BRN', 'IDN', 'PHL', 'TLS', 'PNG'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
 export const AF_CLIP = [-30, -36, 180, 78];
 
@@ -336,7 +343,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': '', 'Imperial Japan': '',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': '',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -408,6 +415,8 @@ export const AF_POP = {
   // subcontinente indiano (censimenti del 1881: 254 milioni con la Birmania; Ceylon 2,76)
   // Indocina e Malesia peninsulare (stime 1881: censimento della Bassa Birmania 3,7 milioni; Siam circa 6)
   MMR: 7_000_000, THA: 5_500_000, LAO: 800_000, KHM: 1_000_000, VNM: 10_000_000, MYS: 600_000, SGP: 140_000,
+  // arcipelago (censimento di Giava del 1880: 19,5 milioni; Filippine 1877: 5,6 milioni)
+  IDN: 29_000_000, PHL: 5_600_000, BRN: 25_000, TLS: 300_000, PNG: 1_000_000,
   IND: 200_000_000, PAK: 20_000_000, BGD: 27_000_000, NPL: 3_000_000, BTN: 200_000, LKA: 2_760_000, KAS: 5_000,
   IRN: 4_500_000, AFG: 3_000_000, TKM: 700_000, UZB: 3_200_000, KAZ: 2_400_000, KGZ: 650_000, TJK: 900_000, KAB: 5_000,
   ESP: 280_000, PRT: 395_000, FRA: 180_000,
@@ -609,10 +618,13 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   // fase 4: la Russia a est del 50° meridiano, il subcontinente indiano
   'RUS', 'IND', 'PAK', 'BGD', 'NPL', 'BTN', 'LKA', 'KAS',
   // fase 5: Indocina e penisola malese
-  'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP'];
+  'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP',
+  // fase 6: arcipelago
+  'BRN', 'IDN', 'PHL', 'TLS', 'PNG'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
-export const AF_FINE = { ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
+export const AF_FINE = { IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
+  'ID-BA': 250, 'ID-NB': 800, 'ID-NT': 800, 'ID-MU': 800, 'ID-JB': 1000, 'ID-JT': 1000, 'ID-JI': 1000, 'ID-YO': 600, 'ID-BT': 1000, 'ID-JK': 500, ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
 
 /** Deserto percorso dai nomadi, non intransitabile: il Sahara occidentale (spagnolo dal 1884) e la costa mauritana. */
 export const AF_STEPPE = { modern: ['SAH'], boxes: [[-17.5, 18.5, -15.2, 21.4], [-17.5, 20.7, -8.6, 27.7]] };
@@ -1301,4 +1313,83 @@ export const AF_DETAIL_REGIONS = [
   ['Terengganu', 103.0, 4.9, ['MYS'], 15000, 'TRG'],
   ['Kelantan', 102.0, 5.4, ['MYS'], 15000, 'KEL'],
   ['Kedah', 100.6, 6.1, ['MYS'], 15000, 'KED'],
+  // ===== Fase 6: arcipelago (Indie olandesi, Borneo, Filippine, Timor, Nuova Guinea) =====
+  // Sumatra: Aceh in guerra con l'Olanda dal 1873; terre batak libere; Siak vassallo
+  ['Kutaraja', 95.4, 5.45, ['IDN'], 5000, 'NED'], ['Pidie', 96.1, 5.15, ['IDN'], 8000, 'ACH'], ['Aceh orientale', 97.3, 4.95, ['IDN'], 12000, 'ACH'],
+  ['Aceh occidentale', 96.2, 4.4, ['IDN'], 14000, 'ACH'], ['Gayo', 97.1, 4.1, ['IDN'], 12000, 'ACH'], ['Singkil', 97.85, 2.5, ['IDN'], 8000, 'NED'],
+  ['Tamiang', 98.0, 4.3, ['IDN'], 6000, 'NED'], ['Langkat', 98.3, 3.85, ['IDN'], 6000, 'NED'], ['Deli', 98.75, 3.5, ['IDN'], 5000, 'NED'],
+  ['Asahan', 99.6, 2.85, ['IDN'], 10000, 'NED'], ['Karo', 98.4, 3.1, ['IDN'], 5000, ''], ['Toba', 99.05, 2.4, ['IDN'], 10000, ''], ['Dairi', 98.2, 2.75, ['IDN'], 6000, ''],
+  ['Tapanuli', 98.8, 1.75, ['IDN'], 8000, 'NED'], ['Mandailing', 99.5, 1.0, ['IDN'], 12000, 'NED'], ['Nias', 97.6, 1.1, ['IDN'], 5000, 'NED'],
+  ['Rokan', 100.6, 1.6, ['IDN'], 15000, 'SAK'], ['Siak', 101.8, 0.9, ['IDN'], 20000, 'SAK'], ['Kampar', 101.0, 0.2, ['IDN'], 15000, 'NED'],
+  ['Pelalawan', 102.3, 0.1, ['IDN'], 12000, 'NED'], ['Indragiri', 102.6, -0.6, ['IDN'], 15000, 'NED'],
+  ['Padang', 100.4, -0.95, ['IDN'], 6000, 'NED'], ['Fort de Kock', 100.4, -0.3, ['IDN'], 6000, 'NED'], ['Pasaman', 100.0, 0.3, ['IDN'], 8000, 'NED'],
+  ['Solok', 100.9, -0.9, ['IDN'], 8000, 'NED'], ['Painan', 100.85, -1.9, ['IDN'], 8000, 'NED'], ['Kerinci', 101.45, -2.05, ['IDN'], 6000, ''], ['Mentawai', 99.3, -1.6, ['IDN'], 7000, ''],
+  ['Jambi', 103.6, -1.6, ['IDN'], 15000, 'NED'], ['Alto Jambi', 102.4, -1.6, ['IDN'], 20000, ''], ['Bengkulu', 102.3, -3.8, ['IDN'], 10000, 'NED'], ['Mukomuko', 101.4, -2.7, ['IDN'], 8000, 'NED'],
+  ['Palembang', 104.75, -3.0, ['IDN'], 20000, 'NED'], ['Musi Rawas', 103.0, -3.0, ['IDN'], 20000, 'NED'], ['Lahat', 103.5, -4.0, ['IDN'], 15000, 'NED'], ['Ogan Komering', 104.6, -4.0, ['IDN'], 18000, 'NED'],
+  ['Lampung', 105.3, -5.3, ['IDN'], 15000, 'NED'], ['Tulang Bawang', 105.2, -4.3, ['IDN'], 15000, 'NED'],
+  ['Bangka', 106.1, -2.2, ['IDN'], 12000, 'NED'], ['Belitung', 107.9, -2.9, ['IDN'], 5000, 'NED'], ['Riau', 104.4, 0.9, ['IDN'], 5000, 'NED'], ['Lingga', 104.6, -0.2, ['IDN'], 5000, 'NED'], ['Natuna', 108.2, 3.8, ['IDN'], 3000, 'NED'],
+  // Giava: residenze olandesi e principati di Yogyakarta e Surakarta
+  ['Bantam', 106.1, -6.4, ['IDN'], 9000, 'NED'], ['Batavia', 106.85, -6.2, ['IDN'], 3000, 'NED'], ['Buitenzorg', 106.8, -6.6, ['IDN'], 4000, 'NED'], ['Krawang', 107.4, -6.35, ['IDN'], 5000, 'NED'],
+  ['Bandung', 107.6, -6.95, ['IDN'], 6000, 'NED'], ['Sukabumi', 106.85, -7.0, ['IDN'], 8000, 'NED'], ['Garut', 107.85, -7.3, ['IDN'], 8000, 'NED'], ['Tasikmalaya', 108.25, -7.4, ['IDN'], 5000, 'NED'],
+  ['Cheribon', 108.5, -6.85, ['IDN'], 6000, 'NED'], ['Tegal', 109.1, -7.0, ['IDN'], 5000, 'NED'], ['Pekalongan', 109.7, -7.0, ['IDN'], 5000, 'NED'], ['Banyumas', 109.2, -7.45, ['IDN'], 6000, 'NED'],
+  ['Bagelen', 109.9, -7.7, ['IDN'], 4000, 'NED'], ['Kedu', 110.2, -7.4, ['IDN'], 4000, 'NED'], ['Semarang', 110.4, -7.05, ['IDN'], 7000, 'NED'], ['Grobogan', 110.95, -7.1, ['IDN'], 5000, 'NED'], ['Japara', 110.8, -6.65, ['IDN'], 4000, 'NED'],
+  ['Rembang', 111.4, -6.95, ['IDN'], 7000, 'NED'], ['Yogyakarta', 110.4, -7.85, ['IDN'], 4000, 'YOG'], ['Surakarta', 110.9, -7.7, ['IDN'], 6000, 'SUR'], ['Madiun', 111.5, -7.75, ['IDN'], 7000, 'NED'],
+  ['Kediri', 112.0, -7.95, ['IDN'], 8000, 'NED'], ['Surabaya', 112.6, -7.35, ['IDN'], 9000, 'NED'], ['Pasuruan', 112.75, -7.85, ['IDN'], 6000, 'NED'], ['Probolinggo', 113.2, -7.85, ['IDN'], 4000, 'NED'],
+  ['Besuki', 113.8, -7.95, ['IDN'], 6000, 'NED'], ['Banyuwangi', 114.2, -8.25, ['IDN'], 6000, 'NED'], ['Bangkalan', 112.95, -7.05, ['IDN'], 3000, 'NED'], ['Sumenep', 113.8, -7.0, ['IDN'], 3500, 'NED'],
+  // Borneo olandese: coste e sultanati vassalli, interno dayak libero
+  ['Sambas', 109.3, 1.3, ['IDN'], 7000, 'NED'], ['Pontianak', 109.4, -0.1, ['IDN'], 12000, 'NED'], ['Landak', 109.9, 0.5, ['IDN'], 9000, 'NED'], ['Sanggau', 110.6, 0.1, ['IDN'], 13000, 'NED'],
+  ['Sintang', 111.8, 0.0, ['IDN'], 20000, 'NED'], ['Kapuas Hulu', 113.0, 0.9, ['IDN'], 30000, ''], ['Ketapang', 110.3, -1.7, ['IDN'], 30000, 'NED'], ['Kotawaringin', 111.7, -2.4, ['IDN'], 25000, 'NED'],
+  ['Sampit', 112.9, -2.3, ['IDN'], 25000, 'NED'], ['Kahayan', 113.8, -1.6, ['IDN'], 30000, ''], ['Kuala Kapuas', 114.3, -2.8, ['IDN'], 15000, 'NED'], ['Banjarmasin', 114.6, -3.3, ['IDN'], 8000, 'NED'],
+  ['Martapura', 115.0, -3.6, ['IDN'], 8000, 'NED'], ['Hulu Sungai', 115.3, -2.6, ['IDN'], 10000, 'NED'], ['Tanah Bumbu', 115.9, -3.4, ['IDN'], 12000, 'NED'], ['Barito', 114.9, -1.2, ['IDN'], 35000, ''],
+  ['Pasir', 116.0, -1.8, ['IDN'], 15000, 'NED'], ['Kutai', 117.0, -0.4, ['IDN'], 30000, 'KTI'], ['Alto Mahakam', 115.3, 0.6, ['IDN'], 40000, ''], ['Berau', 117.4, 2.0, ['IDN'], 22000, 'NED'],
+  ['Bulungan', 117.0, 3.0, ['IDN'], 25000, 'NED'], ['Apo Kayan', 115.5, 2.3, ['IDN'], 30000, ''],
+  // Sarawak dei Brooke, Brunei, Borneo del Nord di Dent, Labuan
+  ['Kuching', 110.3, 1.4, ['MYS'], 9000, 'SRW'], ['Batang Lupar', 111.5, 1.2, ['MYS'], 12000, 'SRW'], ['Rejang', 111.9, 2.2, ['MYS'], 20000, 'SRW'], ['Kapit', 113.2, 1.9, ['MYS'], 25000, 'SRW'],
+  ['Bintulu', 113.2, 3.0, ['MYS'], 12000, 'SRW'], ['Baram', 114.3, 3.8, ['MYS'], 22000, 'BRU'], ['Limbang', 115.0, 4.5, ['MYS'], 8000, 'BRU'], ['Brunei', 114.8, 4.8, ['BRN'], 6000, 'BRU'],
+  ['Padas', 115.7, 5.0, ['MYS'], 5000, 'BRU'], ['Labuan', 115.22, 5.3, ['MYS'], 100, 'GBR'], ['Papar', 116.1, 5.65, ['MYS'], 6000, 'BNB'], ['Kudat', 116.8, 6.6, ['MYS'], 6000, 'BNB'],
+  ['Sandakan', 117.8, 5.6, ['MYS'], 15000, 'BNB'], ['Keningau', 116.3, 5.2, ['MYS'], 15000, 'BNB'], ['Darvel Bay', 118.2, 4.7, ['MYS'], 12000, 'BNB'],
+  // Celebes: Makassar e Manado olandesi, Bone vassallo, interno libero
+  ['Makassar', 119.48, -5.12, ['IDN'], 3000, 'NED'], ['Maros', 119.7, -4.85, ['IDN'], 3000, 'NED'], ['Gowa', 119.85, -5.35, ['IDN'], 4000, 'NED'], ['Bantaeng', 120.0, -5.5, ['IDN'], 4000, 'NED'],
+  ['Selayar', 120.5, -6.2, ['IDN'], 1500, 'NED'], ['Bone', 120.2, -4.6, ['IDN'], 6000, 'BON'], ['Soppeng', 119.9, -4.3, ['IDN'], 3000, 'BON'], ['Wajo', 120.1, -3.9, ['IDN'], 4000, ''],
+  ['Luwu', 120.3, -2.8, ['IDN'], 15000, ''], ['Toraja', 119.85, -3.1, ['IDN'], 8000, ''], ['Mandar', 119.0, -2.9, ['IDN'], 16000, ''], ['Kolaka', 121.5, -4.0, ['IDN'], 10000, ''],
+  ['Kendari', 122.4, -4.0, ['IDN'], 15000, ''], ['Buton', 122.7, -5.3, ['IDN'], 6000, 'NED'], ['Poso', 120.7, -1.5, ['IDN'], 15000, ''], ['Palu', 119.9, -0.9, ['IDN'], 15000, ''],
+  ['Tolitoli', 120.8, 1.0, ['IDN'], 10000, ''], ['Banggai', 123.0, -1.3, ['IDN'], 12000, 'TER'], ['Gorontalo', 122.8, 0.6, ['IDN'], 12000, 'NED'], ['Bolaang Mongondow', 124.0, 0.7, ['IDN'], 8000, 'NED'],
+  ['Minahasa', 124.9, 1.3, ['IDN'], 5000, 'NED'], ['Sangihe', 125.5, 3.5, ['IDN'], 1500, 'NED'],
+  // Molucche: Ternate e Tidore vassalli, Ambon e Banda olandesi
+  ['Ternate', 127.35, 0.8, ['IDN'], 6000, 'TER'], ['Tidore', 127.4, 0.67, ['IDN'], 5000, 'TID'], ['Halmahera settentrionale', 127.9, 1.5, ['IDN'], 9000, 'TER'], ['Halmahera orientale', 128.3, 0.6, ['IDN'], 9000, 'TID'],
+  ['Bacan', 127.5, -0.7, ['IDN'], 5000, 'NED'], ['Sula', 125.5, -1.9, ['IDN'], 5000, 'TER'], ['Buru', 126.6, -3.3, ['IDN'], 9000, 'NED'], ['Ambon', 128.2, -3.65, ['IDN'], 3500, 'NED'],
+  ['Seram', 129.4, -3.1, ['IDN'], 18000, 'NED'], ['Isole Banda', 129.9, -4.5, ['IDN'], 500, 'NED'], ['Kei', 132.7, -5.7, ['IDN'], 1500, 'NED'], ['Aru', 134.4, -6.2, ['IDN'], 8000, 'NED'],
+  ['Tanimbar', 131.4, -7.6, ['IDN'], 5500, ''], ['Wetar', 126.3, -7.8, ['IDN'], 4000, 'NED'],
+  // Piccole Sonde: Bali del nord olandese, regni balinesi del sud, Lombok, Sumbawa, Flores, Timor
+  ['Buleleng', 115.1, -8.18, ['IDN'], 2500, 'NED'], ['Tejakula', 115.4, -8.18, ['IDN'], 1200, 'NED'], ['Jembrana', 114.65, -8.35, ['IDN'], 900, 'NED'], ['Tabanan', 115.1, -8.5, ['IDN'], 2000, 'BAL'], ['Badung', 115.2, -8.65, ['IDN'], 1500, 'BAL'],
+  ['Gianyar', 115.29, -8.55, ['IDN'], 1500, 'BAL'], ['Klungkung', 115.46, -8.56, ['IDN'], 400, 'BAL'], ['Bangli', 115.37, -8.42, ['IDN'], 1500, 'BAL'], ['Karangasem', 115.6, -8.4, ['IDN'], 1500, 'LOM'],
+  ['Mataram', 116.15, -8.6, ['IDN'], 2500, 'LOM'], ['Lombok orientale', 116.5, -8.6, ['IDN'], 2300, 'LOM'], ['Sumbawa', 117.3, -8.6, ['IDN'], 8000, 'NED'], ['Dompu', 118.4, -8.6, ['IDN'], 2500, 'NED'],
+  ['Bima', 118.75, -8.5, ['IDN'], 4500, 'NED'], ['Sumba', 119.9, -9.7, ['IDN'], 11000, ''], ['Manggarai', 120.4, -8.6, ['IDN'], 9000, 'NED'], ['Ngada', 121.05, -8.75, ['IDN'], 7000, ''], ['Ende', 121.7, -8.7, ['IDN'], 6000, ''],
+  ['Larantuka', 122.9, -8.4, ['IDN'], 4000, 'NED'], ['Alor', 124.6, -8.3, ['IDN'], 3000, 'NED'], ['Kupang', 123.7, -10.1, ['IDN'], 5000, 'NED'], ['Savu', 121.8, -10.5, ['IDN'], 500, 'NED'], ['Rote', 123.1, -10.75, ['IDN'], 1500, 'NED'],
+  ['Timor occidentale', 124.2, -9.6, ['IDN'], 8000, 'NED'], ['Belu', 124.9, -9.3, ['IDN'], 5000, 'NED'],
+  ['Oecusse', 124.35, -9.3, ['TLS'], 800, 'POR'], ['Dili', 125.6, -8.6, ['TLS'], 3000, 'POR'], ['Manatuto', 126.0, -8.7, ['TLS'], 4000, 'POR'], ['Lautém', 126.9, -8.5, ['TLS'], 3500, 'POR'], ['Suai', 125.3, -9.2, ['TLS'], 4000, 'POR'],
+  // Nuova Guinea: coste occidentali sotto Tidore (pretesa olandese fino al 141° meridiano), il resto libero
+  ['Raja Ampat', 130.8, -0.8, ['IDN'], 8000, 'TID'], ['Sorong', 131.6, -1.0, ['IDN'], 15000, 'TID'], ['Doreh', 134.0, -1.0, ['IDN'], 20000, 'TID'], ['Fakfak', 132.5, -3.0, ['IDN'], 20000, 'TID'],
+  ['Biak', 136.0, -1.0, ['IDN'], 5000, 'TID'], ['Bintuni', 133.3, -2.0, ['IDN'], 15000, ''], ['Kaimana', 133.8, -3.7, ['IDN'], 20000, ''], ['Nabire', 135.5, -3.4, ['IDN'], 20000, ''],
+  ['Mamberamo', 138.0, -2.5, ['IDN'], 40000, ''], ['Humboldt', 140.4, -2.8, ['IDN'], 20000, ''], ['Mimika', 136.5, -4.6, ['IDN'], 30000, ''], ['Baliem', 138.8, -4.0, ['IDN'], 50000, ''],
+  ['Asmat', 138.3, -5.6, ['IDN'], 40000, ''], ['Digul', 140.3, -6.0, ['IDN'], 40000, ''], ['Merauke', 140.0, -8.0, ['IDN'], 30000, ''],
+  ['Sepik', 142.8, -4.0, ['PNG'], 50000, ''], ['Madang', 145.4, -5.2, ['PNG'], 30000, ''], ['Huon', 147.0, -6.6, ['PNG'], 35000, ''], ['Altopiani orientali', 145.0, -6.2, ['PNG'], 45000, ''],
+  ['Fly', 141.8, -7.5, ['PNG'], 60000, ''], ['Golfo di Papua', 144.5, -7.5, ['PNG'], 35000, ''], ['Port Moresby', 147.3, -9.3, ['PNG'], 30000, ''], ['Oro', 148.2, -8.8, ['PNG'], 22000, ''],
+  ['Milne Bay', 150.3, -10.0, ['PNG'], 15000, ''], ['Nuova Britannia', 151.0, -5.6, ['PNG'], 35000, ''], ['Nuova Irlanda', 152.5, -3.8, ['PNG'], 10000, ''], ['Manus', 147.0, -2.1, ['PNG'], 2500, ''],
+  ['Bougainville', 155.3, -6.2, ['PNG'], 10000, ''],
+  // Filippine spagnole, Cordigliera e Mindanao interno liberi, sultanato di Sulu protetto dalla Spagna (1878)
+  ['Ilocos Norte', 120.7, 18.2, ['PHL'], 3500, 'SPA'], ['Ilocos Sur', 120.55, 17.4, ['PHL'], 5000, 'SPA'], ['La Union', 120.4, 16.6, ['PHL'], 1500, 'SPA'], ['Benguet', 120.7, 16.4, ['PHL'], 2700, 'SPA'],
+  ['Cordigliera', 121.1, 17.2, ['PHL'], 14000, ''], ['Pangasinan', 120.3, 15.9, ['PHL'], 5500, 'SPA'], ['Zambales', 120.1, 15.3, ['PHL'], 4000, 'SPA'], ['Tarlac', 120.5, 15.5, ['PHL'], 3000, 'SPA'],
+  ['Pampanga', 120.7, 15.05, ['PHL'], 2200, 'SPA'], ['Bataan', 120.45, 14.65, ['PHL'], 1400, 'SPA'], ['Bulacan', 121.0, 14.95, ['PHL'], 2800, 'SPA'], ['Nueva Ecija', 121.0, 15.6, ['PHL'], 6000, 'SPA'],
+  ['Manila', 121.0, 14.6, ['PHL'], 1500, 'SPA'], ['Cavite', 120.9, 14.3, ['PHL'], 1300, 'SPA'], ['Laguna', 121.4, 14.2, ['PHL'], 1900, 'SPA'], ['Batangas', 121.05, 13.85, ['PHL'], 3200, 'SPA'],
+  ['Tayabas', 121.8, 14.0, ['PHL'], 12000, 'SPA'], ['Camarines', 123.2, 13.7, ['PHL'], 7500, 'SPA'], ['Albay', 123.6, 13.2, ['PHL'], 4000, 'SPA'], ['Sorsogon', 123.95, 12.85, ['PHL'], 2100, 'SPA'],
+  ['Cagayan', 121.7, 18.0, ['PHL'], 9000, 'SPA'], ['Isabela', 121.9, 16.9, ['PHL'], 12000, 'SPA'], ['Nueva Vizcaya', 121.1, 16.3, ['PHL'], 5000, 'SPA'],
+  ['Mindoro', 121.0, 12.9, ['PHL'], 10500, 'SPA'], ['Marinduque', 121.95, 13.4, ['PHL'], 950, 'SPA'], ['Romblon', 122.3, 12.55, ['PHL'], 1500, 'SPA'], ['Masbate', 123.4, 12.2, ['PHL'], 4100, 'SPA'],
+  ['Samar', 125.0, 12.0, ['PHL'], 13500, 'SPA'], ['Leyte', 124.8, 10.9, ['PHL'], 8000, 'SPA'], ['Bohol', 124.1, 9.8, ['PHL'], 4100, 'SPA'], ['Cebu', 123.8, 10.3, ['PHL'], 5100, 'SPA'],
+  ['Negros', 123.0, 10.2, ['PHL'], 13300, 'SPA'], ['Iloilo', 122.5, 10.9, ['PHL'], 5000, 'SPA'], ['Capiz', 122.7, 11.4, ['PHL'], 4600, 'SPA'], ['Antique', 122.05, 11.2, ['PHL'], 2700, 'SPA'],
+  ['Calamianes', 120.0, 12.0, ['PHL'], 2000, 'SPA'], ['Paragua', 118.7, 9.8, ['PHL'], 12000, 'SPA'], ['Palawan meridionale', 117.6, 8.8, ['PHL'], 4000, 'SUL'],
+  ['Zamboanga', 122.1, 7.2, ['PHL'], 4000, 'SPA'], ['Sibugay', 122.9, 8.0, ['PHL'], 12000, ''], ['Misamis', 124.3, 8.5, ['PHL'], 8000, 'SPA'], ['Surigao', 125.8, 9.4, ['PHL'], 9000, 'SPA'],
+  ['Agusan', 125.7, 8.3, ['PHL'], 13000, ''], ['Bukidnon', 125.0, 7.9, ['PHL'], 10000, ''], ['Lanao', 124.3, 7.9, ['PHL'], 13000, ''], ['Cotabato', 124.25, 7.2, ['PHL'], 6000, 'SPA'],
+  ['Buayan', 124.8, 6.9, ['PHL'], 15000, ''], ['Davao', 125.6, 7.1, ['PHL'], 10000, 'SPA'], ['Mati', 126.2, 7.2, ['PHL'], 6000, 'SPA'], ['Sarangani', 125.2, 6.0, ['PHL'], 6000, ''],
+  ['Basilan', 122.0, 6.55, ['PHL'], 1300, 'SPA'], ['Jolo', 121.0, 5.95, ['PHL'], 1500, 'SUL'], ['Tawi-Tawi', 120.0, 5.1, ['PHL'], 1100, 'SUL'],
 ];
