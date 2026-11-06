@@ -4,13 +4,17 @@
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
 export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
   // fasi successive: India, Cina, Siberia
-  'CHN', 'MNG', 'MDV', 'IOT', 'USA'];
+  'MDV', 'IOT', 'USA'];
 /**
  * Popolazione del 1881 per unità amministrativa moderna (stima dai censimenti del 1881-1897 dei governatorati).
  * Ha la precedenza sul bacino del paese moderno: in Siberia la popolazione di oggi (Vladivostok, Kuzbass) non dice
  * niente di quella del 1881, concentrata negli Urali e lungo la via della Siberia.
  */
 export const AF_POP_ISO = {
+  // Cina, stime per provincia al 1880 (dopo le rivolte e la carestia del 1877-79)
+  'CN-BJ': 1_600_000, 'CN-TJ': 1_000_000, 'CN-HE': 20_000_000, 'CN-SD': 36_000_000, 'CN-SX': 11_000_000, 'CN-HA': 22_000_000, 'CN-JS': 20_000_000, 'CN-SH': 800_000, 'CN-AH': 20_000_000, 'CN-JX': 24_000_000, 'CN-FJ': 22_000_000, 'CN-ZJ': 12_000_000, 'CN-HB': 33_000_000, 'CN-HN': 21_000_000, 'CN-SN': 8_000_000, 'CN-GS': 4_500_000, 'CN-NX': 500_000, 'CN-QH': 700_000, 'CN-SC': 40_000_000, 'CN-CQ': 15_000_000, 'CN-GZ': 7_000_000, 'CN-YN': 8_000_000, 'CN-GX': 8_000_000, 'CN-GD': 29_000_000, 'CN-HI': 2_200_000, 'CN-LN': 2_500_000, 'CN-JL': 800_000, 'CN-HL': 300_000, 'CN-NM': 1_500_000, 'CN-XJ': 1_200_000, 'CN-XZ': 1_000_000,
+  // Giappone, prefetture (riportate al censimento del 1880)
+  'JP-01': 188_000, 'JP-02': 496_000, 'JP-03': 595_000, 'JP-04': 645_000, 'JP-05': 595_000, 'JP-06': 694_000, 'JP-07': 793_000, 'JP-08': 893_000, 'JP-09': 595_000, 'JP-10': 595_000, 'JP-11': 942_000, 'JP-12': 1_091_000, 'JP-13': 992_000, 'JP-14': 744_000, 'JP-15': 1_537_000, 'JP-16': 744_000, 'JP-17': 694_000, 'JP-18': 595_000, 'JP-19': 397_000, 'JP-20': 992_000, 'JP-21': 843_000, 'JP-22': 992_000, 'JP-23': 1_289_000, 'JP-24': 843_000, 'JP-25': 645_000, 'JP-26': 813_000, 'JP-27': 1_091_000, 'JP-28': 1_389_000, 'JP-29': 496_000, 'JP-30': 595_000, 'JP-31': 397_000, 'JP-32': 645_000, 'JP-33': 992_000, 'JP-34': 1_240_000, 'JP-35': 843_000, 'JP-36': 645_000, 'JP-37': 645_000, 'JP-38': 843_000, 'JP-39': 546_000, 'JP-40': 1_141_000, 'JP-41': 546_000, 'JP-42': 694_000, 'JP-43': 992_000, 'JP-44': 744_000, 'JP-45': 377_000, 'JP-46': 942_000, 'JP-47': 357_000,
   // Indie olandesi: Giava e Madura (censimento 1880) e isole esterne (stime)
   'ID-BT': 600_000, 'ID-JK': 400_000, 'ID-JB': 5_000_000, 'ID-JT': 7_000_000, 'ID-YO': 700_000, 'ID-JI': 6_300_000,
   'ID-AC': 500_000, 'ID-SU': 900_000, 'ID-SB': 1_000_000, 'ID-RI': 150_000, 'ID-KR': 100_000, 'ID-JA': 150_000, 'ID-SS': 600_000,
@@ -317,7 +321,7 @@ export const AF_FREED_FIX = {
   'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
 };
 /** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
-export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'BRN', 'IDN', 'PHL', 'TLS', 'PNG'];
+export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'BRN', 'IDN', 'PHL', 'TLS', 'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC', 'PNG'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
 export const AF_CLIP = [-30, -36, 180, 78];
 
@@ -343,7 +347,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': '', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': '',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': 'CHI', 'Korea': 'COR', 'Taiwan': 'CHI', 'Hong Kong': 'GBR', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': 'JAP',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -416,6 +420,8 @@ export const AF_POP = {
   // Indocina e Malesia peninsulare (stime 1881: censimento della Bassa Birmania 3,7 milioni; Siam circa 6)
   MMR: 7_000_000, THA: 5_500_000, LAO: 800_000, KHM: 1_000_000, VNM: 10_000_000, MYS: 600_000, SGP: 140_000,
   // arcipelago (censimento di Giava del 1880: 19,5 milioni; Filippine 1877: 5,6 milioni)
+  // Asia orientale (Cina per provincia in AF_POP_ISO; Giappone: censimento 1880, 36,4 milioni)
+  MNG: 600_000, KOR: 8_000_000, PRK: 4_500_000, TWN: 2_500_000, HKG: 160_000, MAC: 70_000,
   IDN: 29_000_000, PHL: 5_600_000, BRN: 25_000, TLS: 300_000, PNG: 1_000_000,
   IND: 200_000_000, PAK: 20_000_000, BGD: 27_000_000, NPL: 3_000_000, BTN: 200_000, LKA: 2_760_000, KAS: 5_000,
   IRN: 4_500_000, AFG: 3_000_000, TKM: 700_000, UZB: 3_200_000, KAZ: 2_400_000, KGZ: 650_000, TJK: 900_000, KAB: 5_000,
@@ -620,10 +626,12 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   // fase 5: Indocina e penisola malese
   'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP',
   // fase 6: arcipelago
-  'BRN', 'IDN', 'PHL', 'TLS', 'PNG'];
+  'BRN', 'IDN', 'PHL', 'TLS', 'PNG',
+  // fase 7: Cina, Corea e Giappone
+  'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
-export const AF_FINE = { IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
+export const AF_FINE = { CHN: 10000, MNG: 30000, 'CN-XJ': 30000, 'CN-XZ': 30000, 'CN-QH': 30000, 'CN-NM': 25000, 'CN-HL': 20000, JPN: 3000, 'JP-01': 8000, KOR: 3000, PRK: 3000, TWN: 2000, HKG: 50, MAC: 20, IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
   'ID-BA': 250, 'ID-NB': 800, 'ID-NT': 800, 'ID-MU': 800, 'ID-JB': 1000, 'ID-JT': 1000, 'ID-JI': 1000, 'ID-YO': 600, 'ID-BT': 1000, 'ID-JK': 500, ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
 
 /** Deserto percorso dai nomadi, non intransitabile: il Sahara occidentale (spagnolo dal 1884) e la costa mauritana. */
@@ -831,7 +839,7 @@ export const AF_DETAIL_REGIONS = [
   // Siberia centrale: governatorati dello Enisej e di Irkutsk; l'Uriankhai (Tuva) è dei Qing
   ['Krasnoiarsk', 92.9, 56.0, ['RUS'], 50000, 'RUS'], ['Acinsk', 90.5, 56.3, ['RUS'], 50000, 'RUS'], ['Minusinsk', 91.7, 53.7, ['RUS'], 80000, 'RUS'], ['Kansk', 95.7, 56.2, ['RUS'], 80000, 'RUS'],
   ['Eniseisk', 92.2, 58.8, ['RUS'], 300000, 'RUS'], ['Turuchansk', 88.0, 65.8, ['RUS'], 400000, 'RUS'], ['Taimyr', 95.0, 72.0, ['RUS'], 550000, 'RUS'], ['Tunguska', 100.0, 63.0, ['RUS'], 550000, 'RUS'],
-  ['Uriankhai', 94.5, 51.7, ['RUS'], 170000, ''],
+  ['Uriankhai', 94.5, 51.7, ['RUS'], 170000, 'CHI'],
   ['Irkutsk', 104.3, 52.3, ['RUS'], 70000, 'RUS'], ['Balagansk', 103.0, 54.0, ['RUS'], 80000, 'RUS'], ['Nizneudinsk', 99.0, 54.9, ['RUS'], 110000, 'RUS'], ['Ilimsk', 103.7, 57.0, ['RUS'], 150000, 'RUS'],
   ['Kirensk', 108.1, 57.8, ['RUS'], 300000, 'RUS'],
   // Transbajkalia, Amur, Litorale, Iacuzia, Kamciatka, Sachalin (russa dal 1875; le Curili giapponesi)
@@ -839,7 +847,7 @@ export const AF_DETAIL_REGIONS = [
   ['Argun', 119.5, 51.5, ['RUS'], 60000, 'RUS'], ['Blagovescensk', 127.5, 50.3, ['RUS'], 130000, 'RUS'], ['Alto Amur', 123.5, 54.0, ['RUS'], 250000, 'RUS'],
   ['Vladivostok', 131.9, 43.8, ['RUS'], 50000, 'RUS'], ['Ussuri', 133.5, 45.5, ['RUS'], 60000, 'RUS'], ['Chabarovka', 135.1, 48.5, ['RUS'], 110000, 'RUS'], ['Nikolaevsk', 139.5, 52.5, ['RUS'], 200000, 'RUS'],
   ['Ochotsk', 140.0, 58.0, ['RUS'], 300000, 'RUS'], ['Gizhiga', 159.0, 62.0, ['RUS'], 300000, 'RUS'], ['Kamciatka', 159.0, 55.0, ['RUS'], 150000, 'RUS'], ['Anadyr', 172.0, 65.5, ['RUS'], 550000, 'RUS'],
-  ['Sachalin', 142.5, 50.0, ['RUS'], 60000, 'RUS'], ['Curili', 148.0, 45.5, ['RUS'], 15000, ''],
+  ['Sachalin', 142.5, 50.0, ['RUS'], 60000, 'RUS'], ['Curili', 148.0, 45.5, ['RUS'], 15000, 'JAP'],
   ['Iakutsk', 129.7, 62.0, ['RUS'], 300000, 'RUS'], ['Olekminsk', 120.4, 60.4, ['RUS'], 300000, 'RUS'], ['Viliuisk', 121.6, 64.0, ['RUS'], 450000, 'RUS'], ['Verchoiansk', 133.4, 67.5, ['RUS'], 600000, 'RUS'],
   ['Kolyma', 153.7, 67.5, ['RUS'], 400000, 'RUS'],
 
@@ -1392,4 +1400,145 @@ export const AF_DETAIL_REGIONS = [
   ['Agusan', 125.7, 8.3, ['PHL'], 13000, ''], ['Bukidnon', 125.0, 7.9, ['PHL'], 10000, ''], ['Lanao', 124.3, 7.9, ['PHL'], 13000, ''], ['Cotabato', 124.25, 7.2, ['PHL'], 6000, 'SPA'],
   ['Buayan', 124.8, 6.9, ['PHL'], 15000, ''], ['Davao', 125.6, 7.1, ['PHL'], 10000, 'SPA'], ['Mati', 126.2, 7.2, ['PHL'], 6000, 'SPA'], ['Sarangani', 125.2, 6.0, ['PHL'], 6000, ''],
   ['Basilan', 122.0, 6.55, ['PHL'], 1300, 'SPA'], ['Jolo', 121.0, 5.95, ['PHL'], 1500, 'SUL'], ['Tawi-Tawi', 120.0, 5.1, ['PHL'], 1100, 'SUL'],
+  // ===== Fase 7: Cina, Corea e Giappone (regioni per prefetture Qing, province Joseon e prefetture Meiji) =====
+  // Zhili
+  ['Pechino', 116.4, 39.9, ['CN-BJ', 'CN-TJ', 'CN-HE'], 31900, 'CHI'], ['Tianjin', 117.2, 39.1, ['CN-BJ', 'CN-TJ', 'CN-HE'], 27900, 'CHI'], ['Baoding', 115.5, 38.87, ['CN-BJ', 'CN-TJ', 'CN-HE'], 25400, 'CHI'], ['Zhengding', 114.57, 38.15, ['CN-BJ', 'CN-TJ', 'CN-HE'], 29800, 'CHI'],
+  ['Shunde', 114.5, 37.07, ['CN-BJ', 'CN-TJ', 'CN-HE'], 29000, 'CHI'], ['Daming', 115.15, 36.28, ['CN-BJ', 'CN-TJ', 'CN-HE'], 11200, 'CHI'], ['Hejian', 116.1, 38.45, ['CN-BJ', 'CN-TJ', 'CN-HE'], 30200, 'CHI'], ['Yongping', 118.9, 39.95, ['CN-BJ', 'CN-TJ', 'CN-HE'], 30600, 'CHI'],
+  ['Xuanhua', 115.05, 40.6, ['CN-BJ', 'CN-TJ', 'CN-HE'], 59900, 'CHI'], ['Chengde', 117.9, 40.95, ['CN-BJ', 'CN-TJ', 'CN-HE'], 60500, 'CHI'],
+  // Shandong
+  ['Jinan', 117.0, 36.65, ['CN-SD'], 21500, 'CHI'], ['Dongchang', 115.98, 36.45, ['CN-SD'], 19400, 'CHI'], ['Yanzhou', 116.85, 35.55, ['CN-SD'], 28600, 'CHI'], ['Yizhou', 118.35, 35.05, ['CN-SD'], 34700, 'CHI'],
+  ['Qingzhou', 118.48, 36.7, ['CN-SD'], 37400, 'CHI'], ['Laizhou', 119.94, 37.18, ['CN-SD'], 25600, 'CHI'], ['Dengzhou', 120.75, 37.4, ['CN-SD'], 27100, 'CHI'], ['Wuding', 117.5, 37.5, ['CN-SD'], 28500, 'CHI'],
+  ['Caozhou', 115.48, 35.25, ['CN-SD'], 19700, 'CHI'],
+  // Shanxi
+  ['Taiyuan', 112.55, 37.87, ['CN-SX'], 33300, 'CHI'], ['Datong', 113.3, 40.08, ['CN-SX'], 35800, 'CHI'], ['Fenzhou', 111.5, 37.4, ['CN-SX'], 39000, 'CHI'], ['Pingyang', 111.52, 36.08, ['CN-SX'], 38500, 'CHI'],
+  ['Lu\'an', 113.1, 36.2, ['CN-SX'], 35200, 'CHI'], ['Puzhou', 110.6, 34.95, ['CN-SX'], 15900, 'CHI'], ['Xinzhou', 112.73, 38.6, ['CN-SX'], 45200, 'CHI'],
+  // Henan
+  ['Kaifeng', 114.35, 34.8, ['CN-HA'], 22400, 'CHI'], ['Luoyang', 112.45, 34.62, ['CN-HA'], 35400, 'CHI'], ['Nanyang', 112.53, 33.0, ['CN-HA'], 47400, 'CHI'], ['Runing', 114.35, 33.0, ['CN-HA'], 28900, 'CHI'],
+  ['Guide', 115.65, 34.43, ['CN-HA'], 16100, 'CHI'], ['Zhangde', 114.35, 36.1, ['CN-HA'], 16900, 'CHI'], ['Weihui', 114.07, 35.3, ['CN-HA'], 18000, 'CHI'], ['Huaiyang', 114.88, 33.73, ['CN-HA'], 21300, 'CHI'],
+  ['Shanzhou', 111.2, 34.75, ['CN-HA'], 22800, 'CHI'], ['Xinyang', 114.07, 32.13, ['CN-HA'], 29000, 'CHI'],
+  // Jiangsu
+  ['Nanchino', 118.78, 32.05, ['CN-JS', 'CN-SH'], 13000, 'CHI'], ['Suzhou', 120.62, 31.3, ['CN-JS', 'CN-SH'], 11500, 'CHI'], ['Shanghai', 121.45, 31.2, ['CN-JS', 'CN-SH'], 11900, 'CHI'], ['Changzhou', 119.95, 31.78, ['CN-JS', 'CN-SH'], 17000, 'CHI'],
+  ['Yangzhou', 119.42, 32.6, ['CN-JS', 'CN-SH'], 13800, 'CHI'], ['Huai\'an', 119.0, 33.5, ['CN-JS', 'CN-SH'], 25800, 'CHI'], ['Xuzhou', 117.4, 34.3, ['CN-JS', 'CN-SH'], 17100, 'CHI'], ['Haizhou', 119.2, 34.6, ['CN-JS', 'CN-SH'], 18100, 'CHI'],
+  ['Tongzhou', 120.86, 32.1, ['CN-JS', 'CN-SH'], 16500, 'CHI'], ['Yancheng', 120.15, 33.35, ['CN-JS', 'CN-SH'], 21300, 'CHI'],
+  // Anhui
+  ['Anqing', 117.05, 30.52, ['CN-AH'], 27700, 'CHI'], ['Hefei', 117.27, 31.86, ['CN-AH'], 23800, 'CHI'], ['Fengyang', 117.55, 32.87, ['CN-AH'], 28400, 'CHI'], ['Yingzhou', 115.81, 32.9, ['CN-AH'], 33300, 'CHI'],
+  ['Huizhou', 118.3, 29.87, ['CN-AH'], 16900, 'CHI'], ['Ningguo', 118.75, 30.95, ['CN-AH'], 25600, 'CHI'], ['Chizhou', 117.48, 30.65, ['CN-AH'], 16100, 'CHI'], ['Liu\'an', 116.5, 31.75, ['CN-AH'], 26700, 'CHI'],
+  ['Sizhou', 117.9, 33.48, ['CN-AH'], 20900, 'CHI'],
+  // Jiangxi
+  ['Nanchang', 115.89, 28.68, ['CN-JX'], 27400, 'CHI'], ['Jiujiang', 116.0, 29.7, ['CN-JX'], 16200, 'CHI'], ['Raozhou', 116.65, 29.0, ['CN-JX'], 24300, 'CHI'], ['Guangxin', 117.95, 28.45, ['CN-JX'], 25100, 'CHI'],
+  ['Linchuan', 116.35, 27.95, ['CN-JX'], 36300, 'CHI'], ['Ji\'an', 114.98, 27.1, ['CN-JX'], 37800, 'CHI'], ['Ganzhou', 114.93, 25.85, ['CN-JX'], 43100, 'CHI'], ['Yuanzhou', 114.38, 27.8, ['CN-JX'], 34700, 'CHI'],
+  ['Nan\'an', 114.36, 25.4, ['CN-JX'], 17100, 'CHI'],
+  // Fujian
+  ['Fuzhou', 119.3, 26.08, ['CN-FJ'], 14300, 'CHI'], ['Quanzhou', 118.6, 24.9, ['CN-FJ'], 12200, 'CHI'], ['Zhangzhou', 117.65, 24.5, ['CN-FJ'], 20100, 'CHI'], ['Tingzhou', 116.36, 25.82, ['CN-FJ'], 21200, 'CHI'],
+  ['Yanping', 118.18, 26.64, ['CN-FJ'], 23800, 'CHI'], ['Jian\'ou', 118.32, 27.05, ['CN-FJ'], 22800, 'CHI'], ['Shaowu', 117.48, 27.34, ['CN-FJ'], 21200, 'CHI'], ['Funing', 119.9, 26.9, ['CN-FJ'], 14900, 'CHI'],
+  ['Xinghua', 119.0, 25.43, ['CN-FJ'], 12600, 'CHI'], ['Longyan', 117.02, 25.08, ['CN-FJ'], 25400, 'CHI'],
+  // Taiwan
+  ['Tamsui', 121.5, 25.05, ['TWN'], 6300, 'CHI'], ['Taiwan-fu', 120.2, 23.0, ['TWN'], 5900, 'CHI'], ['Changhua', 120.55, 24.08, ['TWN'], 9300, 'CHI'], ['Fengshan', 120.4, 22.65, ['TWN'], 6100, 'CHI'],
+  ['Yilan', 121.75, 24.75, ['TWN'], 4700, 'CHI'], ['Penghu', 119.6, 23.57, ['TWN'], 2000, 'CHI'], ['Beinan', 121.1, 22.8, ['TWN'], 6800, 'CHI'], ['Montagne di Taiwan', 121.05, 23.7, ['TWN'], 10100, ''],
+  ['Hualien', 121.5, 24.0, ['TWN'], 6500, ''],
+  // Zhejiang
+  ['Hangzhou', 120.17, 30.27, ['CN-ZJ'], 10400, 'CHI'], ['Jiaxing', 120.75, 30.75, ['CN-ZJ'], 5700, 'CHI'], ['Huzhou', 119.85, 30.75, ['CN-ZJ'], 7400, 'CHI'], ['Ningbo', 121.55, 29.87, ['CN-ZJ'], 12700, 'CHI'],
+  ['Shaoxing', 120.58, 30.0, ['CN-ZJ'], 13900, 'CHI'], ['Taizhou', 121.42, 28.65, ['CN-ZJ'], 14600, 'CHI'], ['Jinhua', 119.65, 29.08, ['CN-ZJ'], 13400, 'CHI'], ['Quzhou', 118.87, 28.95, ['CN-ZJ'], 20000, 'CHI'],
+  ['Yanzhou (Zhejiang)', 119.28, 29.6, ['CN-ZJ'], 15900, 'CHI'], ['Wenzhou', 120.65, 28.0, ['CN-ZJ'], 16200, 'CHI'], ['Chuzhou', 119.92, 28.45, ['CN-ZJ'], 25500, 'CHI'], ['Zhoushan', 122.1, 30.0, ['CN-ZJ'], 1800, 'CHI'],
+  // Hubei
+  ['Wuchang', 114.3, 30.55, ['CN-HB'], 13200, 'CHI'], ['Huangzhou', 114.87, 30.6, ['CN-HB'], 38300, 'CHI'], ['De\'an', 113.6, 31.3, ['CN-HB'], 25100, 'CHI'], ['Xiangyang', 112.14, 32.04, ['CN-HB'], 28200, 'CHI'],
+  ['Yunyang', 110.8, 32.6, ['CN-HB'], 42800, 'CHI'], ['Jingzhou', 112.2, 30.35, ['CN-HB'], 21900, 'CHI'], ['Yichang', 111.3, 30.7, ['CN-HB'], 37100, 'CHI'], ['Shinan', 109.48, 30.3, ['CN-HB'], 36600, 'CHI'],
+  ['Anlu', 112.9, 31.0, ['CN-HB'], 17700, 'CHI'], ['Hanyang', 113.7, 30.2, ['CN-HB'], 27400, 'CHI'],
+  // Hunan
+  ['Changsha', 112.95, 28.2, ['CN-HN'], 37400, 'CHI'], ['Yuezhou', 113.1, 29.37, ['CN-HN'], 20800, 'CHI'], ['Changde', 111.7, 29.03, ['CN-HN'], 40400, 'CHI'], ['Baoqing', 111.47, 27.24, ['CN-HN'], 36000, 'CHI'],
+  ['Hengzhou', 112.6, 26.9, ['CN-HN'], 33200, 'CHI'], ['Yongzhou', 111.6, 26.0, ['CN-HN'], 35500, 'CHI'], ['Chenzhou', 113.0, 25.8, ['CN-HN'], 35100, 'CHI'], ['Yuanzhou (Hunan)', 109.7, 27.45, ['CN-HN'], 38600, 'CHI'],
+  ['Yuanling', 110.4, 28.45, ['CN-HN'], 25400, 'CHI'], ['Yongshun', 109.85, 29.0, ['CN-HN'], 26900, 'CHI'],
+  // Shaanxi
+  ['Xi\'an', 108.95, 34.27, ['CN-SN'], 30600, 'CHI'], ['Tongzhou (Shaanxi)', 109.94, 34.8, ['CN-SN'], 22500, 'CHI'], ['Fengxiang', 107.4, 34.52, ['CN-SN'], 34700, 'CHI'], ['Hanzhong', 107.03, 33.07, ['CN-SN'], 41400, 'CHI'],
+  ['Xing\'an', 109.03, 32.68, ['CN-SN'], 38900, 'CHI'], ['Yan\'an', 109.49, 36.6, ['CN-SN'], 42300, 'CHI'], ['Yulin', 109.73, 38.28, ['CN-SN'], 39400, 'CHI'], ['Suide', 110.25, 37.5, ['CN-SN'], 17300, 'CHI'],
+  ['Shangzhou', 109.93, 33.87, ['CN-SN'], 25600, 'CHI'], ['Fuzhou (Shaanxi)', 109.0, 36.0, ['CN-SN'], 27000, 'CHI'],
+  // Gansu
+  ['Lanzhou', 103.83, 36.06, ['CN-GS', 'CN-NX'], 78000, 'CHI'], ['Gongchang', 104.63, 35.0, ['CN-GS', 'CN-NX'], 59800, 'CHI'], ['Qinzhou (Gansu)', 105.72, 34.58, ['CN-GS', 'CN-NX'], 31300, 'CHI'], ['Pingliang', 106.67, 35.54, ['CN-GS', 'CN-NX'], 15300, 'CHI'],
+  ['Qingyang', 107.64, 35.73, ['CN-GS', 'CN-NX'], 34800, 'CHI'], ['Ningxia', 106.27, 38.47, ['CN-GS', 'CN-NX'], 42000, 'CHI'], ['Guyuan', 106.28, 36.0, ['CN-GS', 'CN-NX'], 50800, 'CHI'], ['Liangzhou', 102.63, 37.93, ['CN-GS', 'CN-NX'], 68800, 'CHI'],
+  ['Ganzhou (Gansu)', 100.45, 38.93, ['CN-GS', 'CN-NX'], 36900, 'CHI'], ['Jiuquan', 98.5, 39.75, ['CN-GS', 'CN-NX'], 97500, 'CHI'], ['Anxi', 95.0, 40.3, ['CN-GS', 'CN-NX'], 150900, 'CHI'], ['Jiezhou', 104.92, 33.4, ['CN-GS', 'CN-NX'], 45200, 'CHI'],
+  ['Xining', 101.78, 36.62, ['CN-QH'], 42500, 'CHI'],
+  // Sichuan
+  ['Chengdu', 104.07, 30.67, ['CN-SC', 'CN-CQ'], 37300, 'CHI'], ['Chongqing', 106.55, 29.57, ['CN-SC', 'CN-CQ'], 45200, 'CHI'], ['Kuizhou', 109.3, 31.0, ['CN-SC', 'CN-CQ'], 34200, 'CHI'], ['Shunqing', 106.08, 30.8, ['CN-SC', 'CN-CQ'], 27900, 'CHI'],
+  ['Baoning', 105.97, 31.9, ['CN-SC', 'CN-CQ'], 36400, 'CHI'], ['Tongchuan', 105.08, 31.1, ['CN-SC', 'CN-CQ'], 24800, 'CHI'], ['Long\'an', 104.53, 32.4, ['CN-SC', 'CN-CQ'], 26200, 'CHI'], ['Jiading', 103.75, 29.57, ['CN-SC', 'CN-CQ'], 30100, 'CHI'],
+  ['Xuzhou (Sichuan)', 104.62, 28.77, ['CN-SC', 'CN-CQ'], 25800, 'CHI'], ['Luzhou', 105.43, 28.88, ['CN-SC', 'CN-CQ'], 34300, 'CHI'], ['Yazhou', 103.0, 30.0, ['CN-SC', 'CN-CQ'], 28100, 'CHI'], ['Ningyuan', 102.27, 27.9, ['CN-SC', 'CN-CQ'], 99800, 'CHI'],
+  ['Suiding', 107.5, 31.2, ['CN-SC', 'CN-CQ'], 54400, 'CHI'], ['Youyang', 108.77, 28.84, ['CN-SC', 'CN-CQ'], 27000, 'CHI'], ['Dajianlu', 101.96, 30.05, ['CN-SC', 'CN-CQ'], 50800, 'CHI'], ['Litang', 100.27, 29.8, ['CN-SC', 'CN-CQ'], 52000, 'CHI'],
+  ['Batang', 99.3, 29.6, ['CN-SC', 'CN-CQ'], 28400, 'CHI'], ['Dege', 98.8, 31.8, ['CN-SC', 'CN-CQ'], 67100, 'CHI'], ['Songpan', 103.4, 32.65, ['CN-SC', 'CN-CQ'], 80300, 'CHI'], ['Garze', 100.5, 31.6, ['CN-SC', 'CN-CQ'], 74100, 'CHI'],
+  // Guizhou
+  ['Guiyang', 106.71, 26.58, ['CN-GZ'], 18200, 'CHI'], ['Zunyi', 106.93, 27.7, ['CN-GZ'], 52800, 'CHI'], ['Anshun', 105.93, 26.25, ['CN-GZ'], 34800, 'CHI'], ['Xingyi', 104.9, 25.1, ['CN-GZ'], 26600, 'CHI'],
+  ['Duyun', 107.52, 26.26, ['CN-GZ'], 34200, 'CHI'], ['Zhenyuan', 108.42, 27.05, ['CN-GZ'], 24800, 'CHI'], ['Liping', 109.13, 26.23, ['CN-GZ'], 20000, 'CHI'], ['Dading', 105.6, 27.15, ['CN-GZ'], 39200, 'CHI'],
+  ['Tongren', 109.19, 27.72, ['CN-GZ'], 22100, 'CHI'],
+  // Yunnan
+  ['Kunming', 102.7, 25.04, ['CN-YN'], 37300, 'CHI'], ['Dali', 100.23, 25.6, ['CN-YN'], 32900, 'CHI'], ['Lijiang', 100.23, 26.87, ['CN-YN'], 36700, 'CHI'], ['Chuxiong', 101.55, 25.03, ['CN-YN'], 45100, 'CHI'],
+  ['Qujing', 103.8, 25.5, ['CN-YN'], 44700, 'CHI'], ['Lin\'an', 102.83, 23.62, ['CN-YN'], 50200, 'CHI'], ['Kaihua', 104.25, 23.37, ['CN-YN'], 32100, 'CHI'], ['Pu\'er', 100.97, 22.78, ['CN-YN'], 50600, 'CHI'],
+  ['Yongchang', 99.16, 25.12, ['CN-YN'], 22500, 'CHI'], ['Shunning', 99.92, 24.2, ['CN-YN'], 52200, 'CHI'], ['Zhaotong', 103.72, 27.33, ['CN-YN'], 42900, 'CHI'], ['Guangnan', 105.06, 24.05, ['CN-YN'], 27400, 'CHI'],
+  ['Sipsongpanna', 100.8, 21.9, ['CN-YN'], 33200, 'CHI'], ['Tengyue', 98.5, 25.0, ['CN-YN'], 31300, 'CHI'], ['Zhongdian', 99.7, 27.8, ['CN-YN'], 37800, 'CHI'], ['Weixi', 98.9, 26.9, ['CN-YN'], 24000, 'CHI'],
+  // Guangxi
+  ['Guilin', 110.29, 25.27, ['CN-GX'], 41200, 'CHI'], ['Liuzhou', 109.4, 24.33, ['CN-GX'], 23400, 'CHI'], ['Wuzhou', 111.28, 23.48, ['CN-GX'], 23100, 'CHI'], ['Xunzhou', 110.08, 23.4, ['CN-GX'], 39200, 'CHI'],
+  ['Nanning', 108.32, 22.82, ['CN-GX'], 33200, 'CHI'], ['Taiping', 107.36, 22.4, ['CN-GX'], 26500, 'CHI'], ['Qingyuan', 108.63, 24.48, ['CN-GX'], 46400, 'CHI'], ['Baise', 106.62, 23.9, ['CN-GX'], 54900, 'CHI'],
+  ['Zhen\'an', 106.6, 23.33, ['CN-GX'], 21600, 'CHI'], ['Pingle', 110.64, 24.63, ['CN-GX'], 26200, 'CHI'], ['Lianzhou', 109.2, 21.66, ['CN-GX'], 18400, 'CHI'], ['Qinzhou', 108.62, 21.95, ['CN-GX'], 15900, 'CHI'],
+  // Guangdong
+  ['Canton', 113.26, 23.13, ['CN-GD', 'CN-HI', 'CN-X01~'], 22700, 'CHI'], ['Shaozhou', 113.6, 24.8, ['CN-GD', 'CN-HI', 'CN-X01~'], 38300, 'CHI'], ['Huizhou (Guangdong)', 114.4, 23.1, ['CN-GD', 'CN-HI', 'CN-X01~'], 39700, 'CHI'], ['Chaozhou', 116.62, 23.66, ['CN-GD', 'CN-HI', 'CN-X01~'], 22300, 'CHI'],
+  ['Jiaying', 116.12, 24.29, ['CN-GD', 'CN-HI', 'CN-X01~'], 31500, 'CHI'], ['Zhaoqing', 112.47, 23.05, ['CN-GD', 'CN-HI', 'CN-X01~'], 21900, 'CHI'], ['Gaozhou', 110.9, 21.92, ['CN-GD', 'CN-HI', 'CN-X01~'], 23400, 'CHI'], ['Leizhou', 110.08, 20.9, ['CN-GD', 'CN-HI', 'CN-X01~'], 13200, 'CHI'],
+  ['Luoding', 111.57, 22.77, ['CN-GD', 'CN-HI', 'CN-X01~'], 20000, 'CHI'], ['Xinning', 112.79, 22.25, ['CN-GD', 'CN-HI', 'CN-X01~'], 18600, 'CHI'], ['Lianzhou (Guangdong)', 112.4, 24.8, ['CN-GD', 'CN-HI', 'CN-X01~'], 20100, 'CHI'], ['Qiongzhou', 110.33, 20.03, ['CN-GD', 'CN-HI', 'CN-X01~'], 22400, 'CHI'],
+  ['Yazhou (Hainan)', 109.5, 18.6, ['CN-GD', 'CN-HI', 'CN-X01~'], 32900, 'CHI'],
+  // Hong Kong
+  ['Hong Kong', 114.17, 22.28, ['HKG'], 700, 'GBR'], ['Xin\'an', 114.1, 22.45, ['HKG'], 900, 'CHI'],
+  // Macao
+  
+  // Shengjing
+  ['Mukden', 123.43, 41.8, ['CN-LN'], 29400, 'CHI'], ['Jinzhou', 121.13, 41.1, ['CN-LN'], 67200, 'CHI'], ['Niuzhuang', 122.23, 40.67, ['CN-LN'], 20800, 'CHI'], ['Fenghuang', 124.07, 40.45, ['CN-LN'], 28900, 'CHI'],
+  ['Liaoyang', 123.6, 41.05, ['CN-LN'], 18600, 'CHI'], ['Lüshun', 121.6, 39.2, ['CN-LN'], 13600, 'CHI'], ['Changtu', 124.1, 42.78, ['CN-LN'], 22300, 'CHI'], ['Xingjing', 124.85, 41.75, ['CN-LN'], 26700, 'CHI'],
+  // Jilin
+  ['Jilin', 126.55, 43.83, ['CN-JL'], 58900, 'CHI'], ['Changchun', 125.32, 43.88, ['CN-JL'], 52900, 'CHI'], ['Bodune', 124.82, 45.14, ['CN-JL'], 76100, 'CHI'], ['Hunchun', 130.0, 42.9, ['CN-JL'], 43600, 'CHI'],
+  ['Changbai', 127.5, 42.0, ['CN-JL'], 64800, 'CHI'],
+  // Heilongjiang
+  ['Qiqihar', 123.95, 47.35, ['CN-HL'], 71000, 'CHI'], ['Hulan', 126.6, 46.0, ['CN-HL'], 65700, 'CHI'], ['Aigun', 127.5, 50.25, ['CN-HL'], 33600, 'CHI'], ['Mergen', 125.2, 49.18, ['CN-HL'], 47100, 'CHI'],
+  ['Ningguta', 129.47, 44.35, ['CN-HL'], 65900, 'CHI'], ['Sanxing', 129.57, 46.32, ['CN-HL'], 94100, 'CHI'], ['Ashihe', 126.95, 45.52, ['CN-HL'], 33500, 'CHI'], ['Ussuri cinese', 133.0, 47.0, ['CN-HL'], 96800, 'CHI'],
+  ['Khingan minore', 128.5, 48.5, ['CN-HL'], 94400, 'CHI'], ['Huma', 125.5, 52.0, ['CN-HL'], 100300, 'CHI'],
+  // Mongolia Interna
+  ['Chifeng', 118.9, 42.27, ['CN-NM'], 90700, 'CHI'], ['Horqin', 122.25, 43.62, ['CN-NM'], 77000, 'CHI'], ['Hulunbuir', 119.75, 49.2, ['CN-NM'], 160000, 'CHI'], ['Khingan', 122.0, 50.5, ['CN-NM'], 160000, 'CHI'],
+  ['Chahar', 114.0, 42.0, ['CN-NM'], 110400, 'CHI'], ['Xilingol', 116.0, 44.0, ['CN-NM'], 160000, 'CHI'], ['Ulanqab', 111.0, 41.6, ['CN-NM'], 118800, 'CHI'], ['Guihua', 111.65, 40.82, ['CN-NM'], 66700, 'CHI'],
+  ['Ordos', 108.5, 39.5, ['CN-NM'], 160000, 'CHI'], ['Alxa', 104.0, 39.8, ['CN-NM'], 160000, 'CHI'], ['Ejin', 101.0, 41.8, ['CN-NM'], 160000, 'CHI'], ['Jirim', 121.0, 45.5, ['CN-NM'], 160000, 'CHI'],
+  // Mongolia Esterna
+  ['Urga', 106.92, 47.92, ['MNG'], 149400, 'CHI'], ['Tüsheet Khan', 108.5, 46.5, ['MNG'], 160000, 'CHI'], ['Setsen Khan', 112.5, 47.5, ['MNG'], 160000, 'CHI'], ['Kherlen', 115.0, 48.0, ['MNG'], 160000, 'CHI'],
+  ['Sain Noyon', 101.5, 46.5, ['MNG'], 160000, 'CHI'], ['Zasagt Khan', 96.5, 46.0, ['MNG'], 160000, 'CHI'], ['Uliastai', 96.85, 48.5, ['MNG'], 160000, 'CHI'], ['Kobdo', 91.6, 48.0, ['MNG'], 160000, 'CHI'],
+  ['Khövsgöl', 100.0, 50.5, ['MNG'], 157100, 'CHI'], ['Gobi', 105.0, 43.8, ['MNG'], 160000, 'CHI'], ['Selenga', 105.5, 49.8, ['MNG'], 109400, 'CHI'],
+  // Xinjiang
+  ['Dihua', 87.6, 43.8, ['CN-XJ'], 103800, 'CHI'], ['Ili', 81.3, 43.9, ['CN-XJ'], 109400, 'RUS'], ['Tarbagatai', 83.0, 46.75, ['CN-XJ'], 47500, 'CHI'], ['Kashgar', 75.99, 39.47, ['CN-XJ'], 113700, 'CHI'],
+  ['Yarkand', 77.25, 38.4, ['CN-XJ'], 156900, 'CHI'], ['Khotan', 79.9, 37.1, ['CN-XJ'], 125300, 'CHI'], ['Aksu', 80.26, 41.17, ['CN-XJ'], 129500, 'CHI'], ['Kucha', 82.96, 41.72, ['CN-XJ'], 127200, 'CHI'],
+  ['Karashahr', 86.57, 42.06, ['CN-XJ'], 144700, 'CHI'], ['Turfan', 89.18, 42.95, ['CN-XJ'], 117700, 'CHI'], ['Hami', 93.5, 42.8, ['CN-XJ'], 152000, 'CHI'], ['Barkol', 93.0, 43.9, ['CN-XJ'], 101800, 'CHI'],
+  ['Taklamakan', 83.0, 39.0, ['CN-XJ'], 160000, 'CHI'], ['Lop Nor', 89.5, 40.0, ['CN-XJ'], 160000, 'CHI'], ['Kunlun', 80.0, 35.8, ['CN-XJ'], 135700, 'CHI'], ['Dzungaria', 86.0, 45.5, ['CN-XJ'], 138800, 'CHI'],
+  ['Shara Süme', 88.1, 47.85, ['CN-XJ'], 140700, 'CHI'],
+  // Qinghai
+  ['Kokonor', 100.2, 37.0, ['CN-QH'], 160000, 'CHI'], ['Tsaidam', 95.0, 37.0, ['CN-QH'], 160000, 'CHI'], ['Golog', 100.5, 34.0, ['CN-QH'], 107600, ''], ['Yushu', 97.0, 33.0, ['CN-QH'], 160000, 'CHI'],
+  ['Huangnan', 101.8, 35.3, ['CN-QH'], 43300, 'CHI'], ['Tanggula', 92.0, 34.0, ['CN-QH'], 160000, 'CHI'],
+  // Tibet
+  ['Lhasa', 91.13, 29.65, ['CN-XZ'], 70900, 'TIB'], ['Shigatse', 88.88, 29.27, ['CN-XZ'], 142400, 'TIB'], ['Ngari', 80.1, 32.5, ['CN-XZ'], 160000, 'TIB'], ['Changtang', 87.0, 33.5, ['CN-XZ'], 160000, 'TIB'],
+  ['Nagqu', 92.05, 31.48, ['CN-XZ'], 160000, 'TIB'], ['Chamdo', 97.17, 31.14, ['CN-XZ'], 87100, 'TIB'], ['Kongpo', 94.36, 29.65, ['CN-XZ'], 75600, 'TIB'], ['Lhoka', 91.77, 28.8, ['CN-XZ'], 63700, 'TIB'],
+  ['Powo', 95.77, 29.86, ['CN-XZ'], 70900, 'TIB'], ['Tingri', 86.65, 28.6, ['CN-XZ'], 160000, 'TIB'], ['Markham', 98.6, 29.68, ['CN-XZ'], 64500, 'TIB'],
+  // Giappone
+  ['Hakodate', 140.73, 41.77, ['JP-01'], 8000, 'JAP'], ['Sapporo', 141.35, 43.06, ['JP-01'], 12300, 'JAP'], ['Shiribeshi', 140.45, 42.75, ['JP-01'], 9900, 'JAP'], ['Kamikawa', 142.4, 43.77, ['JP-01'], 22700, 'JAP'],
+  ['Teshio', 141.9, 44.9, ['JP-01'], 13600, 'JAP'], ['Kitami', 143.9, 43.8, ['JP-01'], 15100, 'JAP'], ['Nemuro', 145.4, 43.4, ['JP-01'], 6600, 'JAP'], ['Kushiro', 144.2, 43.25, ['JP-01'], 8600, 'JAP'],
+  ['Tokachi', 143.2, 42.92, ['JP-01'], 15100, 'JAP'], ['Hidaka', 142.4, 42.4, ['JP-01'], 10100, 'JAP'], ['Aomori', 140.74, 40.82, ['JP-02'], 15100, 'JAP'], ['Iwate', 141.15, 39.7, ['JP-03'], 23800, 'JAP'],
+  ['Miyagi', 140.87, 38.27, ['JP-04'], 11600, 'JAP'], ['Akita', 140.1, 39.72, ['JP-05'], 18200, 'JAP'], ['Yamagata', 140.36, 38.24, ['JP-06'], 14700, 'JAP'], ['Fukushima', 140.47, 37.75, ['JP-07'], 21700, 'JAP'],
+  ['Ibaraki', 140.45, 36.37, ['JP-08'], 9700, 'JAP'], ['Tochigi', 139.88, 36.57, ['JP-09'], 10100, 'JAP'], ['Gunma', 139.06, 36.39, ['JP-10'], 9700, 'JAP'], ['Saitama', 139.65, 35.86, ['JP-11'], 6100, 'JAP'],
+  ['Chiba', 140.12, 35.6, ['JP-12'], 7800, 'JAP'], ['Tokyo', 139.7, 35.68, ['JP-13'], 3400, 'JAP'], ['Kanagawa', 139.64, 35.44, ['JP-14'], 3800, 'JAP'], ['Niigata', 139.02, 37.9, ['JP-15'], 19600, 'JAP'],
+  ['Ishikawa', 136.65, 36.56, ['JP-16'], 6900, 'JAP'], ['Etchū', 137.21, 36.7, ['JP-17'], 6200, 'JAP'], ['Echizen', 136.22, 36.06, ['JP-18'], 6500, 'JAP'], ['Yamanashi', 138.57, 35.66, ['JP-19'], 6900, 'JAP'],
+  ['Nagano', 138.18, 36.65, ['JP-20'], 21100, 'JAP'], ['Gifu', 136.76, 35.42, ['JP-21'], 16700, 'JAP'], ['Shizuoka', 138.38, 34.98, ['JP-22'], 11900, 'JAP'], ['Aichi', 136.9, 35.18, ['JP-23'], 7700, 'JAP'],
+  ['Mie', 136.51, 34.73, ['JP-24'], 9200, 'JAP'], ['Shiga', 135.87, 35.0, ['JP-25'], 6200, 'JAP'], ['Kyōto', 135.77, 35.01, ['JP-26'], 7200, 'JAP'], ['Ōsaka', 135.5, 34.69, ['JP-27'], 3000, 'JAP'],
+  ['Hyōgo', 135.18, 34.69, ['JP-28'], 12800, 'JAP'], ['Yamato', 135.83, 34.69, ['JP-29'], 5900, 'JAP'], ['Wakayama', 135.17, 34.23, ['JP-30'], 7000, 'JAP'], ['Inaba', 134.24, 35.5, ['JP-31'], 5900, 'JAP'],
+  ['Shimane', 133.05, 35.47, ['JP-32'], 10700, 'JAP'], ['Okayama', 133.93, 34.66, ['JP-33'], 10800, 'JAP'], ['Hiroshima', 132.46, 34.39, ['JP-34'], 13100, 'JAP'], ['Yamaguchi', 131.47, 34.19, ['JP-35'], 9600, 'JAP'],
+  ['Tokushima', 134.56, 34.07, ['JP-36'], 6500, 'JAP'], ['Sanuki', 134.05, 34.34, ['JP-37'], 3000, 'JAP'], ['Ehime', 132.77, 33.84, ['JP-38'], 8900, 'JAP'], ['Kōchi', 133.53, 33.56, ['JP-39'], 11100, 'JAP'],
+  ['Fukuoka', 130.4, 33.6, ['JP-40'], 8000, 'JAP'], ['Saga', 130.3, 33.25, ['JP-41'], 4100, 'JAP'], ['Nagasaki', 129.87, 32.75, ['JP-42'], 6200, 'JAP'], ['Kumamoto', 130.74, 32.8, ['JP-43'], 11200, 'JAP'],
+  ['Ōita', 131.61, 33.24, ['JP-44'], 9900, 'JAP'], ['Hyūga', 131.42, 31.91, ['JP-45'], 12700, 'JAP'], ['Kagoshima', 130.56, 31.6, ['JP-46'], 11900, 'JAP'], ['Amami', 129.5, 28.3, ['JP-46'], 2700, 'JAP'],
+  ['Okinawa', 127.8, 26.3, ['JP-47'], 4200, 'JAP'], ['Sakishima', 124.2, 24.4, ['JP-47'], 1100, 'JAP'],
+  // Corea
+  ['Hanseong', 126.98, 37.57, ['KR-11', 'KR-28', 'KR-41'], 8900, 'COR'], ['Suwon', 127.0, 37.2, ['KR-41'], 6100, 'COR'], ['Kaesong', 126.55, 37.97, ['KP-06', 'KR-41'], 8200, 'COR'], ['Gongju', 127.12, 36.46, ['KR-44', 'KR-30', 'KR-50'], 13100, 'COR'],
+  ['Chungju', 127.93, 36.97, ['KR-43'], 12200, 'COR'], ['Jeonju', 127.15, 35.82, ['KR-45'], 12800, 'COR'], ['Naju', 126.71, 35.02, ['KR-46', 'KR-29'], 17700, 'COR'], ['Jeju', 126.53, 33.4, ['KR-49'], 2800, 'COR'],
+  ['Daegu', 128.6, 35.87, ['KR-47', 'KR-27'], 9200, 'COR'], ['Andong', 128.73, 36.57, ['KR-47'], 14900, 'COR'], ['Gyeongju', 129.22, 35.84, ['KR-47', 'KR-31'], 7300, 'COR'], ['Jinju', 128.08, 35.18, ['KR-48'], 11600, 'COR'],
+  ['Dongnae', 129.08, 35.2, ['KR-48', 'KR-26'], 4500, 'COR'], ['Wonju', 127.95, 37.34, ['KR-42'], 6600, 'COR'], ['Gangneung', 128.9, 37.75, ['KR-42'], 12600, 'COR'], ['Chuncheon', 127.73, 37.88, ['KR-42', 'KP-07'], 10800, 'COR'],
+  ['Hoeyang', 127.6, 38.7, ['KP-07'], 12700, 'COR'], ['Haeju', 125.72, 38.04, ['KP-05'], 12600, 'COR'], ['Hwangju', 125.75, 38.67, ['KP-06'], 8900, 'COR'], ['Pyongyang', 125.75, 39.03, ['KP-01', 'KP-02'], 11900, 'COR'],
+  ['Anju', 125.66, 39.62, ['KP-02'], 11600, 'COR'], ['Uiju', 124.4, 40.2, ['KP-03'], 18900, 'COR'], ['Kanggye', 126.6, 40.97, ['KP-04'], 24700, 'COR'], ['Hamhung', 127.54, 39.92, ['KP-08'], 13000, 'COR'],
+  ['Wonsan', 127.44, 39.15, ['KP-07', 'KP-08'], 7300, 'COR'], ['Pukchong', 128.33, 40.2, ['KP-08'], 13400, 'COR'], ['Kapsan', 128.3, 41.2, ['KP-10'], 21600, 'COR'], ['Kilju', 129.32, 40.96, ['KP-09'], 12200, 'COR'],
+  ['Hoeryong', 129.75, 42.44, ['KP-09', 'KP-13'], 15800, 'COR'],
 ];

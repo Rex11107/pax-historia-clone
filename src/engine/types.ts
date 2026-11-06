@@ -81,6 +81,8 @@ export interface NationProfile {
   redLines: string[];
   rivals: Tag[];
   friends: Tag[];
+  /** quota della ricchezza che lo Stato riesce davvero a tassare e mobilitare (default 1): imperi agrari con fisco debole (Cina Qing) */
+  fiscal?: number;
   /** microstato: non giocabile, senza esercito */
   micro?: boolean;
   /** nazione senza Stato nel 1881: nasce solo se una pace libera questo popolo */

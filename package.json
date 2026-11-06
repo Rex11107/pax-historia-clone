@@ -8,7 +8,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "map": "node scripts/map/build-map.mjs && node scripts/map/check-map.mjs --from=eu",
+    "map": "node --max-old-space-size=6144 scripts/map/build-map.mjs && node scripts/map/check-map.mjs --from=eu",
     "cap:sync": "cap sync android",
     "icons": "node scripts/icons/make-icons.cjs",
     "map:check": "node scripts/map/check-map.mjs --from=eu"

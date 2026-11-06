@@ -9,6 +9,9 @@ export type ClaimStrength = 'nucleo' | 'storica' | 'pretesa';
 /** [chi rivendica, forza, dove, perché] */
 export const CLAIMS_1881: [Tag, ClaimStrength, Match, string][] = [
   // Impero ottomano: i deserti fra Siria, Iraq e Arabia, rivendicati sulla carta ma in mano alle tribù beduine
+  ['CHI', 'nucleo', { name: ['Ili'] }, 'l\'Ili occupato dai russi dal 1871 (trattato di San Pietroburgo in discussione)'],
+  ['CHI', 'pretesa', { name: ['Okinawa', 'Sakishima'] }, 'il regno delle Ryukyu, tributario dei Qing, annesso dal Giappone nel 1879'],
+  ['CHI', 'pretesa', { owner: [''], modern: ['CHN', 'TWN'] }, 'tribù e altipiani di frontiera'],
   ['NED', 'pretesa', { owner: ['ACH'] }, 'Aceh, in guerra dal 1873'],
   ['NED', 'pretesa', { owner: ['BAL', 'LOM'] }, 'sovranità riconosciuta dai principi balinesi nei trattati del 1841-49'],
   ['NED', 'pretesa', { modern: ['IDN'], owner: [''] }, 'le Indie fino al 141° meridiano'],

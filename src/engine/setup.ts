@@ -30,7 +30,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   for (const tag of present) {
     const pr = profiles[tag];
     if (!pr) throw new Error(`profilo mancante per ${tag}`);
-    const pop = map.provinces.filter((p) => p.owner === tag).reduce((s, p) => s + p.pop * colonialWeight({ map } as World, tag, p.id), 0);
+    const pop = map.provinces.filter((p) => p.owner === tag).reduce((s, p) => s + p.pop * colonialWeight({ map } as World, tag, p.id), 0) * (profiles[tag]?.fiscal ?? 1);
     nations[tag] = {
       tag,
       treasury: Math.round(pop / 1e6 * 4 * (0.5 + pr.finance / 100)),

@@ -141,6 +141,17 @@ export const ASIA_NATIONS: Record<string, P> = {
     cohesion: 20, finance: 4, armyPeace: 300, temperament: 'concessione di Brunei e Sulu (1877-78) alla compagnia di Dent, che attende il privilegio reale britannico', goals: ['tabacco e legname'], friends: ['GBR'], rivals: ['SUL'] }),
   SUL: base({ name: 'Sultanato di Sulu', short: ['il ', 'Sulu'], adjective: 'suluano', color: '#4a8ac8', capital: [121.05, 5.93], government: 'sultanato', leader: 'Sultano Jamalul Alam',
     militaryQuality: 30, cohesion: 40, finance: 4, armyPeace: 3000, temperament: 'sultanato marinaro dei tausug, protettorato spagnolo dal 1878 con una guarnigione a Jolo, ma ancora padrone dei suoi mari', goals: ['autonomia', 'tributo del Borneo del Nord'], rivals: ['SPA'], friends: [] }),
+  // ===== Asia orientale (fase 7) =====
+  CHI: base({ name: 'Impero Qing', short: ["l'", 'Impero Qing'], adjective: 'cinese', color: '#d8c25a', capital: [116.4, 39.9], government: 'impero', leader: 'Imperatore Guangxu (reggenza delle imperatrici vedove Cixi e Ci\'an; Li Hongzhang a Tianjin)',
+    militaryQuality: 30, cohesion: 45, finance: 15, armyPeace: 500000, fiscal: 0.15, temperament: 'immenso impero manciù che si riprende dalle rivolte dei Taiping e dei musulmani; il movimento di autorafforzamento compra navi e fucili, ma la corte è divisa e diffida dell\'Occidente',
+    goals: ['riavere l\'Ili dalla Russia', 'tenere la Corea e l\'Annam come tributari', 'non cedere le Ryukyu al Giappone'], rivals: ['RUS', 'JAP', 'FRA'], friends: ['GBR'] }),
+  TIB: base({ name: 'Tibet', short: ['il ', 'Tibet'], adjective: 'tibetano', color: '#b88ab8', capital: [91.13, 29.65], government: 'teocrazia', leader: 'Dalai Lama Thubten Gyatso (minorenne; reggenza)',
+    militaryQuality: 15, cohesion: 50, finance: 6, armyPeace: 5000, temperament: 'governo dei lama di Lhasa sotto la tutela nominale degli amban Qing, chiuso agli stranieri', goals: ['tenere fuori gli europei'], rivals: ['GBR'], friends: ['CHI'] }),
+  JAP: base({ name: 'Impero del Giappone', short: ['il ', 'Giappone'], adjective: 'giapponese', color: '#c8506a', capital: [139.7, 35.68], government: 'monarchia', leader: 'Imperatore Meiji (gran consigliere Sanjō Sanetomi; Itō Hirobumi e Ōkuma Shigenobu)',
+    militaryQuality: 55, cohesion: 70, finance: 35, armyPeace: 45000, temperament: 'stato che si modernizza a tappe forzate dopo la restaurazione Meiji; ha appena annesso le Ryukyu, guarda alla Corea e vuole rivedere i trattati ineguali',
+    goals: ['rivedere i trattati ineguali', 'influenza in Corea', 'tenere le Ryukyu'], rivals: ['CHI', 'RUS'], friends: ['GBR'] }),
+  COR: base({ name: 'Regno di Joseon', short: ['la ', 'Corea'], adjective: 'coreano', color: '#5aa898', capital: [126.98, 37.57], government: 'regno', leader: 'Re Gojong (la regina Min e i suoi parenti; il Daewongun in disparte)',
+    militaryQuality: 20, cohesion: 50, finance: 12, armyPeace: 20000, temperament: 'regno eremita tributario dei Qing, aperto a forza dal Giappone nel 1876; la corte è divisa fra riformatori e tradizionalisti', goals: ['restare fuori dalle contese', 'proteggersi dal Giappone'], rivals: ['JAP'], friends: ['CHI'] }),
 };
 
 /** Opinioni iniziali (A verso B). */
@@ -148,6 +159,7 @@ export const ASIA_OPINIONS: [string, string, number][] = [
   ['AFG', 'GBR', -50], ['GBR', 'AFG', -20], ['AFG', 'RUS', -30], ['AFG', 'PER', -30], ['PER', 'AFG', -20],
   ['GBR', 'NEP', 20], ['NEP', 'GBR', 30], ['BHU', 'GBR', -20], ['GBR', 'BHU', -10], ['SIK', 'GBR', 0], ['KAL', 'AFG', -30], ['GWA', 'HOL', -20], ['HOL', 'GWA', -20], ['HYD', 'GBR', 20], ['JOD', 'JAI', -10], ['JAI', 'JOD', -10],
   ['ARA', 'NJD', -40], ['NJD', 'ARA', -50], ['NJD', 'TUR', -40], ['TUR', 'NJD', -20], ['KUW', 'TUR', 10], ['QAT', 'TUR', -10], ['QAT', 'BHR', -30], ['BHR', 'QAT', -30],
+  ['CHI', 'RUS', -50], ['RUS', 'CHI', -30], ['CHI', 'JAP', -50], ['JAP', 'CHI', -30], ['CHI', 'FRA', -30], ['CHI', 'COR', 40], ['COR', 'CHI', 50], ['COR', 'JAP', -50], ['JAP', 'COR', -10], ['TIB', 'GBR', -40], ['CHI', 'GBR', -10], ['JAP', 'GBR', 20], ['ANN', 'CHI', 30], ['CHI', 'ANN', 30],
   ['ACH', 'NED', -90], ['NED', 'ACH', -70], ['BON', 'NED', -30], ['BAL', 'NED', -30], ['LOM', 'BAL', -40], ['BAL', 'LOM', -50], ['SRW', 'BRU', -20], ['BRU', 'SRW', -40], ['SUL', 'SPA', -50], ['SPA', 'SUL', -30], ['SUL', 'BNB', -20], ['SRW', 'GBR', 30], ['TER', 'TID', -20], ['TID', 'TER', -20],
   ['BRM', 'GBR', -40], ['GBR', 'BRM', -30], ['ANN', 'FRA', -50], ['FRA', 'ANN', -20], ['SIA', 'FRA', -20], ['SIA', 'BRM', -20], ['ANN', 'SIA', -20], ['CAM', 'SIA', -20], ['BRM', 'FRA', 20], ['SIA', 'GBR', 20],
   ['BUK', 'RUS', 10], ['KHI', 'RUS', -10], ['RUS', 'BUK', 20], ['RUS', 'KHI', 10], ['BUK', 'AFG', -30], ['BUK', 'KHI', -20],

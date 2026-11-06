@@ -47,8 +47,9 @@ export function budget(w: World, tag: Tag): Budget {
   const n = s.nations[tag];
   const pol = n.policies;
   let popEff = 0, popOwn = 0, provinces = 0, occupied = 0;
+  const fiscal = w.profiles[tag]?.fiscal ?? 1;
   for (let i = 0; i < s.owner.length; i++) {
-    const p = w.map.provinces[i].pop * (s.owner[i] === tag ? colonialWeight(w, tag, i) : 1);
+    const p = w.map.provinces[i].pop * fiscal * (s.owner[i] === tag ? colonialWeight(w, tag, i) : 1);
     if (s.owner[i] === tag) { popOwn += p; if (!w.map.provinces[i].impassable) provinces++; }
     if (s.owner[i] === tag && s.controller[i] === tag) popEff += p;
     else if (s.controller[i] === tag) { popEff += p * 0.25; occupied++; } // requisizioni nelle province occupate

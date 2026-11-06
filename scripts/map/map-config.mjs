@@ -364,6 +364,7 @@ export const PROTECTED = [
   { id: 'XYANA', name: 'Yanaon', owner: 'FRA', point: [82.21, 16.73], pop: 5000, terrain: 'plain', coast: true, af: true },
   { id: 'XCHAN', name: 'Chandernagor', owner: 'FRA', point: [88.37, 22.87], pop: 25000, terrain: 'plain', coast: true, af: true },
   { id: 'XDIU', name: 'Diu', owner: 'POR', point: [70.98, 20.71], pop: 12000, terrain: 'plain', coast: true, af: true },
+  { id: 'XMACAO', name: 'Macao', owner: 'POR', point: [113.55, 22.19], pop: 70000, terrain: 'plain', coast: true, af: true },
   { id: 'XDAMA', name: 'Damão', owner: 'POR', point: [72.85, 20.41], pop: 40000, terrain: 'plain', coast: true, af: true },
 ];
 

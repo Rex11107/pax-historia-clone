@@ -71,6 +71,8 @@ const INITIAL: Subject[] = [
   { subject: 'CAM', overlord: 'FRA', level: 'protettorato', liberty: 45, since: -9100 }, // trattato del 1863
   { subject: 'PRK', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 }, // Pangkor 1874
   { subject: 'SEL', overlord: 'GBR', level: 'protettorato', liberty: 40, since: -2500 },
+  { subject: 'TIB', overlord: 'CHI', level: 'protettorato', liberty: 80, since: -60000 }, // amban di Lhasa
+  { subject: 'COR', overlord: 'CHI', level: 'tributario', liberty: 85, since: -90000 },
   { subject: 'SAK', overlord: 'NED', level: 'protettorato', liberty: 45, since: -8000 }, // trattato di Siak 1858
   { subject: 'YOG', overlord: 'NED', level: 'protettorato', liberty: 35, since: -25000 },
   { subject: 'SUR', overlord: 'NED', level: 'protettorato', liberty: 35, since: -25000 },

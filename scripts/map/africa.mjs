@@ -378,7 +378,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     else {
       // in India il distretto intero va alla regione più vicina (confini sui distretti, non linee di Voronoi)
       const at = (a.dist && distCentroid.get(a.dist)) || a.c;
-      for (const r of REG) { if (!r.mods.includes(a.modern) || ENC.has(r.name) || DIST_NAMES.has(r.name) || (r.euRegion !== undefined && !AF_DETAIL_REGIONS.some((x) => x[0] === r.name)) || (a.modern === 'SAU' && regZone(r) !== a.arz)) continue; const d = turf.distance(at, r.at); if (d < bd) { bd = d; best = r; } }
+      for (const r of REG) { if ((!r.mods.includes(a.modern) && !r.mods.includes(a.iso)) || ENC.has(r.name) || DIST_NAMES.has(r.name) || (r.euRegion !== undefined && !AF_DETAIL_REGIONS.some((x) => x[0] === r.name)) || (a.modern === 'SAU' && regZone(r) !== a.arz)) continue; const d = turf.distance(at, r.at); if (d < bd) { bd = d; best = r; } }
     }
     a.region = best;
     // il padrone della regione storica vale per tutte le sue terre abitate (niente schegge di confine del dataset)
