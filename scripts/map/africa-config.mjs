@@ -2,15 +2,17 @@
 // Fase 1: province storiche e regni (divisione larga, guidata dagli stati d'epoca e dalla densità).
 
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
-export const AF_EXCLUDE = ['FJI', 'KIR', 'NOR', 'ATF', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
+export const AF_EXCLUDE = ['ATA', 'MDV', 'NOR', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
   // fasi successive: India, Cina, Siberia
-  'MDV', 'IOT', 'USA'];
+  'ESB', 'WSB', 'KAB', 'USG', 'PGA', 'CSI', 'ATC', 'CLP', 'UMI'];
 /**
  * Popolazione del 1881 per unità amministrativa moderna (stima dai censimenti del 1881-1897 dei governatorati).
  * Ha la precedenza sul bacino del paese moderno: in Siberia la popolazione di oggi (Vladivostok, Kuzbass) non dice
  * niente di quella del 1881, concentrata negli Urali e lungo la via della Siberia.
  */
 export const AF_POP_ISO = {
+  // Australia (censimento del 1881, con una stima degli aborigeni) e Hawaii (censimento del 1878)
+  'AU-NSW': 760_000, 'AU-ACT': 2_000, 'AU-VIC': 865_000, 'AU-QLD': 235_000, 'AU-SA': 290_000, 'AU-NT': 20_000, 'AU-WA': 50_000, 'AU-TAS': 117_000, 'US-HI': 58_000,
   // Cina, stime per provincia al 1880 (dopo le rivolte e la carestia del 1877-79)
   'CN-BJ': 1_600_000, 'CN-TJ': 1_000_000, 'CN-HE': 20_000_000, 'CN-SD': 36_000_000, 'CN-SX': 11_000_000, 'CN-HA': 22_000_000, 'CN-JS': 20_000_000, 'CN-SH': 800_000, 'CN-AH': 20_000_000, 'CN-JX': 24_000_000, 'CN-FJ': 22_000_000, 'CN-ZJ': 12_000_000, 'CN-HB': 33_000_000, 'CN-HN': 21_000_000, 'CN-SN': 8_000_000, 'CN-GS': 4_500_000, 'CN-NX': 500_000, 'CN-QH': 700_000, 'CN-SC': 40_000_000, 'CN-CQ': 15_000_000, 'CN-GZ': 7_000_000, 'CN-YN': 8_000_000, 'CN-GX': 8_000_000, 'CN-GD': 29_000_000, 'CN-HI': 2_200_000, 'CN-LN': 2_500_000, 'CN-JL': 800_000, 'CN-HL': 300_000, 'CN-NM': 1_500_000, 'CN-XJ': 1_200_000, 'CN-XZ': 1_000_000,
   // Giappone, prefetture (riportate al censimento del 1880)
@@ -321,9 +323,14 @@ export const AF_FREED_FIX = {
   'Al-Riyad': { name: 'Dahna', owner: '', T: 70000 },
 };
 /** Fuori dal vecchio riquadro (a est dell'88° meridiano o a nord del 56° parallelo) entrano solo questi paesi. */
-export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'BRN', 'IDN', 'PHL', 'TLS', 'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC', 'PNG'];
+export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'BRN', 'IDN', 'PHL', 'TLS', 'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC',
+  // fase 8: Oceania e isole dell'Indiano e dell'Atlantico
+  'AUS', 'NZL', 'NCL', 'SLB', 'VUT', 'FJI', 'TON', 'WSM', 'ASM', 'NIU', 'PYF', 'FSM', 'PLW', 'GUM',
+  'ATF', 'HMD', 'ISL', 'GRL', 'FLK', 'SGS', 'PNG'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
-export const AF_CLIP = [-30, -36, 180, 78];
+export const AF_CLIP = [-180, -56, 180, 84];
+// cucitura della mappa: lo stretto di Bering (168° O); nella proiezione le terre a ovest di questa longitudine passano dopo il 180° (vedi proj)
+export const AF_SEAM = -168;
 
 // grandi laghi naturali (i bacini artificiali come il Nasser, il Volta o il Kariba nel 1881 non esistevano)
 export const AF_LAKES = ['Lake Baikal', 'Lake Khanka', 'Lake Taymyr', 'Lake Chany', 'Lake Balkhash', 'Issyk-Kul', 'Lake Zaysan', 'Alakol', 'Lake Albert', 'Lake Malawi', 'Lake Tanganyika', 'Lake Victoria', 'Lake Tana', 'Lac Moeru', 'Lake Bangweulu', 'Lake Kivu', 'Lake Edward', 'Lake Turkana'];
@@ -347,7 +354,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': 'CHI', 'Korea': 'COR', 'Taiwan': 'CHI', 'Hong Kong': 'GBR', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': 'JAP',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': 'CHI', 'Korea': 'COR', 'Taiwan': 'CHI', 'Hong Kong': 'GBR', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Māori': '', 'South Australia (UK)': 'GBR', 'Western Australia (UK)': 'GBR', 'Victoria (UK)': 'GBR', 'Queensland (UK)': 'GBR', 'New South Wales (UK)': 'GBR', 'Northern Territory (UK)': 'GBR', 'Greenland': 'DEN', 'Iceland': 'DEN', 'Kingdom of Hawaii': 'HAW', 'American Samoa': 'SAM', 'Samoa': 'SAM', 'Niue': '', 'Tonga': 'TON', 'Wallis and Futuna Islands': '', 'Fiji': 'GBR', 'Argentina': '', 'Chile': '', 'United Kingdom of Great Britain and Ireland': 'GBR', 'Sweden–Norway': 'SWE', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': 'JAP',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -421,6 +428,10 @@ export const AF_POP = {
   MMR: 7_000_000, THA: 5_500_000, LAO: 800_000, KHM: 1_000_000, VNM: 10_000_000, MYS: 600_000, SGP: 140_000,
   // arcipelago (censimento di Giava del 1880: 19,5 milioni; Filippine 1877: 5,6 milioni)
   // Asia orientale (Cina per provincia in AF_POP_ISO; Giappone: censimento 1880, 36,4 milioni)
+  // Oceania e isole (censimenti coloniali del 1881; stime per i popoli indigeni)
+  NZL: 530_000, NFK: 500, NCL: 60_000, SLB: 150_000, VUT: 70_000, FJI: 130_000, TON: 25_000, WSM: 35_000, ASM: 4_000, NIU: 5_000, COK: 8_000, PYF: 30_000,
+  PCN: 100, WLF: 5_000, TUV: 3_000, KIR: 30_000, NRU: 1_400, MHL: 10_000, FSM: 30_000, PLW: 4_000, GUM: 9_000, MNP: 2_000,
+  SYC: 14_000, MDV: 40_000, IOT: 500, IOA: 500, ATF: 0, HMD: 0, ISL: 72_000, GRL: 10_000, BMU: 13_000, FLK: 1_500, SGS: 0,
   MNG: 600_000, KOR: 8_000_000, PRK: 4_500_000, TWN: 2_500_000, HKG: 160_000, MAC: 70_000,
   IDN: 29_000_000, PHL: 5_600_000, BRN: 25_000, TLS: 300_000, PNG: 1_000_000,
   IND: 200_000_000, PAK: 20_000_000, BGD: 27_000_000, NPL: 3_000_000, BTN: 200_000, LKA: 2_760_000, KAS: 5_000,
@@ -628,10 +639,13 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   // fase 6: arcipelago
   'BRN', 'IDN', 'PHL', 'TLS', 'PNG',
   // fase 7: Cina, Corea e Giappone
-  'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC'];
+  'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC',
+  // fase 8: Oceania e isole
+  'AUS', 'NZL', 'NCL', 'SLB', 'VUT', 'FJI', 'TON', 'WSM', 'ASM', 'NIU', 'PYF', 'FSM', 'PLW', 'GUM',
+  'ATF', 'HMD', 'ISL', 'GRL', 'FLK', 'SGS', 'USA'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
-export const AF_FINE = { CHN: 10000, MNG: 30000, 'CN-XJ': 30000, 'CN-XZ': 30000, 'CN-QH': 30000, 'CN-NM': 25000, 'CN-HL': 20000, JPN: 3000, 'JP-01': 8000, KOR: 3000, PRK: 3000, TWN: 2000, HKG: 50, MAC: 20, IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
+export const AF_FINE = { AUS: 40000, 'AU-VIC': 8000, 'AU-TAS': 6000, 'AU-NSW': 8000, NZL: 6000, GRL: 80000, ISL: 8000, FJI: 1500, NCL: 3000, SLB: 3000, VUT: 2000, 'US-HI': 1500, CHN: 10000, MNG: 30000, 'CN-XJ': 30000, 'CN-XZ': 30000, 'CN-QH': 30000, 'CN-NM': 25000, 'CN-HL': 20000, JPN: 3000, 'JP-01': 8000, KOR: 3000, PRK: 3000, TWN: 2000, HKG: 50, MAC: 20, IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
   'ID-BA': 250, 'ID-NB': 800, 'ID-NT': 800, 'ID-MU': 800, 'ID-JB': 1000, 'ID-JT': 1000, 'ID-JI': 1000, 'ID-YO': 600, 'ID-BT': 1000, 'ID-JK': 500, ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
 
 /** Deserto percorso dai nomadi, non intransitabile: il Sahara occidentale (spagnolo dal 1884) e la costa mauritana. */
@@ -1541,4 +1555,82 @@ export const AF_DETAIL_REGIONS = [
   ['Anju', 125.66, 39.62, ['KP-02'], 11600, 'COR'], ['Uiju', 124.4, 40.2, ['KP-03'], 18900, 'COR'], ['Kanggye', 126.6, 40.97, ['KP-04'], 24700, 'COR'], ['Hamhung', 127.54, 39.92, ['KP-08'], 13000, 'COR'],
   ['Wonsan', 127.44, 39.15, ['KP-07', 'KP-08'], 7300, 'COR'], ['Pukchong', 128.33, 40.2, ['KP-08'], 13400, 'COR'], ['Kapsan', 128.3, 41.2, ['KP-10'], 21600, 'COR'], ['Kilju', 129.32, 40.96, ['KP-09'], 12200, 'COR'],
   ['Hoeryong', 129.75, 42.44, ['KP-09', 'KP-13'], 15800, 'COR'],
+  // ===== Fase 8: Oceania, Australia e Nuova Zelanda, isole dell'Indiano e dell'Atlantico (longitudini oltre il 168° O spostate di 360°) =====
+  // Nuovo Galles del Sud
+  ['Sydney', 151.2, -33.87, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 15200, 'GBR'], ['Hunter', 151.75, -32.9, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 41300, 'GBR'], ['Bathurst', 149.58, -33.42, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 43800, 'GBR'], ['Goulburn', 149.7, -34.75, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 41600, 'GBR'],
+  ['Albury', 147.0, -35.6, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 29900, 'GBR'], ['New England', 151.0, -30.5, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 129000, 'GBR'], ['Dubbo', 148.6, -32.2, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 100000, 'GBR'], ['Bourke', 145.9, -30.1, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 155700, 'GBR'],
+  ['Albert', 142.5, -31.5, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 205100, 'GBR'], ['Grafton', 152.9, -29.7, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 56300, 'GBR'], ['Monaro', 149.1, -36.4, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 41900, 'GBR'], ['Deniliquin', 144.95, -35.0, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 80900, 'GBR'],
+  ['Wagga Wagga', 147.4, -34.6, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 48400, 'GBR'], ['Lachlan', 145.8, -33.4, ['AU-NSW', 'AU-ACT', 'AU-X02~'], 100000, 'GBR'],
+  // Victoria
+  ['Melbourne', 144.96, -37.81, ['AU-VIC'], 29900, 'GBR'], ['Geelong', 144.0, -38.3, ['AU-VIC'], 14000, 'GBR'], ['Ballarat', 143.85, -37.56, ['AU-VIC'], 19400, 'GBR'], ['Sandhurst', 144.28, -36.76, ['AU-VIC'], 37800, 'GBR'],
+  ['Portland', 141.8, -37.9, ['AU-VIC'], 28400, 'GBR'], ['Wimmera', 142.2, -36.5, ['AU-VIC'], 40800, 'GBR'], ['Mallee', 142.3, -35.2, ['AU-VIC'], 51500, 'GBR'], ['Gippsland', 147.4, -37.7, ['AU-VIC'], 50500, 'GBR'],
+  ['Beechworth', 146.7, -36.4, ['AU-VIC'], 36700, 'GBR'],
+  // Queensland
+  ['Brisbane', 153.03, -27.47, ['AU-QLD'], 26800, 'GBR'], ['Darling Downs', 151.5, -27.6, ['AU-QLD'], 80800, 'GBR'], ['Wide Bay', 152.4, -25.6, ['AU-QLD'], 68600, 'GBR'], ['Rockhampton', 150.0, -23.5, ['AU-QLD'], 74700, 'GBR'],
+  ['Mackay', 148.7, -21.4, ['AU-QLD'], 87400, 'GBR'], ['Townsville', 146.6, -19.6, ['AU-QLD'], 106000, 'GBR'], ['Cooktown', 145.0, -15.8, ['AU-QLD'], 145700, 'GBR'], ['Capo York', 142.6, -12.8, ['AU-QLD'], 107700, 'GBR'],
+  ['Normanton', 141.08, -17.67, ['AU-QLD'], 213900, 'GBR'], ['Barcoo', 144.5, -24.0, ['AU-QLD'], 188700, 'GBR'], ['Maranoa', 148.8, -26.57, ['AU-QLD'], 155400, 'GBR'], ['Warrego', 145.5, -27.5, ['AU-QLD'], 211900, 'GBR'],
+  ['Cloncurry', 140.5, -20.7, ['AU-QLD'], 260000, 'GBR'], ['Kennedy', 144.5, -21.0, ['AU-QLD'], 186700, 'GBR'], ['Gregory', 141.5, -25.5, ['AU-QLD'], 260000, 'GBR'], ['Leichhardt', 148.5, -24.0, ['AU-QLD'], 116800, 'GBR'],
+  // Australia Meridionale
+  ['Adelaide', 138.6, -34.93, ['AU-SA'], 27800, 'GBR'], ['Mount Gambier', 140.6, -37.3, ['AU-SA'], 30500, 'GBR'], ['Port Augusta', 137.77, -32.49, ['AU-SA'], 98900, 'GBR'], ['Port Pirie', 138.4, -33.4, ['AU-SA'], 42000, 'GBR'],
+  ['Port Lincoln', 135.86, -34.0, ['AU-SA'], 60300, 'GBR'], ['Murray', 140.0, -34.4, ['AU-SA'], 62900, 'GBR'], ['Lago Eyre', 138.0, -28.5, ['AU-SA'], 260000, 'GBR'], ['Nullarbor', 132.5, -31.5, ['AU-SA'], 215900, 'GBR'],
+  ['Musgrave', 132.0, -27.5, ['AU-SA'], 260000, 'GBR'], ['Flinders Ranges', 139.3, -31.0, ['AU-SA'], 131700, 'GBR'], ['Isola dei Canguri', 137.2, -35.8, ['AU-SA'], 8700, 'GBR'],
+  // Territorio del Nord
+  ['Palmerston', 131.0, -12.8, ['AU-NT'], 124300, 'GBR'], ['Terra di Arnhem', 134.5, -12.8, ['AU-NT'], 163200, 'GBR'], ['Victoria River', 130.5, -16.5, ['AU-NT'], 248000, 'GBR'], ['Barkly', 135.5, -18.5, ['AU-NT'], 260000, 'GBR'],
+  ['Alice Springs', 133.87, -23.7, ['AU-NT'], 260000, 'GBR'], ['Tanami', 130.5, -20.5, ['AU-NT'], 260000, 'GBR'], ['Golfo di Carpentaria', 136.5, -15.5, ['AU-NT'], 119900, 'GBR'], ['Simpson', 136.5, -24.5, ['AU-NT'], 189900, 'GBR'],
+  // Australia Occidentale
+  ['Swan River', 115.86, -31.95, ['AU-WA'], 26100, 'GBR'], ['York', 116.9, -31.6, ['AU-WA'], 98200, 'GBR'], ['Albany', 117.88, -35.02, ['AU-WA'], 42900, 'GBR'], ['Bunbury', 115.64, -33.33, ['AU-WA'], 43400, 'GBR'],
+  ['Champion Bay', 114.61, -28.77, ['AU-WA'], 94900, 'GBR'], ['Gascoyne', 114.5, -24.5, ['AU-WA'], 186600, 'GBR'], ['Roebourne', 117.15, -20.78, ['AU-WA'], 130100, 'GBR'], ['Kimberley', 126.0, -17.0, ['AU-WA'], 260000, 'GBR'],
+  ['Gran Deserto Sabbioso', 123.5, -21.0, ['AU-WA'], 260000, 'GBR'], ['Gibson', 125.0, -25.0, ['AU-WA'], 260000, 'GBR'], ['Murchison', 117.5, -27.0, ['AU-WA'], 260000, 'GBR'], ['Coolgardie', 121.5, -30.5, ['AU-WA'], 260000, 'GBR'],
+  ['Gran Deserto Vittoria', 126.0, -29.0, ['AU-WA'], 260000, 'GBR'], ['Esperance', 121.9, -33.5, ['AU-WA'], 124500, 'GBR'], ['Pilbara', 120.0, -23.0, ['AU-WA'], 260000, 'GBR'], ['Wheatbelt', 118.5, -32.5, ['AU-WA'], 106200, 'GBR'],
+  // Tasmania
+  ['Hobart', 147.33, -42.88, ['AU-TAS', 'AU-X03~'], 26500, 'GBR'], ['Launceston', 147.14, -41.44, ['AU-TAS', 'AU-X03~'], 27000, 'GBR'], ['Costa occidentale', 145.5, -42.0, ['AU-TAS', 'AU-X03~'], 20700, 'GBR'], ['Tasmania nord-occidentale', 145.9, -41.1, ['AU-TAS', 'AU-X03~'], 14900, 'GBR'],
+  ['Flinders', 148.0, -40.0, ['AU-TAS', 'AU-X03~'], 3000, 'GBR'],
+  // Norfolk e isole australiane
+  
+  // Nuova Zelanda
+  ['Auckland', 174.76, -36.85, ['NZL'], 8800, 'GBR'], ['Northland', 173.8, -35.5, ['NZL'], 15800, 'GBR'], ['Waikato', 175.3, -37.6, ['NZL'], 13000, 'GBR'], ['Paese del Re', 174.95, -38.5, ['NZL'], 12600, ''],
+  ['Tauranga', 176.2, -37.9, ['NZL'], 9800, 'GBR'], ['Urewera', 176.9, -38.6, ['NZL'], 13500, ''], ['Napier', 176.9, -39.5, ['NZL'], 13100, 'GBR'], ['Taranaki', 174.2, -39.3, ['NZL'], 8700, 'GBR'],
+  ['Wellington', 174.9, -41.2, ['NZL'], 5100, 'GBR'], ['Wanganui', 175.2, -39.9, ['NZL'], 15300, 'GBR'], ['Wairarapa', 175.6, -41.0, ['NZL'], 13500, 'GBR'], ['Poverty Bay', 178.0, -38.4, ['NZL'], 14800, 'GBR'],
+  ['Taupo', 175.9, -38.9, ['NZL'], 12500, ''], ['Nelson', 172.8, -41.4, ['NZL'], 20400, 'GBR'], ['Marlborough', 173.6, -41.8, ['NZL'], 19000, 'GBR'], ['Westland', 171.2, -42.6, ['NZL'], 21400, 'GBR'],
+  ['Christchurch', 172.4, -43.5, ['NZL'], 20700, 'GBR'], ['Timaru', 170.8, -44.2, ['NZL'], 32000, 'GBR'], ['Dunedin', 170.3, -45.8, ['NZL'], 16400, 'GBR'], ['Otago centrale', 169.3, -45.0, ['NZL'], 33900, 'GBR'],
+  ['Invercargill', 168.4, -46.2, ['NZL'], 20900, 'GBR'], ['Fiordland', 167.3, -45.4, ['NZL'], 20400, 'GBR'], ['Chatham', 183.5, -43.9, ['NZL'], 1100, 'GBR'], ['Isole subantartiche', 166.1, -50.7, ['NZL'], 1000, ''],
+  // Figi
+  ['Viti Levu', 178.0, -17.8, ['FJI'], 15600, 'GBR'], ['Vanua Levu', 179.2, -16.6, ['FJI'], 8900, 'GBR'], 
+  ['Kadavu', 178.2, -19.05, ['FJI'], 900, 'GBR'],
+  // Tonga
+  ['Tongatapu', 184.8, -21.15, ['TON'], 500, 'TON'], ['Vava\'u', 186.0, -18.65, ['TON'], 300, 'TON'], ['Ha\'apai', 185.6, -19.8, ['TON'], 300, 'TON'],
+  // Samoa
+  ['Upolu', 188.25, -13.9, ['WSM', 'ASM'], 1700, 'SAM'], ['Savai\'i', 187.6, -13.6, ['WSM', 'ASM'], 2200, 'SAM'], ['Tutuila', 189.3, -14.3, ['WSM', 'ASM'], 300, 'SAM'],
+  // Polinesia occidentale
+  ['Niue', 190.13, -19.05, ['NIU'], 300, ''], 
+  
+  // Micronesia
+  
+  ['Pohnpei', 158.2, 6.9, ['FSM'], 500, ''], 
+  ['Kosrae', 163.0, 5.3, ['FSM'], 300, ''], ['Palau', 134.6, 7.5, ['PLW'], 800, ''], ['Guam', 144.8, 13.45, ['GUM'], 700, 'SPA'], 
+  // Melanesia
+  ['Nouméa', 166.45, -22.27, ['NCL'], 9400, 'FRA'], ['Nuova Caledonia settentrionale', 164.8, -20.8, ['NCL'], 13600, 'FRA'], ['Isole della Lealtà', 167.8, -21.0, ['NCL'], 2700, 'FRA'], ['Espiritu Santo', 166.9, -15.4, ['VUT'], 7500, ''],
+  ['Efate', 168.3, -17.7, ['VUT'], 1700, ''], ['Malekula', 167.4, -16.2, ['VUT'], 5300, ''], ['Tanna', 169.3, -19.5, ['VUT'], 2200, ''], ['Guadalcanal', 160.0, -9.6, ['SLB'], 8200, ''],
+  ['Malaita', 161.0, -9.0, ['SLB'], 5800, ''], ['Nuova Georgia', 157.5, -8.3, ['SLB'], 5900, ''], ['Santa Isabel', 159.2, -8.1, ['SLB'], 5500, ''], ['Makira', 161.9, -10.6, ['SLB'], 4800, ''],
+  ['Choiseul', 157.0, -7.0, ['SLB'], 5500, ''], ['Santa Cruz', 166.0, -10.7, ['SLB'], 1300, ''],
+  // Hawaii
+  ['Oahu', -157.95, 21.45, ['US-HI'], 2100, 'HAW'], ['Hawaii', -155.5, 19.6, ['US-HI'], 14300, 'HAW'], ['Maui', -156.3, 20.8, ['US-HI'], 2700, 'HAW'], ['Kauai', -159.5, 22.05, ['US-HI'], 2200, 'HAW'],
+  ['Molokai', -157.0, 21.13, ['US-HI'], 1500, 'HAW'],
+  // Polinesia orientale
+  ['Tahiti', -149.4, -17.65, ['PYF'], 1600, 'FRA'], ['Isole Sottovento', -151.45, -16.75, ['PYF'], 500, ''],
+  ['Marchesi', -139.5, -9.4, ['PYF'], 1400, 'FRA'], ['Tuamotu', -145.0, -16.5, ['PYF'], 1000, 'FRA'], 
+  
+  // Oceano Indiano
+  ['Kerguelen', 69.5, -49.3, ['ATF'], 9500, ''], ['Crozet', 51.8, -46.4, ['ATF'], 300, ''],
+  ['Heard', 73.5, -53.1, ['HMD'], 600, ''],
+  // Islanda
+  ['Reykjavík', -21.9, 64.15, ['ISL'], 5600, 'DEN'], ['Borgarfjörður', -21.8, 64.8, ['ISL'], 17400, 'DEN'], ['Ísafjörður', -22.8, 65.9, ['ISL'], 12200, 'DEN'], ['Akureyri', -18.4, 65.6, ['ISL'], 16800, 'DEN'],
+  ['Húsavík', -17.0, 65.9, ['ISL'], 15200, 'DEN'], ['Seyðisfjörður', -14.5, 65.2, ['ISL'], 20900, 'DEN'], ['Suðuramt', -20.0, 63.9, ['ISL'], 14900, 'DEN'], ['Skaftafell', -17.5, 63.9, ['ISL'], 14000, 'DEN'],
+  
+  // Groenlandia
+  ['Godthåb', -51.7, 64.2, ['GRL'], 116400, 'DEN'], ['Julianehåb', -46.0, 60.8, ['GRL'], 113500, 'DEN'], ['Godhavn', -53.5, 69.25, ['GRL'], 194600, 'DEN'], ['Upernavik', -56.0, 72.8, ['GRL'], 184300, 'DEN'],
+  ['Groenlandia orientale', -30.0, 68.0, ['GRL'], 260000, 'DEN'], ['Thule', -68.0, 77.5, ['GRL'], 249100, 'DEN'], ['Groenlandia settentrionale', -40.0, 81.0, ['GRL'], 260000, 'DEN'], ['Calotta glaciale', -40.0, 73.0, ['GRL'], 260000, 'DEN'],
+  ['Calotta meridionale', -44.0, 65.0, ['GRL'], 260000, 'DEN'], ['Nord-est della Groenlandia', -24.0, 76.0, ['GRL'], 260000, 'DEN'],
+  // Atlantico
+  ['Falkland orientali', -58.6, -51.7, ['FLK'], 7800, 'GBR'], ['Falkland occidentali', -60.2, -51.8, ['FLK'], 7900, 'GBR'], ['Georgia del Sud', -36.5, -54.3, ['SGS'], 5400, ''],
 ];

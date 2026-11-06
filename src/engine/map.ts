@@ -202,7 +202,9 @@ class MinHeap {
 
 /** Decodifica gli archi delta-codificati in coordinate km (y verso il basso per il disegno). */
 /** Proiezione cilindrica di Miller, km all'equatore: la stessa di scripts/map. */
-export function laea(lon: number, lat: number): [number, number] {
+export function laea(lon0: number, lat: number): [number, number] {
+  // cucitura allo stretto di Bering (168° O): ciò che sta a ovest passa dopo il 180°
+  const lon = lon0 < -168 ? lon0 + 360 : lon0;
   const R = 6371, p = (Math.max(-85, Math.min(85, lat)) * Math.PI) / 180;
   return [(R * lon * Math.PI) / 180, R * 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * p))];
 }

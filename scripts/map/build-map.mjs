@@ -31,7 +31,7 @@ import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORR
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
 import { buildAfrica } from './africa.mjs';
-import { AF_FREE_EU, AF_POP, AF_POP_FIXED, AF_POP_ISO, AF_HOME, AF_CLIP, AF_ROUTES, AF_OASES } from './africa-config.mjs';
+import { AF_FREE_EU, AF_POP, AF_POP_FIXED, AF_POP_ISO, AF_HOME, AF_CLIP, AF_SEAM, AF_ROUTES, AF_OASES } from './africa-config.mjs';
 import { AFRICA_MODERN, atomize, coastDistance, compactClusters, eastOfVar, inZone, prepareBasins8, topoMetrics } from './compact.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -439,7 +439,9 @@ function basinSplit(f, rivers, places) {
 // potrà avvolgere da est a ovest. Unità: km all'equatore (x = R·λ); le distanze vere si calcolano su lon/lat.
 const R = 6371;
 function laea([lon, lat]) { return proj([lon, lat]); }
-function proj([lon, lat]) {
+function proj([lon0, lat]) {
+  // cucitura allo stretto di Bering: Chukotka orientale, Figi orientali, Tonga e Samoa stanno a destra del 180°
+  const lon = lon0 < AF_SEAM ? lon0 + 360 : lon0;
   const p = (Math.max(-85, Math.min(85, lat)) * Math.PI) / 180;
   return [(R * lon * Math.PI) / 180, R * 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * p))];
 }
@@ -512,8 +514,9 @@ async function main() {
   // livelli da disegnare: Europa e Mediterraneo (il rettangolo) più Africa, Arabia e isole atlantiche
   // Persia orientale e Asia centrale: solo sulle terre incluse (niente fiumi dell'India o della Siberia nel vuoto)
   const EAST_MASK = path.join(TMP, 'draw_mask_east.geojson');
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS','IND','PAK','BGD','NPL','BTN','LKA','KAS','MMR','THA','LAO','KHM','VNM','SGP','MYS','BRN','IDN','PHL','TLS','PNG','CHN','MNG','PRK','KOR','JPN','TWN','HKG','MAC'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${AF_CLIP[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
-  const DRAW_BOXES = [BBOX, [AF_CLIP[0], AF_CLIP[1], 62, BBOX[1]], [AF_CLIP[0], BBOX[1], BBOX[0], 40], EAST_MASK];
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', "['IRN','AFG','TKM','UZB','KAZ','KGZ','TJK','AZE','KAB','OMN','ARE','SAU','QAT','YEM','BHR','RUS','IND','PAK','BGD','NPL','BTN','LKA','KAS','MMR','THA','LAO','KHM','VNM','SGP','MYS','BRN','IDN','PHL','TLS','PNG','CHN','MNG','PRK','KOR','JPN','TWN','HKG','MAC','AUS','NZL','NCL','FJI','SLB','VUT'].includes(adm0_a3)", '-clip', `bbox=${BBOX[2]},${AF_CLIP[1]},${AF_CLIP[2]},${AF_CLIP[3]}`, '-dissolve', '-o', EAST_MASK);
+  // (i riquadri di Africa e Atlantico restano quelli di prima: l'estensione a tutto il globo della fase 8 non porta fiumi sulle Americhe ancora vuote)
+  const DRAW_BOXES = [BBOX, [-30, -36, 62, BBOX[1]], [-30, BBOX[1], BBOX[0], 40], EAST_MASK];
   const drawLayer = (out, src, pre, post) => {
     const parts = DRAW_BOXES.map((b, i) => { const o = path.join(TMP, `draw_${i}_${out}`); ms(...src, ...pre, '-clip', typeof b === 'string' ? b : `bbox=${b}`, '-o', o); return o; });
     ms('-i', ...parts, 'combine-files', '-merge-layers', 'force', ...post, '-o', path.join(TMP, out));

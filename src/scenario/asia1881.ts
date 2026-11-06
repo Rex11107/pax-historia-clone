@@ -152,6 +152,15 @@ export const ASIA_NATIONS: Record<string, P> = {
     goals: ['rivedere i trattati ineguali', 'influenza in Corea', 'tenere le Ryukyu'], rivals: ['CHI', 'RUS'], friends: ['GBR'] }),
   COR: base({ name: 'Regno di Joseon', short: ['la ', 'Corea'], adjective: 'coreano', color: '#5aa898', capital: [126.98, 37.57], government: 'regno', leader: 'Re Gojong (la regina Min e i suoi parenti; il Daewongun in disparte)',
     militaryQuality: 20, cohesion: 50, finance: 12, armyPeace: 20000, temperament: 'regno eremita tributario dei Qing, aperto a forza dal Giappone nel 1876; la corte è divisa fra riformatori e tradizionalisti', goals: ['restare fuori dalle contese', 'proteggersi dal Giappone'], rivals: ['JAP'], friends: ['CHI'] }),
+  // ===== Oceania e Oceano Indiano (fase 8) =====
+  HAW: base({ name: 'Regno delle Hawaii', short: ['il ', 'Regno delle Hawaii'], adjective: 'hawaiano', color: '#4ab0c8', capital: [-157.86, 21.31], government: 'regno', leader: 'Re Kalākaua (in viaggio intorno al mondo; reggente la principessa Liliʻuokalani)',
+    cohesion: 45, finance: 8, armyPeace: 500, temperament: 'regno polinesiano moderno, con piantagioni di zucchero americane e un trattato di reciprocità con gli Stati Uniti (1875)', goals: ['restare indipendente', 'zucchero e commercio'], friends: ['GBR'] }),
+  TON: base({ name: 'Regno di Tonga', short: ['il ', 'Regno di Tonga'], adjective: 'tongano', color: '#c8604a', capital: [-175.2, -21.13], government: 'regno', leader: 'Re George Tupou I (primo ministro Shirley Baker)',
+    cohesion: 60, finance: 3, armyPeace: 500, temperament: 'monarchia costituzionale dal 1875, unita da Tupou I e decisa a non diventare colonia', goals: ['restare indipendente'], friends: ['GBR'] }),
+  SAM: base({ name: 'Regno di Samoa', short: ['le ', 'Samoa'], adjective: 'samoano', color: '#8a6ac0', capital: [-171.76, -13.83], government: 'regno', leader: 'Malietoa Laupepa (titolo conteso fra i capi)',
+    cohesion: 25, finance: 2, armyPeace: 1000, temperament: 'capi rivali in guerra per il titolo regale, mentre i consoli tedesco, britannico e americano si contendono Apia', goals: ['un re riconosciuto da tutti i capi'], rivals: [], friends: [] }),
+  MDV: base({ name: 'Sultanato delle Maldive', short: ['le ', 'Maldive'], adjective: 'maldiviano', color: '#3a8a5a', capital: [73.51, 4.18], government: 'sultanato', leader: 'Sultano Muhammad Mueenuddeen II',
+    cohesion: 50, finance: 2, armyPeace: 200, micro: true, temperament: 'sultanato di atolli che manda ogni anno doni al governatore di Ceylon', goals: ['autonomia'], friends: ['GBR'] }),
 };
 
 /** Opinioni iniziali (A verso B). */

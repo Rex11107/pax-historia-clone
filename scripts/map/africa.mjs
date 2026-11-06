@@ -44,8 +44,12 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   // 1. livelli: suddivisioni moderne, stati d'epoca, laghi
   fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection([...readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })), turf.polygon([AF_ARAL])])));
   // oltre il vecchio riquadro (est dell'88° meridiano, nord del 56° parallelo) entrano solo i paesi della fase in corso
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && ((this.centroidX <= 88 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3))`, '-clip', `bbox=${AF_CLIP.join(',')}`,
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && !(adm0_a3 == 'FRA' && iso_3166_2 == 'FR-GF') && ((this.centroidX <= 88 && this.centroidX >= -30 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3) || iso_3166_2 == 'US-HI')`,
     '-each', 'pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=adm0_a3', '-filter-fields', 'pid,iso,pname,modern',
+    // (la cucitura del Pacifico allo stretto di Bering si fa nella proiezione: qui le longitudini restano fra -180 e 180)
+    // terre artiche russe oltre il 78° parallelo (Terra di Francesco Giuseppe, Severnaja Zemlja): sconosciute o di nessuno nel 1881, restano fuori
+    '-explode', '-filter', "!(modern == 'RUS' && this.centroidY > 78)",
+    '-clip', `bbox=${AF_CLIP.join(',')}`, '-dissolve', 'pid', 'copy-fields=iso,pname,modern',
     // il taglio dell'Europa dopo la semplificazione: il bordo resta identico a quello delle province europee
     '-simplify', 'interval=800', 'keep-shapes', '-erase', erase, '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
   ms(path.join(RAW, 'world_1880.geojson'), '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', erase, '-each', 'hist=NAME', '-filter-fields', 'hist', '-o', P('hist.geojson'));
