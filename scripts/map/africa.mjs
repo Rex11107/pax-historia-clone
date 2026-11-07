@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import * as turf from '@turf/turf';
 import * as topojson from 'topojson-client';
-import { AF_ARAL, AF_FREED_EXTRA, AF_FREED_FIX, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
+import { AF_ARAL, AF_FREED_EXTRA, AF_FREED_FIX, AF_DISTRICT_REGIONS, AF_FAR_KEEP, AF_DETAIL_MODERN, AF_DETAIL_REGIONS, AF_DETAIL_SCALE, AF_STEPPE, AF_ENCLAVES, AF_FINE, AF_DESERT_NAMES, AF_ARID, AF_CLIP, AF_SEAM, AF_EXCLUDE, AF_HIST, AF_LAKES, AF_NULL_REGION, AF_OASES, AF_OVERRIDES, AF_POP, AF_REGION, AF_SIZE, AF_TOWNS, AF_VALLEYS, AF_ANACHRONISTIC } from './africa-config.mjs';
 
 const readJSON = (p) => JSON.parse(fs.readFileSync(p, 'utf8'));
 const km2 = (f) => turf.area(f) / 1e6;
@@ -51,7 +51,9 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
     '-explode', '-filter', "!(modern == 'RUS' && this.centroidY > 78)",
     // arcipelaghi artici e fiordi del Pacifico: migliaia di isolotti senza peso nel gioco restano fuori (memoria)
     '-filter', "!((['CA-NU', 'CA-NT', 'CA-YT', 'CA-MB', 'CA-ON'].includes(iso) && this.area < 5e8) || (['US-AK', 'CA-BC', 'CA-NL', 'CA-QC'].includes(iso) && this.area < 1.5e8))",
-    '-clip', `bbox=${AF_CLIP.join(',')}`, '-dissolve', 'pid', 'copy-fields=iso,pname,modern',
+    // cucitura di Bering: una striscia sottilissima lungo il 168° O separa i pezzi che la attraversano (penisola di Seward,
+    // Umnak), così ogni anello sta tutto da una parte e la proiezione non disegna linee attraverso la mappa
+    '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', `bbox=${AF_SEAM - 0.001},-90,${AF_SEAM + 0.001},90`, '-dissolve', 'pid', 'copy-fields=iso,pname,modern',
     // il taglio dell'Europa dopo la semplificazione: il bordo resta identico a quello delle province europee
     '-simplify', 'interval=800', 'keep-shapes', '-erase', erase, '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
   ms(path.join(RAW, 'world_1880.geojson'), '-clip', `bbox=${AF_CLIP.join(',')}`, '-erase', erase, '-each', 'hist=NAME', '-filter-fields', 'hist', '-o', P('hist.geojson'));
