@@ -1469,7 +1469,7 @@ export const AF_DETAIL_REGIONS = [
   // Taiwan
   ['Tamsui', 121.5, 25.05, ['TWN'], 6300, 'CHI'], ['Taiwan-fu', 120.2, 23.0, ['TWN'], 5900, 'CHI'], ['Changhua', 120.55, 24.08, ['TWN'], 9300, 'CHI'], ['Fengshan', 120.4, 22.65, ['TWN'], 6100, 'CHI'],
   ['Yilan', 121.75, 24.75, ['TWN'], 4700, 'CHI'], ['Penghu', 119.6, 23.57, ['TWN'], 2000, 'CHI'], ['Beinan', 121.1, 22.8, ['TWN'], 6800, 'CHI'], ['Montagne di Taiwan', 121.05, 23.7, ['TWN'], 10100, ''],
-  ['Hualien', 121.5, 24.0, ['TWN'], 6500, ''],
+  ['Hualien', 121.5, 24.0, ['TWN'], 6500, 'CHI'], // costa est aperta dal Qing nel 1875-78 (開山撫番), come Beinan
   // Zhejiang
   ['Hangzhou', 120.17, 30.27, ['CN-ZJ'], 10400, 'CHI'], ['Jiaxing', 120.75, 30.75, ['CN-ZJ'], 5700, 'CHI'], ['Huzhou', 119.85, 30.75, ['CN-ZJ'], 7400, 'CHI'], ['Ningbo', 121.55, 29.87, ['CN-ZJ'], 12700, 'CHI'],
   ['Shaoxing', 120.58, 30.0, ['CN-ZJ'], 13900, 'CHI'], ['Taizhou', 121.42, 28.65, ['CN-ZJ'], 14600, 'CHI'], ['Jinhua', 119.65, 29.08, ['CN-ZJ'], 13400, 'CHI'], ['Quzhou', 118.87, 28.95, ['CN-ZJ'], 20000, 'CHI'],
