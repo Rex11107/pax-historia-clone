@@ -9,6 +9,18 @@ export type ClaimStrength = 'nucleo' | 'storica' | 'pretesa';
 /** [chi rivendica, forza, dove, perché] */
 export const CLAIMS_1881: [Tag, ClaimStrength, Match, string][] = [
   // Impero ottomano: i deserti fra Siria, Iraq e Arabia, rivendicati sulla carta ma in mano alle tribù beduine
+  ['CHL', 'pretesa', { name: ['Antofagasta', 'Cobija', 'Calama', 'Atacama', 'Taltal', 'Tarapacá', 'Iquique', 'Pisagua', 'Arica', 'Putre', 'Tacna', 'Tarata'] }, 'il deserto del salnitro conquistato nella guerra del Pacifico'],
+  ['CHL', 'pretesa', { modern: ['CHL'], owner: [''] }, 'l\'Araucanía e la Patagonia occidentale'],
+  ['ARG', 'pretesa', { modern: ['ARG'], owner: [''] }, 'la Patagonia, la Terra del Fuoco e il Chaco'],
+  ['CHL', 'pretesa', { name: ['Santa Cruz (Patagonia)', 'Lago Argentino', 'Río Gallegos', 'Terra del Fuoco argentina'] }, 'la Patagonia australe fino al Río Santa Cruz'],
+  ['BOL', 'pretesa', { name: ['Chaco Boreal', 'Alto Paraguay', 'Formosa', 'Chaco centrale'] }, 'il Chaco fino al Pilcomayo e al fiume Paraguay'],
+  ['PAR', 'pretesa', { name: ['Chaco Boreal', 'Alto Paraguay', 'Otuquis'] }, 'il Chaco Boreal'],
+  ['VEN', 'pretesa', { name: ['Essequibo', 'Barima', 'Cuyuni', 'Guyana interna', 'Rupununi'] }, 'la Guayana Esequiba fino al fiume Essequibo'],
+  ['FRA', 'pretesa', { name: ['Amapá'] }, 'il Contestato franco-brasiliano fra l\'Oyapock e l\'Araguari'],
+  ['BRA', 'pretesa', { name: ['Amapá', 'Rupununi'] }, 'il Contestato franco-brasiliano e il Pirara'],
+  ['ECU', 'pretesa', { name: ['Maynas', 'Iquitos', 'Putumayo', 'Jaén (Perù)', 'Tumbes'] }, 'l\'Amazzonia del Marañón e le province di confine'],
+  ['PRU', 'pretesa', { name: ['Canelos', 'Macas', 'Napo'] }, 'l\'Oriente ecuadoriano'],
+  ['COL', 'pretesa', { name: ['Putumayo'] }, 'il Putumayo'],
   ['GBR', 'pretesa', { name: ['Paese del Re', 'Urewera', 'Taupo'] }, 'le terre maori fuori dal controllo coloniale (Kīngitanga)'],
   ['SPA', 'pretesa', { name: ['Pohnpei', 'Chuuk', 'Yap', 'Kosrae', 'Palau'] }, 'le Caroline e Palau, rivendicate dalla Spagna'],
   ['FRA', 'pretesa', { name: ['Isole Sottovento'] }, 'le Isole Sottovento della Società'],

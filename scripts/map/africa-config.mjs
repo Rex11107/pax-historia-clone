@@ -2,7 +2,7 @@
 // Fase 1: province storiche e regni (divisione larga, guidata dagli stati d'epoca e dalla densità).
 
 // paesi moderni (adm0_a3 di Natural Earth) esclusi dall'estensione: fuori dal teatro africano-arabo
-export const AF_EXCLUDE = ['ATA', 'MDV', 'NOR', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR', 'BRA',
+export const AF_EXCLUDE = ['ATA', 'MDV', 'NOR', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX', 'SYR',
   // fasi successive: India, Cina, Siberia
   'ESB', 'WSB', 'KAB', 'USG', 'PGA', 'CSI', 'ATC', 'CLP', 'UMI'];
 /**
@@ -11,6 +11,9 @@ export const AF_EXCLUDE = ['ATA', 'MDV', 'NOR', 'IRQ', 'JOR', 'KWT', 'ISR', 'PSX
  * niente di quella del 1881, concentrata negli Urali e lungo la via della Siberia.
  */
 export const AF_POP_ISO = {
+  // Brasile (censimento 1872 riportato al 1881, siccità del Ceará 1877-79) e Argentina (fra i censimenti 1869 e 1895)
+  'BR-RJ': 1_200_000, 'BR-SP': 1_100_000, 'BR-MG': 2_400_000, 'BR-BA': 1_650_000, 'BR-ES': 100_000, 'BR-PE': 1_000_000, 'BR-AL': 400_000, 'BR-SE': 210_000, 'BR-PB': 450_000, 'BR-RN': 270_000, 'BR-CE': 750_000, 'BR-PI': 250_000, 'BR-MA': 430_000, 'BR-PA': 330_000, 'BR-AP': 20_000, 'BR-AM': 70_000, 'BR-RR': 10_000, 'BR-PR': 170_000, 'BR-SC': 210_000, 'BR-RS': 600_000, 'BR-GO': 150_000, 'BR-DF': 10_000, 'BR-TO': 40_000, 'BR-MT': 40_000, 'BR-MS': 25_000, 'BR-RO': 5_000, 'BR-AC': 5_000,
+  'AR-C': 300_000, 'AR-B': 600_000, 'AR-S': 250_000, 'AR-E': 170_000, 'AR-W': 140_000, 'AR-N': 10_000, 'AR-X': 270_000, 'AR-D': 65_000, 'AR-M': 80_000, 'AR-J': 70_000, 'AR-F': 60_000, 'AR-K': 90_000, 'AR-T': 150_000, 'AR-G': 160_000, 'AR-A': 160_000, 'AR-Y': 45_000, 'AR-L': 10_000, 'AR-Q': 10_000, 'AR-R': 10_000, 'AR-H': 20_000, 'AR-P': 10_000, 'AR-U': 3_000, 'AR-Z': 2_000, 'AR-V': 1_000,
   // Australia (censimento del 1881, con una stima degli aborigeni) e Hawaii (censimento del 1878)
   'AU-NSW': 760_000, 'AU-ACT': 2_000, 'AU-VIC': 865_000, 'AU-QLD': 235_000, 'AU-SA': 290_000, 'AU-NT': 20_000, 'AU-WA': 50_000, 'AU-TAS': 117_000, 'US-HI': 58_000,
   // Cina, stime per provincia al 1880 (dopo le rivolte e la carestia del 1877-79)
@@ -326,7 +329,9 @@ export const AF_FREED_FIX = {
 export const AF_FAR_KEEP = ['RUS', 'IND', 'BGD', 'NPL', 'BTN', 'LKA', 'MMR', 'THA', 'LAO', 'KHM', 'VNM', 'MYS', 'SGP', 'BRN', 'IDN', 'PHL', 'TLS', 'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC',
   // fase 8: Oceania e isole dell'Indiano e dell'Atlantico
   'AUS', 'NZL', 'NCL', 'SLB', 'VUT', 'FJI', 'TON', 'WSM', 'ASM', 'NIU', 'PYF', 'FSM', 'PLW', 'GUM',
-  'ATF', 'HMD', 'ISL', 'GRL', 'FLK', 'SGS', 'PNG'];
+  'ATF', 'HMD', 'ISL', 'GRL', 'FLK', 'SGS', 'PNG',
+  // fase 9: Sud America
+  'ARG', 'BRA', 'CHL', 'PER', 'BOL', 'ECU', 'COL', 'VEN', 'GUY', 'SUR', 'GUF', 'PRY', 'URY', 'PAN'];
 // area dell'estensione: tutto ciò che sta fuori dal rettangolo della mappa europea
 export const AF_CLIP = [-180, -56, 180, 84];
 // cucitura della mappa: lo stretto di Bering (168° O); nella proiezione le terre a ovest di questa longitudine passano dopo il 180° (vedi proj)
@@ -354,7 +359,7 @@ export const AF_HIST = {
   'Kuba': 'KUB', 'Luba': 'LUB', 'Lunda': 'LUN', 'Yaka': 'YAK', 'Teke': 'TEK', 'Yeke': 'YEK', 'Sultanate of Utetera': 'UTE', 'Congo': 'KGO',
   'Mbailundu': 'OVI', 'Ovimbundu': 'OVI', 'Mirambo Unyanyembe Ukimbu': 'MIR', 'Nguni': 'NGO', 'Shona': '',
   // fuori teatro (filtrati dai paesi esclusi, ma il nome va riconosciuto)
-  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': 'CHI', 'Korea': 'COR', 'Taiwan': 'CHI', 'Hong Kong': 'GBR', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Māori': '', 'South Australia (UK)': 'GBR', 'Western Australia (UK)': 'GBR', 'Victoria (UK)': 'GBR', 'Queensland (UK)': 'GBR', 'New South Wales (UK)': 'GBR', 'Northern Territory (UK)': 'GBR', 'Greenland': 'DEN', 'Iceland': 'DEN', 'Kingdom of Hawaii': 'HAW', 'American Samoa': 'SAM', 'Samoa': 'SAM', 'Niue': '', 'Tonga': 'TON', 'Wallis and Futuna Islands': '', 'Fiji': 'GBR', 'Argentina': '', 'Chile': '', 'United Kingdom of Great Britain and Ireland': 'GBR', 'Sweden–Norway': 'SWE', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': 'JAP',
+  'Persia': 'PER', 'Russian Empire': 'RUS', 'Afghanistan': 'AFG', 'British Raj': 'GBR', 'Bokhara Khanate': 'BUK', 'central Asian khanates': '', 'Manchu Empire': 'CHI', 'Korea': 'COR', 'Taiwan': 'CHI', 'Hong Kong': 'GBR', 'Nepal': 'NEP', 'Bhutan': 'BHU', 'Ceylon': 'GBR', 'Annam': 'ANN', 'Rattanakosin Kingdom': 'SIA', 'French Indochina': 'FRA', 'Malaya': '', 'Netherlands Indies': 'NED', 'Māori': '', 'South Australia (UK)': 'GBR', 'Western Australia (UK)': 'GBR', 'Victoria (UK)': 'GBR', 'Queensland (UK)': 'GBR', 'New South Wales (UK)': 'GBR', 'Northern Territory (UK)': 'GBR', 'Greenland': 'DEN', 'Iceland': 'DEN', 'Kingdom of Hawaii': 'HAW', 'American Samoa': 'SAM', 'Samoa': 'SAM', 'Niue': '', 'Tonga': 'TON', 'Wallis and Futuna Islands': '', 'Fiji': 'GBR', 'Argentina': 'ARG', 'Chile': 'CHL', 'United Kingdom of Great Britain and Ireland': 'GBR', 'Sweden–Norway': 'SWE', 'Kingdom of Brazil': 'BRA', 'Peru': 'PRU', 'Bolivia': 'BOL', 'Ecuador': 'ECU', 'Colombia': 'COL', 'Venezuela': 'VEN', 'British Guiana': 'GBR', 'Dutch Guiana': 'NED', 'French Guiana': 'FRA', 'Paraguay': 'PAR', 'Uruguay': 'URU', 'Costa Rica': '', 'Polynesians': '', 'Netherlands Antilles': 'NED', 'Nicaragua': '', 'Guatemala': '', 'Honduras': '', 'El Salvador': '', 'Philippines': 'SPA', 'Brunei': 'BRU', 'Papua New Guinea': '', 'Imperial Japan': 'JAP',
 };
 
 // correzioni al dataset 1880: { modern, iso?, from?, to, box? [minLon,minLat,maxLon,maxLat] }
@@ -429,6 +434,8 @@ export const AF_POP = {
   // arcipelago (censimento di Giava del 1880: 19,5 milioni; Filippine 1877: 5,6 milioni)
   // Asia orientale (Cina per provincia in AF_POP_ISO; Giappone: censimento 1880, 36,4 milioni)
   // Oceania e isole (censimenti coloniali del 1881; stime per i popoli indigeni)
+  // Sud America (censimenti: Venezuela 1881, Perù 1876, Guyana britannica 1881; altrove stime)
+  CHL: 2_200_000, PER: 2_700_000, BOL: 1_300_000, ECU: 1_000_000, COL: 2_800_000, PAN: 220_000, VEN: 2_080_000, GUY: 252_000, SUR: 50_000, GUF: 25_000, PRY: 300_000, URY: 450_000,
   NZL: 530_000, NFK: 500, NCL: 60_000, SLB: 150_000, VUT: 70_000, FJI: 130_000, TON: 25_000, WSM: 35_000, ASM: 4_000, NIU: 5_000, COK: 8_000, PYF: 30_000,
   PCN: 100, WLF: 5_000, TUV: 3_000, KIR: 30_000, NRU: 1_400, MHL: 10_000, FSM: 30_000, PLW: 4_000, GUM: 9_000, MNP: 2_000,
   SYC: 14_000, MDV: 40_000, IOT: 500, IOA: 500, ATF: 0, HMD: 0, ISL: 72_000, GRL: 10_000, BMU: 13_000, FLK: 1_500, SGS: 0,
@@ -642,10 +649,12 @@ export const AF_DETAIL_MODERN = ['EGY', 'SDN', 'SDS', 'ERI', 'ETH', 'DJI', 'SOL'
   'CHN', 'MNG', 'PRK', 'KOR', 'JPN', 'TWN', 'HKG', 'MAC',
   // fase 8: Oceania e isole
   'AUS', 'NZL', 'NCL', 'SLB', 'VUT', 'FJI', 'TON', 'WSM', 'ASM', 'NIU', 'PYF', 'FSM', 'PLW', 'GUM',
-  'ATF', 'HMD', 'ISL', 'GRL', 'FLK', 'SGS', 'USA'];
+  'ATF', 'HMD', 'ISL', 'GRL', 'FLK', 'SGS', 'USA',
+  // fase 9: Sud America
+  'ARG', 'BRA', 'CHL', 'PER', 'BOL', 'ECU', 'COL', 'VEN', 'GUY', 'SUR', 'GUF', 'PRY', 'URY', 'PAN'];
 /** [regione, lon, lat, paesi moderni ammessi, km² per provincia] */
 /** Paesi con regioni piccole: le unità del dataset si dividono in pezzi di questa dimensione (km²) prima di assegnarle. */
-export const AF_FINE = { AUS: 40000, 'AU-VIC': 8000, 'AU-TAS': 6000, 'AU-NSW': 8000, NZL: 6000, GRL: 80000, ISL: 8000, FJI: 1500, NCL: 3000, SLB: 3000, VUT: 2000, 'US-HI': 1500, CHN: 10000, MNG: 30000, 'CN-XJ': 30000, 'CN-XZ': 30000, 'CN-QH': 30000, 'CN-NM': 25000, 'CN-HL': 20000, JPN: 3000, 'JP-01': 8000, KOR: 3000, PRK: 3000, TWN: 2000, HKG: 50, MAC: 20, IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
+export const AF_FINE = { BRA: 20000, 'BR-RJ': 2500, 'BR-ES': 3000, 'BR-SE': 3000, 'BR-AL': 3000, 'BR-PE': 4000, 'BR-PB': 4000, 'BR-RN': 4000, 'BR-BA': 8000, 'BR-MG': 8000, 'BR-SP': 6000, 'CL-AP': 2000, 'CL-TA': 3000, 'AR-B': 6000, ARG: 15000, CHL: 5000, PER: 6000, BOL: 12000, ECU: 4000, COL: 6000, VEN: 8000, GUY: 10000, SUR: 10000, GUF: 10000, PRY: 8000, URY: 5000, PAN: 3000, 'BR-AM': 50000, 'BR-PA': 40000, 'BR-MT': 40000, AUS: 40000, 'AU-VIC': 8000, 'AU-TAS': 6000, 'AU-NSW': 8000, NZL: 6000, GRL: 80000, ISL: 8000, FJI: 1500, NCL: 3000, SLB: 3000, VUT: 2000, 'US-HI': 1500, CHN: 10000, MNG: 30000, 'CN-XJ': 30000, 'CN-XZ': 30000, 'CN-QH': 30000, 'CN-NM': 25000, 'CN-HL': 20000, JPN: 3000, 'JP-01': 8000, KOR: 3000, PRK: 3000, TWN: 2000, HKG: 50, MAC: 20, IDN: 2000, PHL: 2000, PNG: 12000, BRN: 1500, TLS: 1500, 'MY-13': 6000, 'MY-12': 4000,
   'ID-BA': 250, 'ID-NB': 800, 'ID-NT': 800, 'ID-MU': 800, 'ID-JB': 1000, 'ID-JT': 1000, 'ID-JI': 1000, 'ID-YO': 600, 'ID-BT': 1000, 'ID-JK': 500, ERI: 6000, PAK: 4000, BGD: 3000, NPL: 3000, LKA: 3000, BTN: 3000, KAS: 4000, IND: 10000 };
 
 /** Deserto percorso dai nomadi, non intransitabile: il Sahara occidentale (spagnolo dal 1884) e la costa mauritana. */
@@ -1633,4 +1642,148 @@ export const AF_DETAIL_REGIONS = [
   ['Calotta meridionale', -44.0, 65.0, ['GRL'], 260000, 'DEN'], ['Nord-est della Groenlandia', -24.0, 76.0, ['GRL'], 260000, 'DEN'],
   // Atlantico
   ['Falkland orientali', -58.6, -51.7, ['FLK'], 7800, 'GBR'], ['Falkland occidentali', -60.2, -51.8, ['FLK'], 7900, 'GBR'], ['Georgia del Sud', -36.5, -54.3, ['SGS'], 5400, ''],
+  // ===== Fase 9: Sud America (Brasile per province imperiali, repubbliche ispanoamericane per dipartimenti; Cile occupante del Litorale e del sud peruviano) =====
+  // Brasile: Corte e Rio de Janeiro
+  ['Rio de Janeiro', -43.2, -22.9, ['BR-RJ'], 8600, 'BRA'], ['Campos', -41.3, -21.75, ['BR-RJ'], 23600, 'BRA'], ['Petrópolis', -43.2, -22.4, ['BR-RJ'], 18200, 'BRA'], ['Angra dos Reis', -44.3, -22.95, ['BR-RJ'], 9400, 'BRA'],
+  // Brasile: São Paulo
+  ['São Paulo', -46.63, -23.55, ['BR-SP'], 10300, 'BRA'], ['Santos', -46.33, -23.96, ['BR-SP'], 5700, 'BRA'], ['Campinas', -47.06, -22.9, ['BR-SP'], 26900, 'BRA'], ['Taubaté', -45.55, -23.03, ['BR-SP'], 22400, 'BRA'],
+  ['Sorocaba', -47.45, -23.5, ['BR-SP'], 17900, 'BRA'], ['Franca', -47.4, -20.54, ['BR-SP'], 48500, 'BRA'], ['Botucatu', -48.44, -22.88, ['BR-SP'], 61900, 'BRA'], ['Sertão paulista', -50.5, -21.8, ['BR-SP'], 119700, 'BRA'],
+  ['Iguape', -47.55, -24.7, ['BR-SP'], 24100, 'BRA'],
+  // Brasile: Minas Gerais
+  ['Ouro Preto', -43.5, -20.38, ['BR-MG'], 11000, 'BRA'], ['Diamantina', -43.6, -18.25, ['BR-MG'], 55100, 'BRA'], ['Juiz de Fora', -43.35, -21.76, ['BR-MG'], 21700, 'BRA'], ['São João del-Rei', -44.26, -21.13, ['BR-MG'], 26200, 'BRA'],
+  ['Montes Claros', -43.86, -16.73, ['BR-MG'], 51900, 'BRA'], ['Uberaba', -47.93, -19.75, ['BR-MG'], 114300, 'BRA'], ['Sabará', -43.8, -19.88, ['BR-MG'], 23200, 'BRA'], ['Teófilo Otoni', -41.5, -17.86, ['BR-MG'], 78700, 'BRA'],
+  ['Paracatu', -46.87, -17.22, ['BR-MG'], 90300, 'BRA'], ['Campanha', -45.4, -21.84, ['BR-MG'], 59600, 'BRA'], ['Pitangui', -44.9, -19.68, ['BR-MG'], 68600, 'BRA'], ['Minas Novas', -42.6, -17.2, ['BR-MG'], 63600, 'BRA'],
+  ['Januária', -44.36, -15.49, ['BR-MG'], 85400, 'BRA'], ['Ponte Nova', -42.9, -20.4, ['BR-MG'], 46700, 'BRA'],
+  // Brasile: Bahia
+  ['Salvador', -38.5, -12.97, ['BR-BA'], 14900, 'BRA'], ['Cachoeira', -39.0, -12.6, ['BR-BA'], 57800, 'BRA'], ['Ilhéus', -39.05, -14.8, ['BR-BA'], 39000, 'BRA'], ['Caravelas', -39.25, -17.73, ['BR-BA'], 34900, 'BRA'],
+  ['Vitória da Conquista', -40.84, -14.86, ['BR-BA'], 55400, 'BRA'], ['Jacobina', -40.52, -11.18, ['BR-BA'], 78000, 'BRA'], ['Juazeiro', -40.5, -9.42, ['BR-BA'], 60600, 'BRA'], ['Barra', -43.14, -11.09, ['BR-BA'], 106400, 'BRA'],
+  ['Rio de Contas', -41.8, -13.58, ['BR-BA'], 107300, 'BRA'], ['Oeste baiano', -45.0, -12.5, ['BR-BA'], 151500, 'BRA'], ['Jeremoabo', -38.35, -10.07, ['BR-BA'], 54900, 'BRA'],
+  // Brasile: Espírito Santo
+  ['Vitória', -40.34, -20.32, ['BR-ES'], 32800, 'BRA'], ['São Mateus', -39.86, -18.72, ['BR-ES'], 29000, 'BRA'],
+  // Brasile: Pernambuco e Alagoas
+  ['Recife', -34.9, -8.05, ['BR-PE', 'BR-AL'], 12000, 'BRA'], ['Garanhuns', -36.49, -8.89, ['BR-PE', 'BR-AL'], 40200, 'BRA'], ['Caruaru', -35.97, -8.28, ['BR-PE', 'BR-AL'], 20500, 'BRA'], ['Sertão pernambucano', -39.0, -8.2, ['BR-PE', 'BR-AL'], 46800, 'BRA'],
+  ['Petrolina', -40.5, -8.8, ['BR-PE', 'BR-AL'], 27200, 'BRA'], ['Maceió', -35.73, -9.66, ['BR-AL'], 10900, 'BRA'], ['Penedo', -36.58, -10.29, ['BR-AL'], 12000, 'BRA'],
+  // Brasile: Nordeste
+  ['Aracaju', -37.07, -10.91, ['BR-SE'], 29500, 'BRA'], ['João Pessoa', -34.86, -7.12, ['BR-PB'], 24300, 'BRA'], ['Sertão paraibano', -37.5, -7.0, ['BR-PB'], 52400, 'BRA'], ['Natal (Rio Grande do Norte)', -35.2, -5.79, ['BR-RN'], 26800, 'BRA'],
+  ['Mossoró', -37.34, -5.19, ['BR-RN'], 45200, 'BRA'], ['Fortaleza', -38.52, -3.73, ['BR-CE'], 27300, 'BRA'], ['Sobral', -40.35, -3.69, ['BR-CE'], 57300, 'BRA'], ['Crato', -39.41, -7.23, ['BR-CE'], 43700, 'BRA'],
+  ['Quixeramobim', -39.29, -5.2, ['BR-CE'], 75600, 'BRA'], ['Teresina', -42.8, -5.09, ['BR-PI'], 52400, 'BRA'], ['Oeiras', -42.13, -7.02, ['BR-PI'], 121300, 'BRA'], ['Parnaíba', -41.78, -3.0, ['BR-PI'], 23900, 'BRA'],
+  ['Sertão piauiense', -44.0, -9.0, ['BR-PI'], 145400, 'BRA'], ['São Luís', -44.3, -2.53, ['BR-MA'], 68000, 'BRA'], ['Caxias', -43.36, -4.86, ['BR-MA'], 71500, 'BRA'], ['Grajaú', -46.14, -5.82, ['BR-MA'], 183000, 'BRA'],
+  ['Pastos Bons', -44.08, -6.6, ['BR-MA'], 68200, 'BRA'], ['Turiaçu', -45.4, -1.8, ['BR-MA'], 51900, 'BRA'],
+  // Brasile: Sud
+  ['Curitiba', -49.27, -25.43, ['BR-PR'], 19800, 'BRA'], ['Paranaguá', -48.5, -25.52, ['BR-PR'], 9200, 'BRA'], ['Guarapuava', -51.46, -25.39, ['BR-PR'], 131200, 'BRA'], ['Ponta Grossa', -50.16, -25.09, ['BR-PR'], 67400, 'BRA'],
+  ['Desterro', -48.55, -27.6, ['BR-SC'], 20100, 'BRA'], ['Lages', -50.33, -27.82, ['BR-SC'], 52800, 'BRA'], ['Joinville', -48.85, -26.3, ['BR-SC'], 23100, 'BRA'], ['Campos de Palmas', -52.5, -26.6, ['BR-SC', 'BR-PR'], 75900, 'BRA'],
+  ['Porto Alegre', -51.23, -30.03, ['BR-RS'], 50100, 'BRA'], ['Rio Grande', -52.1, -32.03, ['BR-RS'], 17200, 'BRA'], ['Pelotas', -52.34, -31.77, ['BR-RS'], 29000, 'BRA'], ['Bagé', -54.1, -31.33, ['BR-RS'], 38700, 'BRA'],
+  ['Alegrete', -55.79, -29.78, ['BR-RS'], 53500, 'BRA'], ['Santa Maria', -53.8, -29.69, ['BR-RS'], 44500, 'BRA'], ['Cruz Alta', -53.6, -28.64, ['BR-RS'], 56600, 'BRA'], ['Missões', -55.0, -28.2, ['BR-RS'], 31900, 'BRA'],
+  ['Vacaria', -50.93, -28.51, ['BR-RS'], 47300, 'BRA'],
+  // Brasile: Goiás e Mato Grosso
+  ['Goiás', -50.14, -15.93, ['BR-GO', 'BR-DF'], 108100, 'BRA'], ['Meia Ponte', -48.96, -15.85, ['BR-GO', 'BR-DF'], 187600, 'BRA'], ['Catalão', -47.95, -18.17, ['BR-GO'], 46500, 'BRA'], ['Rio Verde', -50.93, -17.8, ['BR-GO'], 128800, 'BRA'],
+  ['Natividade', -47.72, -11.71, ['BR-TO'], 115800, 'BRA'], ['Porto Nacional', -48.4, -10.7, ['BR-TO'], 176600, 'BRA'], ['Boa Vista do Tocantins', -47.6, -6.5, ['BR-TO'], 87000, 'BRA'], ['Cuiabá', -56.1, -15.6, ['BR-MT'], 200000, 'BRA'],
+  ['Diamantino', -56.45, -14.4, ['BR-MT'], 168600, 'BRA'], ['Mato Grosso', -59.95, -15.0, ['BR-MT', 'BR-RO'], 141900, 'BRA'], ['Xingu', -53.0, -12.0, ['BR-MT'], 200000, 'BRA'], ['Araguaia', -51.5, -14.0, ['BR-MT'], 133700, 'BRA'],
+  ['Juruena', -58.5, -10.5, ['BR-MT'], 200000, 'BRA'], ['Corumbá', -57.65, -19.0, ['BR-MS'], 68000, 'BRA'], ['Miranda', -56.4, -20.2, ['BR-MS'], 163300, 'BRA'], ['Vacaria mato-grossense', -54.0, -21.5, ['BR-MS'], 173500, 'BRA'],
+  ['Santana do Paranaíba', -51.2, -19.7, ['BR-MS'], 78700, 'BRA'], ['Guaporé', -63.0, -11.5, ['BR-RO'], 197200, 'BRA'], ['Madeira', -63.9, -8.8, ['BR-RO'], 104500, 'BRA'],
+  // Brasile: Amazzonia
+  ['Belém', -48.5, -1.45, ['BR-PA'], 51600, 'BRA'], ['Marajó', -49.5, -0.9, ['BR-PA'], 68400, 'BRA'], ['Bragança (Pará)', -46.77, -1.05, ['BR-PA'], 46400, 'BRA'], ['Cametá', -49.5, -2.25, ['BR-PA'], 96700, 'BRA'],
+  ['Santarém (Pará)', -54.7, -2.44, ['BR-PA'], 186800, 'BRA'], ['Óbidos', -55.5, -1.0, ['BR-PA'], 200000, 'BRA'], ['Altamira', -52.2, -4.0, ['BR-PA'], 200000, 'BRA'], ['Marabá', -49.1, -5.4, ['BR-PA'], 165900, 'BRA'],
+  ['Alto Tapajós', -56.5, -7.0, ['BR-PA'], 200000, 'BRA'], ['Sul do Pará', -52.5, -8.5, ['BR-PA'], 200000, 'BRA'], ['Macapá', -51.07, 0.03, ['BR-AP'], 61800, 'BRA'], ['Amapá', -51.5, 2.0, ['BR-AP'], 127100, ''],
+  ['Manaus', -60.0, -3.1, ['BR-AM'], 200000, 'BRA'], ['Parintins', -56.7, -2.6, ['BR-AM'], 83100, 'BRA'], ['Tefé', -64.7, -3.35, ['BR-AM'], 200000, 'BRA'], ['Alto Solimões', -69.0, -4.0, ['BR-AM'], 200000, 'BRA'],
+  ['Rio Negro', -66.0, 0.0, ['BR-AM'], 200000, 'BRA'], ['Purus', -65.5, -7.0, ['BR-AM'], 200000, 'BRA'], ['Juruá', -69.0, -7.0, ['BR-AM'], 200000, 'BRA'], ['Humaitá', -62.0, -7.5, ['BR-AM'], 200000, 'BRA'],
+  ['Rio Branco', -61.0, 2.5, ['BR-RR'], 200000, 'BRA'], ['Pirara', -59.8, 3.6, ['BR-RR'], 40700, 'BRA'],
+  // Acre (boliviano)
+  ['Acre', -68.5, -9.5, ['BR-AC'], 72200, 'BOL'], ['Alto Purus', -70.5, -9.0, ['BR-AC'], 137100, 'BOL'],
+  // Argentina
+  ['Delta del Paraná', -58.45, -34.6, ['AR-C', 'AR-B'], 450, 'ARG'], ['Buenos Aires', -58.0, -34.95, ['AR-B'], 6700, 'ARG'], ['Chascomús', -58.0, -35.6, ['AR-B'], 18700, 'ARG'], ['Tandil', -59.13, -37.32, ['AR-B'], 57900, 'ARG'],
+  ['Azul', -59.86, -36.78, ['AR-B'], 55400, 'ARG'], ['Bahía Blanca', -62.27, -38.72, ['AR-B'], 83600, 'ARG'], ['San Nicolás', -60.22, -33.33, ['AR-B'], 3800, 'ARG'], ['Mercedes', -59.43, -34.65, ['AR-B'], 29600, 'ARG'],
+  ['Junín', -60.95, -34.6, ['AR-B'], 38400, 'ARG'], ['Dolores', -57.68, -36.31, ['AR-B'], 31000, 'ARG'], ['Pergamino', -60.57, -33.89, ['AR-B'], 11900, 'ARG'], ['Trenque Lauquen', -62.73, -35.97, ['AR-B'], 66100, 'ARG'],
+  ['Rosario', -60.65, -32.95, ['AR-S'], 38600, 'ARG'], ['Santa Fe', -60.7, -31.63, ['AR-S'], 21300, 'ARG'], ['Esperanza', -61.0, -31.0, ['AR-S'], 45600, 'ARG'], ['Chaco santafesino', -60.5, -29.0, ['AR-S'], 74400, 'ARG'],
+  ['Paraná', -60.53, -31.73, ['AR-E'], 25900, 'ARG'], ['Concepción del Uruguay', -58.24, -32.48, ['AR-E'], 15600, 'ARG'], ['Gualeguay', -59.33, -33.15, ['AR-E'], 32000, 'ARG'], ['Concordia', -58.02, -31.39, ['AR-E'], 32100, 'ARG'],
+  ['Corrientes', -58.83, -27.47, ['AR-W'], 20600, 'ARG'], ['Goya', -59.27, -29.14, ['AR-W'], 20700, 'ARG'], ['Mercedes (Corrientes)', -58.08, -29.18, ['AR-W'], 48200, 'ARG'], ['Santo Tomé', -56.04, -28.55, ['AR-W'], 31600, 'ARG'],
+  ['Misiones', -55.0, -27.0, ['AR-N'], 39200, 'ARG'], ['Córdoba', -64.18, -31.42, ['AR-X'], 38100, 'ARG'], ['Río Cuarto', -64.35, -33.13, ['AR-X'], 67600, 'ARG'], ['Villa María', -63.24, -32.41, ['AR-X'], 44200, 'ARG'],
+  ['Cruz del Eje', -64.8, -30.72, ['AR-X'], 47400, 'ARG'], ['San Francisco', -62.08, -31.43, ['AR-X'], 32300, 'ARG'], ['San Luis', -66.33, -33.3, ['AR-D'], 49500, 'ARG'], ['Villa Mercedes', -65.46, -33.67, ['AR-D'], 53800, 'ARG'],
+  ['Mendoza', -68.83, -32.89, ['AR-M'], 61800, 'ARG'], ['San Rafael', -68.33, -34.62, ['AR-M'], 80700, 'ARG'], ['Malargüe', -69.6, -35.8, ['AR-M'], 62100, 'ARG'], ['San Juan', -68.52, -31.54, ['AR-J'], 61400, 'ARG'],
+  ['Jáchal', -68.75, -30.24, ['AR-J'], 57700, 'ARG'], ['La Rioja', -66.85, -29.41, ['AR-F'], 69100, 'ARG'], ['Chilecito', -67.5, -29.16, ['AR-F'], 53500, 'ARG'], ['Catamarca', -65.78, -28.47, ['AR-K'], 31200, 'ARG'],
+  ['Andalgalá', -66.32, -27.58, ['AR-K'], 73500, 'ARG'], ['Tucumán', -65.2, -26.83, ['AR-T'], 31000, 'ARG'], ['Santiago del Estero', -64.26, -27.79, ['AR-G'], 110200, 'ARG'], ['Chaco santiagueño', -62.5, -26.5, ['AR-G'], 72400, 'ARG'],
+  ['Salta', -65.41, -24.79, ['AR-A'], 66200, 'ARG'], ['Orán', -64.33, -23.13, ['AR-A'], 45900, 'ARG'], ['Rivadavia', -63.0, -24.0, ['AR-A'], 58500, 'ARG'], ['Jujuy', -65.3, -24.19, ['AR-Y'], 21000, 'ARG'],
+  ['Humahuaca', -65.35, -23.2, ['AR-Y'], 45900, 'ARG'], ['Puna di Atacama', -67.3, -24.8, ['AR-A', 'AR-K', 'AR-Y'], 80200, 'BOL'], ['Pampa centrale', -65.0, -37.0, ['AR-L'], 69500, 'ARG'], ['Victorica', -65.43, -36.21, ['AR-L'], 74800, 'ARG'],
+  ['Río Colorado', -65.5, -38.9, ['AR-R', 'AR-L'], 73600, 'ARG'], ['Viedma', -63.0, -40.8, ['AR-R'], 25500, 'ARG'], ['Choele Choel', -65.65, -39.28, ['AR-R'], 76700, 'ARG'], ['Neuquén', -69.0, -37.5, ['AR-Q'], 64300, 'ARG'],
+  ['Alto Neuquén', -70.8, -39.5, ['AR-Q'], 64000, ''], ['Chaco austral', -60.5, -26.5, ['AR-H'], 95400, 'ARG'], ['Chaco centrale', -62.0, -25.0, ['AR-H', 'AR-P'], 73500, ''], ['Formosa', -59.0, -25.0, ['AR-P'], 67600, ''],
+  ['Nahuel Huapi', -71.0, -41.2, ['AR-R'], 52300, ''], ['Meseta di Somuncurá', -67.5, -41.5, ['AR-R', 'AR-U'], 125000, ''], ['Chubut', -65.1, -43.3, ['AR-U'], 70200, 'ARG'], ['Alto Chubut', -70.0, -43.5, ['AR-U'], 134800, ''],
+  ['Golfo San Jorge', -68.0, -45.8, ['AR-U', 'AR-Z'], 143300, ''], ['Santa Cruz (Patagonia)', -69.0, -49.0, ['AR-Z'], 140100, ''], ['Lago Argentino', -72.0, -50.3, ['AR-Z'], 78200, ''], ['Río Gallegos', -69.3, -51.6, ['AR-Z'], 36200, ''],
+  ['Terra del Fuoco argentina', -67.8, -54.0, ['AR-V'], 28400, ''],
+  // Cile
+  ['Santiago', -70.65, -33.45, ['CL-RM'], 21700, 'CHL'], ['Valparaíso', -71.62, -33.05, ['CL-VS'], 7500, 'CHL'], ['Aconcagua', -70.6, -32.75, ['CL-VS'], 14500, 'CHL'], ['Isola di Pasqua', -109.35, -27.12, ['CL-VS'], 300, ''],
+  ['Juan Fernández', -78.85, -33.64, ['CL-VS'], 300, 'CHL'], ['Colchagua', -71.0, -34.4, ['CL-LI'], 22900, 'CHL'], ['Curicó', -71.24, -34.98, ['CL-ML'], 8600, 'CHL'], ['Talca', -71.65, -35.43, ['CL-ML'], 9300, 'CHL'],
+  ['Linares', -71.6, -35.85, ['CL-ML'], 15000, 'CHL'], ['Cauquenes', -72.35, -35.97, ['CL-ML'], 5900, 'CHL'], ['Chillán', -72.1, -36.6, ['CL-NB'], 18400, 'CHL'], ['Concepción', -73.05, -36.82, ['CL-BI'], 4800, 'CHL'],
+  ['Los Ángeles', -72.35, -37.47, ['CL-BI'], 18100, 'CHL'], ['Arauco', -73.4, -37.6, ['CL-BI'], 7300, 'CHL'], ['Araucanía', -72.6, -38.7, ['CL-AR'], 37200, ''], ['Angol', -72.7, -37.8, ['CL-AR', 'CL-BI'], 10400, 'CHL'],
+  ['Valdivia', -73.25, -39.81, ['CL-LR'], 21800, 'CHL'], ['Osorno', -73.13, -40.57, ['CL-LL'], 12600, 'CHL'], ['Llanquihue', -72.94, -41.47, ['CL-LL'], 23900, 'CHL'], ['Chiloé', -73.8, -42.6, ['CL-LL'], 27700, 'CHL'],
+  ['Aysén', -73.0, -46.0, ['CL-AI'], 141000, ''], ['Punta Arenas', -70.9, -53.16, ['CL-MA'], 65900, 'CHL'], ['Patagonia occidentale', -73.5, -50.0, ['CL-MA'], 56000, ''], ['Terra del Fuoco cilena', -69.5, -54.0, ['CL-MA'], 41900, ''],
+  ['Copiapó', -70.33, -27.37, ['CL-AT'], 42500, 'CHL'], ['Vallenar', -70.76, -28.58, ['CL-AT'], 31500, 'CHL'], ['La Serena', -71.25, -29.9, ['CL-CO'], 16900, 'CHL'], ['Ovalle', -71.2, -30.6, ['CL-CO'], 19000, 'CHL'],
+  ['Illapel', -71.17, -31.63, ['CL-CO'], 14800, 'CHL'], ['Chañaral', -70.6, -26.35, ['CL-AT'], 16900, 'CHL'],
+  // Litorale boliviano
+  ['Antofagasta', -70.4, -23.65, ['CL-AN'], 24700, 'BOL'], ['Cobija', -70.2, -22.55, ['CL-AN'], 17500, 'BOL'], ['Calama', -68.93, -22.46, ['CL-AN'], 44100, 'BOL'], ['Atacama', -68.2, -23.5, ['CL-AN'], 47100, 'BOL'],
+  ['Taltal', -70.2, -25.4, ['CL-AN', 'CL-AT'], 49600, 'BOL'],
+  // Sud del Perù
+  ['Tarapacá', -69.6, -20.2, ['CL-TA'], 34400, 'PRU'], ['Iquique', -70.15, -20.22, ['CL-TA'], 7400, 'PRU'], ['Pisagua', -70.0, -19.5, ['CL-TA'], 14600, 'PRU'], ['Arica', -70.25, -18.5, ['CL-AP'], 6600, 'PRU'],
+  ['Putre', -69.55, -18.2, ['CL-AP'], 15300, 'PRU'], ['Tacna', -70.25, -18.0, ['PE-TAC'], 10900, 'PRU'], ['Tarata', -70.0, -17.45, ['PE-TAC'], 10400, 'PRU'],
+  // Perù
+  ['Lima', -77.03, -12.05, ['PE-LIM', 'PE-CAL'], 17200, 'PRU'], ['Huacho', -77.6, -11.1, ['PE-LIM'], 16100, 'PRU'], ['Cañete', -76.4, -13.08, ['PE-LIM'], 14800, 'PRU'], ['Ica', -75.73, -14.07, ['PE-ICA'], 11800, 'PRU'],
+  ['Pisco', -76.2, -13.7, ['PE-ICA'], 7000, 'PRU'], ['Nazca', -74.95, -14.83, ['PE-ICA'], 9400, 'PRU'], ['Arequipa', -71.54, -16.4, ['PE-ARE'], 19500, 'PRU'], ['Camaná', -72.7, -16.6, ['PE-ARE'], 34200, 'PRU'],
+  ['Caylloma', -71.8, -15.5, ['PE-ARE'], 31900, 'PRU'], ['Moquegua', -70.93, -17.19, ['PE-MOQ'], 21000, 'PRU'], ['Puno', -70.02, -15.84, ['PE-PUN'], 36100, 'PRU'], ['Azángaro', -70.2, -14.9, ['PE-PUN'], 27300, 'PRU'],
+  ['Carabaya', -70.0, -13.9, ['PE-PUN'], 34200, 'PRU'], ['Cuzco', -71.97, -13.53, ['PE-CUS'], 10200, 'PRU'], ['Urubamba', -72.1, -13.3, ['PE-CUS'], 10500, 'PRU'], ['Paucartambo', -71.6, -13.0, ['PE-CUS'], 13700, 'PRU'],
+  ['La Convención', -73.0, -12.5, ['PE-CUS'], 41200, 'PRU'], ['Canchis', -71.2, -14.3, ['PE-CUS'], 25200, 'PRU'], ['Abancay', -72.88, -13.63, ['PE-APU'], 16800, 'PRU'], ['Andahuaylas', -73.38, -13.65, ['PE-APU'], 11600, 'PRU'],
+  ['Ayacucho', -74.22, -13.16, ['PE-AYA'], 22800, 'PRU'], ['Lucanas', -74.0, -14.6, ['PE-AYA'], 36700, 'PRU'], ['Huancavelica', -74.98, -12.78, ['PE-HUV'], 30200, 'PRU'], ['Jauja', -75.5, -11.77, ['PE-JUN'], 6700, 'PRU'],
+  ['Huancayo', -75.2, -12.07, ['PE-JUN'], 17600, 'PRU'], ['Tarma', -75.69, -11.42, ['PE-JUN'], 13100, 'PRU'], ['Cerro de Pasco', -76.26, -10.68, ['PE-PAS'], 12800, 'PRU'], ['Chanchamayo', -75.0, -10.9, ['PE-JUN', 'PE-PAS'], 41700, 'PRU'],
+  ['Huánuco', -76.24, -9.93, ['PE-HUC'], 38000, 'PRU'], ['Huaraz', -77.53, -9.53, ['PE-ANC'], 36000, 'PRU'], ['Santa', -78.6, -9.0, ['PE-ANC'], 12600, 'PRU'], ['Trujillo', -79.03, -8.11, ['PE-LAL'], 15600, 'PRU'],
+  ['Huamachuco', -78.05, -7.8, ['PE-LAL'], 9300, 'PRU'], ['Pataz', -77.5, -7.8, ['PE-LAL'], 8700, 'PRU'], ['Chiclayo', -79.84, -6.77, ['PE-LAM'], 18500, 'PRU'], ['Cajamarca', -78.5, -7.16, ['PE-CAJ'], 17200, 'PRU'],
+  ['Jaén (Perù)', -78.8, -5.7, ['PE-CAJ'], 15700, 'PRU'], ['Chota', -78.65, -6.56, ['PE-CAJ'], 13800, 'PRU'], ['Piura', -80.63, -5.19, ['PE-PIU'], 39400, 'PRU'], ['Paita', -81.1, -5.1, ['PE-PIU'], 9200, 'PRU'],
+  ['Tumbes', -80.45, -3.57, ['PE-TUM'], 6200, 'PRU'], ['Chachapoyas', -77.87, -6.23, ['PE-AMA'], 55200, 'PRU'], ['Moyobamba', -76.97, -6.03, ['PE-SAM'], 17300, 'PRU'], ['Tarapoto', -76.37, -6.5, ['PE-SAM'], 53800, 'PRU'],
+  ['Iquitos', -73.25, -3.75, ['PE-LOR'], 114400, 'PRU'], ['Maynas', -75.5, -3.0, ['PE-LOR'], 180500, 'PRU'], ['Bajo Amazonas', -71.0, -4.0, ['PE-LOR'], 60200, 'PRU'], ['Putumayo', -73.5, -1.5, ['PE-LOR'], 55800, 'PRU'],
+  ['Ucayali', -74.0, -7.5, ['PE-LOR', 'PE-UCA'], 117900, 'PRU'], ['Pachitea', -74.5, -9.5, ['PE-UCA', 'PE-HUC'], 81800, 'PRU'], ['Purús', -71.5, -10.5, ['PE-UCA'], 49600, ''], ['Madre de Dios', -70.5, -12.0, ['PE-MDD'], 112300, ''],
+  // Bolivia
+  ['La Paz', -68.15, -16.5, ['BO-L'], 37900, 'BOL'], ['Corocoro', -68.45, -17.2, ['BO-L'], 32200, 'BOL'], ['Sorata', -68.65, -15.78, ['BO-L'], 27200, 'BOL'], ['Apolobamba', -68.5, -14.5, ['BO-L'], 38600, 'BOL'],
+  ['Caupolicán', -68.0, -13.0, ['BO-L'], 45100, 'BOL'], ['Oruro', -67.11, -17.97, ['BO-O'], 34000, 'BOL'], ['Carangas', -68.5, -18.5, ['BO-O'], 40400, 'BOL'], ['Potosí', -65.75, -19.58, ['BO-P'], 43400, 'BOL'],
+  ['Uyuni', -66.83, -20.46, ['BO-P'], 49800, 'BOL'], ['Lípez', -67.5, -21.8, ['BO-P'], 42000, 'BOL'], ['Chichas', -65.6, -21.2, ['BO-P'], 24600, 'BOL'], ['Sucre', -65.26, -19.04, ['BO-H'], 15000, 'BOL'],
+  ['Cinti', -64.8, -20.5, ['BO-H'], 24100, 'BOL'], ['Azero', -64.0, -19.8, ['BO-H'], 30400, 'BOL'], ['Cochabamba', -66.16, -17.39, ['BO-C'], 37400, 'BOL'], ['Chapare', -65.5, -16.8, ['BO-C'], 39100, 'BOL'],
+  ['Tarija', -64.73, -21.53, ['BO-T'], 24100, 'BOL'], ['Gran Chaco', -63.3, -21.5, ['BO-T'], 25600, 'BOL'], ['Santa Cruz de la Sierra', -63.18, -17.78, ['BO-S'], 68100, 'BOL'], ['Vallegrande', -64.1, -18.49, ['BO-S'], 24000, 'BOL'],
+  ['Cordillera', -62.5, -19.5, ['BO-S'], 66200, 'BOL'], ['Chiquitos', -60.5, -17.5, ['BO-S'], 108900, 'BOL'], ['Velasco', -61.0, -15.5, ['BO-S'], 81600, 'BOL'], ['Guarayos', -63.0, -15.5, ['BO-S'], 79100, 'BOL'],
+  ['Otuquis', -58.5, -19.0, ['BO-S'], 63600, 'BOL'], ['Trinidad', -64.9, -14.83, ['BO-B'], 73100, 'BOL'], ['Mojos', -66.0, -14.0, ['BO-B'], 99900, 'BOL'], ['Riberalta', -66.07, -11.0, ['BO-B'], 42700, 'BOL'],
+  ['Baures', -63.5, -13.5, ['BO-B'], 70700, 'BOL'], ['Madre de Dios boliviano', -67.5, -11.2, ['BO-N'], 86300, 'BOL'],
+  // Ecuador
+  ['Quito', -78.5, -0.22, ['EC-P', 'EC-SD'], 18400, 'ECU'], ['Ibarra', -78.12, 0.35, ['EC-I', 'EC-C'], 10900, 'ECU'], ['Latacunga', -78.62, -0.93, ['EC-X'], 8100, 'ECU'], ['Ambato', -78.62, -1.24, ['EC-T'], 17000, 'ECU'],
+  ['Riobamba', -78.65, -1.67, ['EC-H', 'EC-B'], 13500, 'ECU'], ['Cuenca (Ecuador)', -79.0, -2.9, ['EC-A', 'EC-F'], 17000, 'ECU'], ['Loja', -79.2, -4.0, ['EC-L', 'EC-Z'], 29700, 'ECU'], ['Guayaquil', -79.9, -2.19, ['EC-G', 'EC-SE'], 25700, 'ECU'],
+  ['Babahoyo', -79.53, -1.8, ['EC-R'], 9400, 'ECU'], ['Portoviejo', -80.45, -1.05, ['EC-M'], 26300, 'ECU'], ['Esmeraldas', -79.65, 0.96, ['EC-E'], 21200, 'ECU'], ['Machala', -79.96, -3.26, ['EC-O'], 8500, 'ECU'],
+  ['Galápagos', -90.5, -0.7, ['EC-W'], 10900, 'ECU'], ['Napo', -77.8, -0.9, ['EC-N', 'EC-U', 'EC-D'], 58200, 'ECU'], ['Canelos', -77.0, -1.6, ['EC-Y'], 39700, ''], ['Macas', -78.1, -2.3, ['EC-S'], 31900, ''],
+  // Colombia
+  ['Bogotá', -74.07, 4.6, ['CO-CUN'], 18100, 'COL'], ['Zipaquirá', -74.0, 5.03, ['CO-CUN'], 15000, 'COL'], ['Tunja', -73.37, 5.53, ['CO-BOY'], 15200, 'COL'], ['Sogamoso', -72.93, 5.71, ['CO-BOY'], 16100, 'COL'],
+  ['Casanare', -71.5, 5.3, ['CO-CAS', 'CO-ARA'], 92000, 'COL'], ['San Martín', -72.5, 3.8, ['CO-MET'], 117000, 'COL'], ['Socorro', -73.26, 6.47, ['CO-SAN'], 25500, 'COL'], ['Bucaramanga', -73.12, 7.12, ['CO-SAN'], 16400, 'COL'],
+  ['Cúcuta', -72.5, 7.89, ['CO-NSA'], 14200, 'COL'], ['Ocaña', -73.36, 8.24, ['CO-NSA', 'CO-CES'], 25800, 'COL'], ['Medellín', -75.57, 6.25, ['CO-ANT'], 33000, 'COL'], ['Santa Fe de Antioquia', -75.83, 6.56, ['CO-ANT'], 36700, 'COL'],
+  ['Urabá', -76.7, 7.6, ['CO-ANT'], 15800, 'COL'], ['Manizales', -75.5, 5.07, ['CO-CAL', 'CO-RIS', 'CO-QUI'], 17400, 'COL'], ['Ibagué', -75.23, 4.44, ['CO-TOL'], 32600, 'COL'], ['Neiva', -75.28, 2.93, ['CO-HUI'], 25700, 'COL'],
+  ['Popayán', -76.6, 2.44, ['CO-CAU'], 41700, 'COL'], ['Cali', -76.53, 3.45, ['CO-VAC'], 15500, 'COL'], ['Buenaventura', -77.0, 3.88, ['CO-VAC'], 12900, 'COL'], ['Pasto', -77.28, 1.21, ['CO-NAR'], 23900, 'COL'],
+  ['Tumaco', -78.8, 1.8, ['CO-NAR'], 18500, 'COL'], ['Chocó', -76.65, 5.7, ['CO-CHO'], 63700, 'COL'], ['Cartagena', -75.5, 10.4, ['CO-BOL', 'CO-ATL'], 12700, 'COL'], ['Mompox', -74.43, 9.24, ['CO-BOL', 'CO-SUC'], 32300, 'COL'],
+  ['Sincelejo', -75.4, 9.3, ['CO-SUC', 'CO-COR'], 12900, 'COL'], ['Lorica', -75.8, 9.0, ['CO-COR'], 31800, 'COL'], ['Santa Marta', -74.2, 11.24, ['CO-MAG'], 31200, 'COL'], ['Valledupar', -73.25, 10.47, ['CO-CES'], 19600, 'COL'],
+  ['Riohacha', -72.9, 11.54, ['CO-LAG'], 16500, 'COL'], ['Guajira', -71.9, 12.0, ['CO-LAG'], 11500, ''], ['Caquetá', -75.0, 1.0, ['CO-CAQ', 'CO-PUT'], 139600, 'COL'], ['Mocoa', -76.65, 1.15, ['CO-PUT'], 17800, 'COL'],
+  ['Vichada', -69.5, 5.0, ['CO-VID'], 133500, ''], ['Guaviare', -72.0, 2.0, ['CO-GUV'], 75700, ''], ['Vaupés', -70.5, 0.5, ['CO-VAU', 'CO-GUA'], 165700, ''], ['Amazonas colombiano', -71.5, -1.5, ['CO-AMA'], 148100, ''],
+  ['San Andrés', -81.7, 12.55, ['CO-SAP', 'CO-X01~'], 300, 'COL'], ['Panamá', -79.52, 8.98, ['PA-8', 'PA-EM'], 20800, 'COL'], ['Colón', -79.9, 9.36, ['PA-3'], 6800, 'COL'], ['Darién', -77.8, 8.2, ['PA-5', 'PA-KY'], 19300, ''],
+  ['Veraguas', -81.0, 8.1, ['PA-9', 'PA-2'], 21700, 'COL'], ['Azuero', -80.4, 7.6, ['PA-6', 'PA-7'], 8500, 'COL'], ['Chiriquí', -82.43, 8.43, ['PA-4', 'PA-NB'], 17000, 'COL'], ['Bocas del Toro', -82.3, 9.2, ['PA-1'], 7000, 'COL'],
+  // Venezuela
+  ['Caracas', -66.9, 10.5, ['VE-A', 'VE-X', 'VE-M'], 14700, 'VEN'], ['Valencia', -68.0, 10.18, ['VE-G'], 6800, 'VEN'], ['Maracay', -67.6, 10.25, ['VE-D'], 9300, 'VEN'], ['San Felipe', -68.74, 10.34, ['VE-U'], 8200, 'VEN'],
+  ['Barquisimeto', -69.32, 10.07, ['VE-K'], 26200, 'VEN'], ['Coro', -69.68, 11.4, ['VE-I'], 37800, 'VEN'], ['Maracaibo', -71.64, 10.65, ['VE-V'], 24100, 'VEN'], ['Perijá', -72.5, 9.8, ['VE-V'], 36500, 'VEN'],
+  ['Trujillo (Venezuela)', -70.43, 9.37, ['VE-T'], 11300, 'VEN'], ['Mérida (Venezuela)', -71.15, 8.6, ['VE-L'], 15600, 'VEN'], ['San Cristóbal', -72.23, 7.77, ['VE-S'], 14000, 'VEN'], ['Barinas', -70.2, 8.62, ['VE-E'], 49900, 'VEN'],
+  ['Guanare', -69.75, 9.04, ['VE-P'], 24100, 'VEN'], ['San Carlos', -68.35, 9.66, ['VE-H'], 18900, 'VEN'], ['Calabozo', -67.43, 8.92, ['VE-J'], 87900, 'VEN'], ['San Fernando de Apure', -67.47, 7.89, ['VE-C'], 48100, 'VEN'],
+  ['Alto Apure', -70.0, 7.0, ['VE-C'], 54200, 'VEN'], ['Barcelona', -64.68, 10.13, ['VE-B'], 62600, 'VEN'], ['Cumaná', -64.18, 10.46, ['VE-R'], 15100, 'VEN'], ['Maturín', -63.18, 9.75, ['VE-N'], 37900, 'VEN'],
+  ['Margarita', -63.9, 11.0, ['VE-O', 'VE-W', 'VE-X01~'], 1900, 'VEN'], ['Ciudad Bolívar', -63.55, 8.12, ['VE-F'], 34300, 'VEN'], ['Upata', -62.4, 8.0, ['VE-F'], 54800, 'VEN'], ['Caura', -64.5, 6.0, ['VE-F'], 159200, ''],
+  ['Gran Sabana', -61.5, 5.5, ['VE-F'], 93800, ''], ['Delta dell’Orinoco', -61.5, 8.8, ['VE-Y'], 48000, 'VEN'], ['Amazonas venezuelano', -66.0, 3.0, ['VE-Z'], 200000, ''],
+  // Guiane
+  ['Georgetown', -58.16, 6.8, ['GY-DE', 'GY-ES'], 9900, 'GBR'], ['Berbice', -57.5, 6.0, ['GY-EB', 'GY-MA'], 51500, 'GBR'], ['Essequibo', -58.6, 7.2, ['GY-PM'], 65300, 'GBR'], ['Barima', -60.0, 7.8, ['GY-BA'], 26800, 'GBR'],
+  ['Cuyuni', -60.0, 6.5, ['GY-CU'], 7500, 'GBR'], ['Guyana interna', -58.5, 4.5, ['GY-UD', 'GY-PT'], 103600, 'GBR'], ['Rupununi', -59.0, 2.8, ['GY-UT'], 22000, ''], ['Paramaribo', -55.2, 5.85, ['SR-PM', 'SR-WA', 'SR-CM', 'SR-PR', 'SR-SA'], 16900, 'NED'],
+  ['Nickerie', -56.9, 5.6, ['SR-NI', 'SR-CR'], 12400, 'NED'], ['Marowijne', -54.2, 5.5, ['SR-MA', 'SR-BR'], 17000, 'NED'], ['Suriname interno', -56.0, 3.0, ['SR-SI'], 152100, ''], ['Caienna', -52.33, 4.93, ['GUF'], 24300, 'FRA'],
+  ['Saint-Laurent', -54.0, 5.2, ['GUF'], 28800, 'FRA'], ['Guyana francese interna', -53.0, 3.3, ['GUF'], 60000, ''],
+  // Paraguay
+  ['Asunción', -57.6, -25.28, ['PY-ASU', 'PY-11'], 3700, 'PAR'], ['Villarrica', -56.43, -25.75, ['PY-4', 'PY-6'], 17200, 'PAR'], ['Paraguarí', -57.15, -25.62, ['PY-9', 'PY-3'], 18400, 'PAR'], ['Pilar', -58.3, -26.86, ['PY-12'], 16200, 'PAR'],
+  ['Misiones paraguaiane', -57.0, -26.8, ['PY-8'], 11500, 'PAR'], ['Encarnación', -55.9, -27.33, ['PY-7'], 21200, 'PAR'], ['Concepción (Paraguay)', -57.43, -23.4, ['PY-1'], 25400, 'PAR'], ['San Pedro', -56.9, -24.1, ['PY-2'], 28600, 'PAR'],
+  ['Caaguazú', -55.8, -25.5, ['PY-5'], 17100, 'PAR'], ['Alto Paraná', -55.0, -25.3, ['PY-10', 'PY-14'], 39100, 'PAR'], ['Amambay', -55.9, -22.8, ['PY-13'], 16600, 'PAR'], ['Villa Hayes', -59.5, -24.0, ['PY-15'], 100000, 'PAR'],
+  ['Chaco Boreal', -61.0, -21.5, ['PY-19', 'PY-16'], 146900, ''], ['Alto Paraguay', -58.5, -20.5, ['PY-16'], 80300, ''],
+  // Uruguay
+  ['Montevideo', -56.18, -34.88, ['UY-MO', 'UY-CA'], 7100, 'URU'], ['Colonia del Sacramento', -57.84, -34.46, ['UY-CO', 'UY-SJ'], 15300, 'URU'], ['Maldonado', -54.95, -34.9, ['UY-MA', 'UY-RO'], 21300, 'URU'], ['Minas', -55.23, -34.37, ['UY-LA', 'UY-TT'], 26600, 'URU'],
+  ['Florida', -56.2, -34.1, ['UY-FD', 'UY-FS', 'UY-DU'], 37300, 'URU'], ['Mercedes (Uruguay)', -58.03, -33.25, ['UY-SO', 'UY-RN'], 24700, 'URU'], ['Paysandú', -58.07, -32.32, ['UY-PA'], 19000, 'URU'], ['Salto', -57.97, -31.38, ['UY-SA', 'UY-AR'], 36100, 'URU'],
+  ['Tacuarembó', -55.98, -31.73, ['UY-TA', 'UY-RV'], 34100, 'URU'], ['Cerro Largo', -54.2, -32.37, ['UY-CL'], 18300, 'URU'],
 ];

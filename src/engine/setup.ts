@@ -4,6 +4,7 @@ import { NOBODY, type World } from './world';
 import { updateDeserts } from './desert';
 import { colonialWeight } from './ethnic';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
+import { AMERICAS_OCCUPATIONS } from '../scenario/americas1881';
 
 export const ROMAN = (n: number) => {
   const t: [number, string][] = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
@@ -54,6 +55,11 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
     units: [], battles: {}, wars: [], treaties: [], situations: [], events: [], memory: [], chronicle: '', dispatches: [], chats: {}, nextId: 0,
   };
   INITIAL_TREATIES.forEach((t, i) => state.treaties.push({ id: `t${i}`, ...t, startDay: -365, endDay: null }));
+  // guerra del Pacifico (dal 5 aprile 1879): il Cile occupa il Litorale boliviano e il sud del Perù
+  if (nations.CHL && nations.PRU && nations.BOL) {
+    for (const o of AMERICAS_OCCUPATIONS) for (const p of map.provinces) if (o.owners.includes(owner[p.id]) && o.names.includes(p.name)) state.controller[p.id] = o.by;
+    state.wars.push({ id: 'w_pacifico', name: 'Guerra del Pacifico', attackers: ['CHL'], defenders: ['PRU', 'BOL'], startDay: -637, casualties: { CHL: 9000, PRU: 18000, BOL: 6000 } });
+  }
   state.situations.push({
     id: 'tunisia', title: 'La questione tunisina', startDay: 0, nations: ['FRA', 'ITA', 'TUN', 'TUR'],
     summary: 'Francia e Italia si contendono l\'influenza sul Beilicato di Tunisi, indebitato e formalmente vassallo ottomano. Parigi prepara un intervento con il pretesto delle incursioni dei Krumiri dall\'Algeria.',
@@ -70,6 +76,19 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   state.situations.push({
     id: 'scramble', title: 'La corsa all\'Africa', startDay: 0, nations: ['GBR', 'FRA', 'POR', 'GER', 'ITA', 'BEL'],
     summary: 'Brazza e Stanley si contendono il bacino del Congo; la Francia avanza dal Senegal verso il Niger; il Portogallo rivendica le terre fra Angola e Mozambico; la compagnia genovese Rubattino tiene la baia di Assab per conto dell\'Italia.',
+  });
+
+  state.situations.push({
+    id: 'pacifico', title: 'La guerra del Pacifico', startDay: 0, nations: ['CHL', 'PRU', 'BOL'],
+    summary: 'Dal 1879 il Cile combatte Perù e Bolivia per il salnitro del deserto: ha preso il Litorale boliviano, Tarapacá, Arica e Tacna e ora sbarca a sud di Lima, difesa da Piérola con milizie improvvisate.',
+  });
+  state.situations.push({
+    id: 'patagonia', title: 'Patagonia contesa', startDay: 0, nations: ['ARG', 'CHL'],
+    summary: 'Argentina e Cile si contendono la Patagonia e la Terra del Fuoco; il console statunitense media un trattato. Intanto Roca ha spinto la frontiera al Río Negro e il Cile avanza nell\'Araucanía.',
+  });
+  state.situations.push({
+    id: 'panama', title: 'Il canale di Panama', startDay: 0, nations: ['COL', 'FRA'],
+    summary: 'Il 1° gennaio 1881 la compagnia di Ferdinand de Lesseps comincia i lavori del canale attraverso l\'istmo di Panama, provincia degli Stati Uniti di Colombia.',
   });
 
   const w: World = { map, profiles, state };

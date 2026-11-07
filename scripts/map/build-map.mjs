@@ -1316,12 +1316,12 @@ async function main() {
   // bordo della mappa: solo i lati del rettangolo europeo (le coste africane vicine al 50° E o al 27° N restano coste)
   const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
   // frontiere provvisorie verso le terre non ancora in mappa (Siberia, Cina, Pakistan, India): non sono coste
-  // (dalla fase 7 l'Asia è completa: nessuna frontiera provvisoria; la lista resta per le fasi future)
-  const FRONTIER_ISO = [];
+  // frontiera provvisoria: il Costa Rica, finché l'America centrale non è fatta (Panama è colombiano)
+  const FRONTIER_ISO = ['CRI'];
   let frontier = [];
   if (FRONTIER_ISO.length) {
     const FRONTIER = path.join(TMP, 'frontier.geojson');
-    ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `${JSON.stringify(FRONTIER_ISO)}.includes(adm0_a3)`, '-clip', `bbox=${BBOX[2] - 1},${AF_CLIP[1]},${AF_CLIP[2] + 1},${AF_CLIP[3] + 1}`, '-dissolve', '-explode', '-o', FRONTIER);
+    ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `${JSON.stringify(FRONTIER_ISO)}.includes(adm0_a3)`, '-clip', `bbox=${AF_CLIP.join(',')}`, '-dissolve', '-explode', '-o', FRONTIER);
     const frontierFc = readJSON(FRONTIER);
     frontier = (frontierFc.features ?? frontierFc.geometries.map((g) => ({ type: 'Feature', geometry: g, properties: {} }))).filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) }));
   }

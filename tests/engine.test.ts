@@ -511,7 +511,7 @@ describe('pace', () => {
     const P = await import('../src/engine/peace');
     const w = newGame(MAP);
     declareWar(w, 'ITA', 'AUH', 'prova');
-    const war = w.state.wars[0];
+    const war = w.state.wars.at(-1)!;
     occupy(w, 'ITA', (p) => w.state.owner[p.id] === 'AUH' && ['IT-TN', 'IT-BZ', 'IT-TS', 'HR-18', 'SI-046'].includes(p.iso ?? ''));
     w.state.nations.AUH.warExhaustion = 60; war.casualties.ITA = 20000; war.casualties.AUH = 60000;
     expect(P.warScore(w, war).winner).toBe('att');
@@ -524,7 +524,7 @@ describe('pace', () => {
     P.concludePeace(w, war, terms);
     const trento = w.map.provinces.find((p) => p.name === 'Trento')!.id;
     expect(w.state.owner[trento]).toBe('ITA');
-    expect(w.state.wars).toHaveLength(0);
+    expect(w.state.wars.includes(war)).toBe(false);
     // l'Austria conserva una rivendicazione sul Trentino perso
     const C = await import('../src/engine/claims');
     expect(C.claimOf(w, 'AUH', trento)?.reason).toMatch(/persa/);
@@ -532,7 +532,7 @@ describe('pace', () => {
     const w2 = newGame(MAP);
     declareWar(w2, 'FRA', 'TUN', 'Krumiri');
     occupy(w2, 'FRA', (p) => w2.state.owner[p.id] === 'TUN');
-    const t2 = P.engineTerms(w2, w2.state.wars[0]);
+    const t2 = P.engineTerms(w2, w2.state.wars.at(-1)!);
     expect(t2.some((d) => d.type === 'vassal' && d.level === 'protettorato')).toBe(true);
   });
 
@@ -540,7 +540,7 @@ describe('pace', () => {
     const P = await import('../src/engine/peace');
     const w = newGame(MAP);
     declareWar(w, 'SPA', 'PER', 'prova');
-    const war = w.state.wars[0];
+    const war = w.state.wars.at(-1)!;
     occupy(w, 'SPA', (p) => w.state.owner[p.id] === 'PER');
     const persia = w.map.provinces.filter((p) => w.state.owner[p.id] === 'PER' && !p.coast && p.id !== w.state.nations.PER.capital).map((p) => p.id);
     expect(P.checkCession(w, 'PER', 'SPA', persia.slice(0, 1)).refusal).toMatch(/raggiungibile/);
@@ -557,7 +557,7 @@ describe('pace', () => {
     const P = await import('../src/engine/peace');
     const w = newGame(MAP);
     declareWar(w, 'RUS', 'TUR', 'prova');
-    const war = w.state.wars[0];
+    const war = w.state.wars.at(-1)!;
     const bul = P.provincesOfPeople(w, 'TUR', 'bulgari');
     expect(bul.length).toBeGreaterThan(0);
     expect(P.liberationTarget(w, 'bulgari', 'TUR', bul)).toBe('BUL');
