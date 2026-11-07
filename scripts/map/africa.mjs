@@ -44,11 +44,13 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   // 1. livelli: suddivisioni moderne, stati d'epoca, laghi
   fs.writeFileSync(P('lakes.geojson'), JSON.stringify(turf.featureCollection([...readJSON(path.join(RAW, 'ne_10m_lakes.geojson')).features.filter((f) => AF_LAKES.includes(f.properties.name)).map((f) => ({ ...f, properties: {} })), turf.polygon([AF_ARAL])])));
   // oltre il vecchio riquadro (est dell'88° meridiano, nord del 56° parallelo) entrano solo i paesi della fase in corso
-  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && ((this.centroidX <= 88 && this.centroidX >= -30 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3) || iso_3166_2 == 'US-HI' || iso_3166_2 == 'FR-GF')`,
-    '-each', "pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=iso_3166_2 == 'FR-GF' ? 'GUF' : adm0_a3", '-filter-fields', 'pid,iso,pname,modern',
+  ms(path.join(RAW, 'ne_admin1.geojson'), '-filter', `(!${excl}.includes(adm0_a3) || ${JSON.stringify([...new Set((freed?.regions ?? []).map((r) => r.modern))])}.includes(adm0_a3)) && ((this.centroidX <= 88 && this.centroidX >= -30 && this.centroidY <= 56) || ${JSON.stringify(AF_FAR_KEEP)}.includes(adm0_a3) || iso_3166_2 == 'US-HI' || ['FR-GF', 'FR-MQ', 'FR-GP', 'NL-BQ1', 'NL-BQ2', 'NL-BQ3'].includes(iso_3166_2))`,
+    '-each', "pid=adm1_code, iso=iso_3166_2, pname=name_it || name_en || name, modern=({ 'FR-GF': 'GUF', 'FR-MQ': 'MTQ', 'FR-GP': 'GLP', 'NL-BQ1': 'BES', 'NL-BQ2': 'BES', 'NL-BQ3': 'BES' })[iso_3166_2] || adm0_a3", '-filter-fields', 'pid,iso,pname,modern',
     // (la cucitura del Pacifico allo stretto di Bering si fa nella proiezione: qui le longitudini restano fra -180 e 180)
     // terre artiche russe oltre il 78° parallelo (Terra di Francesco Giuseppe, Severnaja Zemlja): sconosciute o di nessuno nel 1881, restano fuori
     '-explode', '-filter', "!(modern == 'RUS' && this.centroidY > 78)",
+    // arcipelaghi artici e fiordi del Pacifico: migliaia di isolotti senza peso nel gioco restano fuori (memoria)
+    '-filter', "!((['CA-NU', 'CA-NT', 'CA-YT', 'CA-MB', 'CA-ON'].includes(iso) && this.area < 5e8) || (['US-AK', 'CA-BC', 'CA-NL', 'CA-QC'].includes(iso) && this.area < 1.5e8))",
     '-clip', `bbox=${AF_CLIP.join(',')}`, '-dissolve', 'pid', 'copy-fields=iso,pname,modern',
     // il taglio dell'Europa dopo la semplificazione: il bordo resta identico a quello delle province europee
     '-simplify', 'interval=800', 'keep-shapes', '-erase', erase, '-erase', P('lakes.geojson'), '-filter', 'this.area > 2e6', '-o', P('adm.geojson'));
@@ -142,7 +144,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const freedGeo = freed ? readJSON(freed.file).features.filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) })) : [];
   const inFreed = (c) => freedGeo.some((q) => c[0] >= q.bb[0] && c[0] <= q.bb[2] && c[1] >= q.bb[1] && c[1] <= q.bb[3] && turf.booleanPointInPolygon(c, q.f));
   // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
-  const hyb = ['af', 'eu', 'as', 'si', 'au', 'sa'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
+  const hyb = ['af', 'eu', 'as', 'si', 'au', 'sa', 'na', 'ar'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
   ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
   if (ARZ.length) {
     // fasce arabe divise dai bacini: pezzi piccoli che l'unione taglia bene, con i soli bordi della fascia come linee nuove
@@ -209,6 +211,21 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
 
   // 2. proprietari
   const u = readJSON(P('u.geojson')).features.filter((f) => f.geometry);
+  // l'unione a volte attacca gli attributi amministrativi del pezzo accanto (lo Yukon etichettato come Alaska): nelle
+  // Americhe la provincia moderna di ogni atomo si ricava da un suo punto interno
+  {
+    const NAM = new Set(['USA', 'CAN', 'MEX', 'GTM', 'BLZ', 'SLV', 'HND', 'NIC', 'CRI', 'PAN', 'CUB', 'PRI', 'HTI', 'DOM', 'JAM', 'BHS']);
+    const admF = readJSON(P('adm.geojson')).features.filter((f) => f.geometry && NAM.has(f.properties.modern)).map((f) => ({ f, bb: turf.bbox(f) }));
+    let fixed = 0;
+    for (const f of u) {
+      const pr = f.properties;
+      if (!NAM.has(pr.modern)) continue;
+      const pt = turf.pointOnFeature(f).geometry.coordinates;
+      const hit = admF.find((q) => pt[0] >= q.bb[0] && pt[0] <= q.bb[2] && pt[1] >= q.bb[1] && pt[1] <= q.bb[3] && turf.booleanPointInPolygon(pt, q.f));
+      if (hit && hit.f.properties.pid !== pr.pid) { Object.assign(pr, { pid: hit.f.properties.pid, iso: hit.f.properties.iso, pname: hit.f.properties.pname, modern: hit.f.properties.modern }); fixed++; }
+    }
+    log(`Americhe: ${fixed} atomi con la provincia moderna corretta`);
+  }
   const inBox = ([x, y], b) => x >= b[0] && x <= b[2] && y >= b[1] && y <= b[3];
   let A = u.map((f) => {
     let pr = f.properties;

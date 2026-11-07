@@ -9,6 +9,9 @@ export type ClaimStrength = 'nucleo' | 'storica' | 'pretesa';
 /** [chi rivendica, forza, dove, perché] */
 export const CLAIMS_1881: [Tag, ClaimStrength, Match, string][] = [
   // Impero ottomano: i deserti fra Siria, Iraq e Arabia, rivendicati sulla carta ma in mano alle tribù beduine
+  ['MEX', 'pretesa', { modern: ['MEX'], owner: [''] }, 'lo Yucatán orientale dei maya di Chan Santa Cruz'],
+  ['GUA', 'pretesa', { name: ['Belize', 'Toledo (Belize)', 'Soconusco', 'Chiapas'] }, 'il Belize britannico e il Soconusco'],
+  ['NIC', 'pretesa', { name: ['Riserva Mosquitia', 'Capo Gracias a Dios'] }, 'la Riserva Mosquitia'],
   ['CHL', 'pretesa', { name: ['Antofagasta', 'Cobija', 'Calama', 'Atacama', 'Taltal', 'Tarapacá', 'Iquique', 'Pisagua', 'Arica', 'Putre', 'Tacna', 'Tarata'] }, 'il deserto del salnitro conquistato nella guerra del Pacifico'],
   ['CHL', 'pretesa', { modern: ['CHL'], owner: [''] }, 'l\'Araucanía e la Patagonia occidentale'],
   ['ARG', 'pretesa', { modern: ['ARG'], owner: [''] }, 'la Patagonia, la Terra del Fuoco e il Chaco'],

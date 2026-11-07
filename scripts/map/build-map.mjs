@@ -1316,8 +1316,8 @@ async function main() {
   // bordo della mappa: solo i lati del rettangolo europeo (le coste africane vicine al 50° E o al 27° N restano coste)
   const onClip = (arc) => arc.every(([x, y]) => ((Math.abs(x - BBOX[0]) < 0.02 || Math.abs(x - BBOX[2]) < 0.02) && y > BBOX[1] - 0.02) || ((Math.abs(y - BBOX[1]) < 0.02 || Math.abs(y - BBOX[3]) < 0.02) && x > BBOX[0] - 0.02 && x < BBOX[2] + 0.02));
   // frontiere provvisorie verso le terre non ancora in mappa (Siberia, Cina, Pakistan, India): non sono coste
-  // frontiera provvisoria: il Costa Rica, finché l'America centrale non è fatta (Panama è colombiano)
-  const FRONTIER_ISO = ['CRI'];
+  // (dalla fase 10 il mondo è completo: nessuna frontiera provvisoria)
+  const FRONTIER_ISO = [];
   let frontier = [];
   if (FRONTIER_ISO.length) {
     const FRONTIER = path.join(TMP, 'frontier.geojson');

@@ -46,6 +46,27 @@ export const AMERICAS_NATIONS: Record<string, P> = {
     industry: 2, militaryQuality: 25, cohesion: 55, finance: 3, armyPeace: 1500, temperament: 'paese dissanguato dalla guerra della Triplice Alleanza, che vende le terre dello Stato per pagare i debiti', goals: ['tenere il Chaco Boreal', 'ricostruire'], rivals: ['BOL', 'BRA'], friends: [] }),
   URU: base({ name: 'Repubblica Orientale dell\'Uruguay', short: ["l'", 'Uruguay'], adjective: 'uruguaiano', color: '#80c8c8', capital: [-56.18, -34.88], leader: 'Presidente Francisco Antonino Vidal (il generale Máximo Santos dietro le quinte)',
     industry: 6, cohesion: 45, finance: 8, armyPeace: 3000, temperament: 'piccola repubblica di allevatori fra Brasile e Argentina, governata dai militari colorados', goals: ['restare neutrale fra i vicini'], rivals: [], friends: ['BRA'] }),
+  // ===== Nord America, America centrale e Caraibi (fase 10) =====
+  USA: base({ name: 'Stati Uniti d\'America', short: ['gli ', 'Stati Uniti'], adjective: 'statunitense', color: '#3a6ab0', capital: [-77.03, 38.9], leader: 'Presidente Rutherford B. Hayes (James A. Garfield, eletto, si insedia il 4 marzo)',
+    major: true, industry: 75, militaryQuality: 45, cohesion: 70, finance: 80, naval: 15, rail: 70, armyPeace: 27000,
+    temperament: 'repubblica industriale in piena espansione dopo la Ricostruzione, con un esercito minuscolo impegnato contro gli Apache e una flotta antiquata; guarda all\'interno e all\'emisfero occidentale',
+    goals: ['dottrina Monroe', 'ferrovie fino al Pacifico', 'un canale americano fra i due oceani'], redLines: ['potenze europee nelle Americhe'], rivals: ['GBR', 'SPA'], friends: ['RUS'] }),
+  CAN: base({ name: 'Dominion del Canada', short: ['il ', 'Canada'], adjective: 'canadese', color: '#d06a6a', capital: [-75.7, 45.42], government: 'monarchia', leader: 'Primo ministro John A. Macdonald (governatore generale il marchese di Lorne)',
+    industry: 30, militaryQuality: 35, cohesion: 55, finance: 40, rail: 30, armyPeace: 2000,
+    temperament: 'dominio autonomo dell\'Impero britannico, che costruisce la ferrovia del Pacifico per tenere unita la federazione fino alla Columbia Britannica',
+    goals: ['ferrovia transcontinentale', 'popolare il Nord-Ovest'], rivals: ['USA'], friends: ['GBR'] }),
+  MEX: base({ name: 'Stati Uniti Messicani', short: ['il ', 'Messico'], adjective: 'messicano', color: '#4a8a5a', capital: [-99.13, 19.43], leader: 'Presidente Manuel González (Porfirio Díaz dietro le quinte)',
+    industry: 8, militaryQuality: 35, cohesion: 45, finance: 12, rail: 6, armyPeace: 30000,
+    temperament: 'repubblica pacificata dal porfirismo che apre le porte a ferrovie e capitali stranieri, mentre combatte Apache, yaqui e i maya ribelli dello Yucatán',
+    goals: ['ferrovie verso gli Stati Uniti', 'domare i maya di Chan Santa Cruz'], rivals: ['USA', 'GUA'], friends: [] }),
+  GUA: base({ name: 'Repubblica del Guatemala', short: ['il ', 'Guatemala'], adjective: 'guatemalteco', color: '#5ab0a0', capital: [-90.5, 14.6], government: 'dittatura', leader: 'Justo Rufino Barrios',
+    industry: 3, cohesion: 40, finance: 5, armyPeace: 4000, temperament: 'dittatura liberale del caffè che sogna di riunire l\'America centrale sotto la sua guida', goals: ['unione centroamericana', 'Chiapas e Soconusco'], rivals: ['MEX', 'ELS'], friends: [] }),
+  HON: base({ name: 'Repubblica di Honduras', short: ["l'", 'Honduras'], adjective: 'honduregno', color: '#8a9ad0', capital: [-87.2, 14.1], leader: 'Presidente Marco Aurelio Soto', industry: 2, finance: 3, armyPeace: 1500, friends: ['GUA'] }),
+  ELS: base({ name: 'Repubblica di El Salvador', short: ['', 'El Salvador'], adjective: 'salvadoregno', color: '#4a6ad0', capital: [-89.2, 13.7], leader: 'Presidente Rafael Zaldívar', industry: 3, finance: 4, armyPeace: 2000, rivals: ['GUA'] }),
+  NIC: base({ name: 'Repubblica di Nicaragua', short: ['il ', 'Nicaragua'], adjective: 'nicaraguense', color: '#c8a85a', capital: [-86.25, 12.13], leader: 'Presidente Joaquín Zavala', industry: 2, finance: 3, armyPeace: 1500, goals: ['la Mosquitia', 'il canale del Nicaragua'] }),
+  COS: base({ name: 'Repubblica di Costa Rica', short: ['la ', 'Costa Rica'], adjective: 'costaricano', color: '#a05a9a', capital: [-84.1, 9.93], government: 'dittatura', leader: 'Tomás Guardia', industry: 3, finance: 4, armyPeace: 1000, goals: ['ferrovia dell\'Atlantico'] }),
+  HAI: base({ name: 'Repubblica di Haiti', short: ['', 'Haiti'], adjective: 'haitiano', color: '#7a4ab0', capital: [-72.34, 18.54], leader: 'Presidente Lysius Salomon', industry: 2, cohesion: 30, finance: 3, armyPeace: 6000, temperament: 'prima repubblica nera, orgogliosa e povera, divisa fra élite mulatta e nera', rivals: ['DOM'] }),
+  DOM: base({ name: 'Repubblica Dominicana', short: ['la ', 'Repubblica Dominicana'], adjective: 'dominicano', color: '#d07a4a', capital: [-69.9, 18.48], leader: 'Presidente Fernando Arturo de Meriño (Gregorio Luperón e Ulises Heureaux)', industry: 2, cohesion: 30, finance: 3, armyPeace: 2000, rivals: ['HAI'] }),
 };
 
 /** Opinioni iniziali reciproche. */
@@ -55,6 +76,8 @@ export const AMERICAS_OPINIONS: [string, string, number][] = [
   ['PAR', 'BRA', -30], ['PAR', 'ARG', -20], ['PAR', 'BOL', -30], ['BOL', 'PAR', -30], ['ECU', 'PRU', -30], ['PRU', 'ECU', -20],
   ['VEN', 'GBR', -40], ['GBR', 'VEN', -10], ['VEN', 'COL', -20], ['COL', 'VEN', -20], ['BRA', 'GBR', 20], ['ARG', 'GBR', 30], ['CHL', 'GBR', 30],
   ['BRA', 'FRA', -10],
+  ['USA', 'GBR', -10], ['GBR', 'USA', 0], ['USA', 'SPA', -30], ['SPA', 'USA', -30], ['USA', 'MEX', -10], ['MEX', 'USA', -30], ['CAN', 'USA', -20], ['GUA', 'MEX', -40], ['MEX', 'GUA', -30],
+  ['HAI', 'DOM', -40], ['DOM', 'HAI', -50], ['USA', 'CHL', -20], ['USA', 'PRU', 20], ['NIC', 'GBR', -30], ['GUA', 'GBR', -30], ['ELS', 'GUA', -30], ['GUA', 'ELS', -20], ['HON', 'GUA', 20],
 ];
 
 /** Province occupate al 1° gennaio 1881: la guerra del Pacifico (1879-1884). */
