@@ -94,7 +94,10 @@ const order = ['exclave', 'enclave', 'deserto', 'forma', 'dentro', 'nome'];
 const counts = Object.fromEntries(order.map((c) => [c, issues.filter((x) => x.cat === c).length]));
 console.log(`[controllo] province da ${FROM}: ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 for (const c of order) for (const x of issues.filter((y) => y.cat === c)) console.log(`  ${c.padEnd(8)} ${String(x.id).padStart(5)} ${x.name} [${x.owner || '-'}]: ${x.text}`);
-fs.writeFileSync(path.join(ROOT, 'data-raw/tmp/check-map.json'), JSON.stringify(issues, null, 1));
+// la cartella di lavoro non esiste su un clone pulito: senza questo, map:check si ferma con ENOENT
+const reportDir = path.join(ROOT, 'data-raw/tmp');
+fs.mkdirSync(reportDir, { recursive: true });
+fs.writeFileSync(path.join(reportDir, 'check-map.json'), JSON.stringify(issues, null, 1));
 
 // immagine: province segnalate in colore, con il numero
 if (args.png) {
