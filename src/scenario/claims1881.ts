@@ -80,6 +80,8 @@ export const CLAIMS_1881: [Tag, ClaimStrength, Match, string][] = [
   ['RUS', 'pretesa', { iso: ['TR-34', 'TR-17'] }, 'Costantinopoli e gli Stretti'],
   ['RUS', 'pretesa', { owner: ['AUH'], modern: ['UKR'] }, 'Galizia orientale e Rutenia (panslavismo)'],
   ['RUS', 'pretesa', { iso: ['TR-25', 'TR-04', 'TR-65'] }, 'Armenia turca'],
+  // Turkmeni liberi fra Krasnovodsk e Merv: l'oasi cade nel 1884, la Transcaspiana si chiude nel 1885
+  ['RUS', 'pretesa', { modern: ['TKM'], owner: [''] }, 'i turkmeni fra Krasnovodsk e Merv, sottomessi nel 1884-85'],
   // Impero ottomano: la sovranità perduta
   ['TUR', 'storica', { modern: ['BIH'] }, 'Bosnia, ancora di diritto ottomana'],
   ['TUR', 'storica', { modern: ['BGR'] }, 'Bulgaria, principato tributario'],
