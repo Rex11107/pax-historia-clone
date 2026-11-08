@@ -25,6 +25,29 @@ const COLONY_LABEL: Record<string, string> = {
 
 interface Camera { x: number; y: number; scale: number } // centro in km, pixel per km
 
+/**
+ * Polilinea -> curva morbida: Catmull-Rom convertita in bezier cubiche.
+ * Le piste carovaniere hanno pochi punti e angoli secchi; con le curve si
+ * leggono come tracce nel deserto invece che come spezzate.
+ */
+function smoothPath(path: Path2D, pts: number[]) {
+  const n = pts.length / 2;
+  const px = (i: number) => pts[Math.min(n - 1, Math.max(0, i)) * 2];
+  const py = (i: number) => pts[Math.min(n - 1, Math.max(0, i)) * 2 + 1];
+  path.moveTo(px(0), py(0));
+  for (let i = 0; i < n - 1; i++) {
+    const x0 = px(i - 1), y0 = py(i - 1);
+    const x1 = px(i), y1 = py(i);
+    const x2 = px(i + 1), y2 = py(i + 1);
+    const x3 = px(i + 2), y3 = py(i + 2);
+    path.bezierCurveTo(
+      x1 + (x2 - x0) / 6, y1 + (y2 - y0) / 6,
+      x2 - (x3 - x1) / 6, y2 - (y3 - y1) / 6,
+      x2, y2,
+    );
+  }
+}
+
 export interface MapCallbacks {
   onProvince(id: number | null): void;
   onUnit(u: Unit): void;
@@ -70,6 +93,8 @@ export class MapView {
   private regionLabels: { text: string; x: number; y: number; size: number }[] = [];
   /** piste carovaniere */
   private routes = new Path2D();
+  /** estremita delle piste, cioe le oasi: disegnate come nodi quando lo zoom lo consente */
+  private routeEnds: [number, number][] = [];
   private sandPattern: CanvasPattern | null = null;
 
   constructor(canvas: HTMLCanvasElement, world: World, private cb: MapCallbacks) {
@@ -111,9 +136,14 @@ export class MapView {
       byRegion.set(p.region, r);
     }
     for (const [name, r] of byRegion) this.regionLabels.push({ text: name, x: r.x / r.a, y: r.y / r.a, size: Math.min(80, Math.max(14, Math.sqrt(r.a) / 11)) });
+    this.routeEnds = [];
     for (const r of world.map.data.routes ?? []) {
       const [pts] = decodeArcs({ arcs: [r.pts] } as MapData);
-      for (let i = 0; i < pts.length; i += 2) if (i === 0) this.routes.moveTo(pts[i], pts[i + 1]); else this.routes.lineTo(pts[i], pts[i + 1]);
+      if (pts.length >= 4) smoothPath(this.routes, pts);
+      if (pts.length >= 2) {
+        this.routeEnds.push([pts[0], pts[1]]);
+        this.routeEnds.push([pts[pts.length - 2], pts[pts.length - 1]]);
+      }
     }
     for (const c of world.map.data.canals ?? []) {
       const [pts] = decodeArcs({ arcs: [c.pts] } as MapData);
@@ -411,16 +441,29 @@ export class MapView {
     ctx.setLineDash([10 / k, 5 / k]);
     ctx.stroke(this.regionBorder);
     ctx.setLineDash([]);
-    // piste carovaniere: una striscia chiara con il tratteggio della pista
-    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-    ctx.strokeStyle = 'rgba(247,236,205,0.9)';
-    ctx.lineWidth = 5 / k;
-    ctx.stroke(this.routes);
-    ctx.strokeStyle = '#7a5428';
-    ctx.lineWidth = 1.8 / k;
-    ctx.setLineDash([6 / k, 4 / k]);
-    ctx.stroke(this.routes);
-    ctx.setLineDash([]);
+    // piste carovaniere: un filo tenue per la continuita, puntini radi per la pista,
+    // nodi alle oasi. A zoom lontano restano solo i puntini, piu leggeri del tratteggio.
+    if (k > 0.14) {
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+      ctx.strokeStyle = 'rgba(107,74,34,0.22)';
+      ctx.lineWidth = 1 / k;
+      ctx.stroke(this.routes);
+      ctx.strokeStyle = 'rgba(107,74,34,0.72)';
+      ctx.lineWidth = 2.1 / k;
+      ctx.setLineDash([0.01, 9 / k]);
+      ctx.stroke(this.routes);
+      ctx.setLineDash([]);
+      if (k > 0.26 && this.routeEnds.length) {
+        const r = 2.1 / k;
+        ctx.beginPath();
+        for (const [x, y] of this.routeEnds) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); }
+        ctx.fillStyle = 'rgba(244,239,227,0.95)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(107,74,34,0.7)';
+        ctx.lineWidth = 0.9 / k;
+        ctx.stroke();
+      }
+    }
 
     if (this.selectedProvince !== null) {
       ctx.strokeStyle = BRASS;
