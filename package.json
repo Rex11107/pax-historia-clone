@@ -7,6 +7,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "check": "tsc --noEmit && vitest run --changed HEAD --passWithNoTests",
+    "quick": "vitest run --changed HEAD --passWithNoTests",
     "typecheck": "tsc --noEmit",
     "map": "node --max-old-space-size=5632 scripts/map/build-map.mjs && node scripts/map/check-map.mjs --from=eu",
     "cap:sync": "cap sync android",
