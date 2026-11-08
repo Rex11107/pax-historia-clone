@@ -30,7 +30,7 @@ interface Camera { x: number; y: number; scale: number } // centro in km, pixel 
  * Le piste carovaniere hanno pochi punti e angoli secchi; con le curve si
  * leggono come tracce nel deserto invece che come spezzate.
  */
-function smoothPath(path: Path2D, pts: number[]) {
+function smoothPath(path: Path2D, pts: ArrayLike<number>) {
   const n = pts.length / 2;
   const px = (i: number) => pts[Math.min(n - 1, Math.max(0, i)) * 2];
   const py = (i: number) => pts[Math.min(n - 1, Math.max(0, i)) * 2 + 1];
