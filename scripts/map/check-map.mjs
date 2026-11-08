@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { checkOasi } from './check-oasi.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, v] = a.replace(/^--/, '').split('='); return [k, v ?? true]; }));
@@ -90,10 +91,20 @@ const byName = new Map();
 for (const p of P) if (p.id >= FROM) byName.set(p.name, [...(byName.get(p.name) ?? []), p]);
 for (const [n, list] of byName) if (list.length > 1) add('nome', list[0], `${list.length} province si chiamano «${n}»`, list.map((x) => x.id));
 
-const order = ['exclave', 'enclave', 'deserto', 'forma', 'dentro', 'nome'];
+// regole delle oasi (scripts/map/check-oasi.mjs): non filtrate da --from, i collegamenti
+// sono globali e una tratta che salta una terra di nessuno resta sbagliata comunque
+const oasi = checkOasi(M, arcs, ringPts, polysOf);
+for (const x of oasi.issues) add('oasi', P[x.id], x.text, x.ids);
+
+const order = ['exclave', 'enclave', 'deserto', 'forma', 'dentro', 'nome', 'oasi'];
 const counts = Object.fromEntries(order.map((c) => [c, issues.filter((x) => x.cat === c).length]));
 console.log(`[controllo] province da ${FROM}: ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 for (const c of order) for (const x of issues.filter((y) => y.cat === c)) console.log(`  ${c.padEnd(8)} ${String(x.id).padStart(5)} ${x.name} [${x.owner || '-'}]: ${x.text}`);
+// R-c e' un giudizio ("confini naturali"): la stampo ma non entra nei conteggi
+if (oasi.info.length) {
+  console.log(`[oasi] ${oasi.info.length} oasi con vicini non deserti (informativo, R-c):`);
+  for (const s of oasi.info) console.log(`  ${s}`);
+}
 // la cartella di lavoro non esiste su un clone pulito: senza questo, map:check si ferma con ENOENT
 const reportDir = path.join(ROOT, 'data-raw/tmp');
 fs.mkdirSync(reportDir, { recursive: true });

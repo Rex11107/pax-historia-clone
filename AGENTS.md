@@ -29,6 +29,23 @@ delle fasi; in caso di dubbio, vince questo file.
    DataMeet, GeoNames. Ogni nuovo dato dichiara la sua fonte e la sua licenza.
 10. **`data-raw/` e `node_modules/` non si committano.** Contengono i dataset scaricati.
 
+### Oasi, deserto e terra di nessuno
+
+11. **Un collegamento non salta una terra di nessuno.** Se una pista attraversa una provincia
+    libera (senza padrone, percorribile) deve agganciarsi a quella, non passarle sopra per
+    arrivare a una provincia più lontana.
+12. **Un'oasi ha al massimo 2 collegamenti con province non-oasi.** Il resto deve passare da
+    altre oasi.
+13. **Un'oasi sta dentro il deserto.** Se non è circondata da deserto va assorbita (confine
+    della provincia reso naturale) o allargata a provincia normale prendendo territorio ai
+    vicini, con confini naturali e senza mangiare troppo deserto: può essere piccola.
+
+Le regole 11 e 12 sono **applicate**: stanno in `scripts/map/check-oasi.mjs`, importato da
+`check-map.mjs`, quindi girano con `npm run map:check` e nel workflow `Build`. Una mappa che le
+viola non si pubblica; le eccezioni accettate vanno in `check-allow.json` sotto `oasi`. La
+regola 13 è un giudizio, quindi il controllo la stampa come informativa senza far fallire nulla.
+Non riscriverle qui: questo è il promemoria, il codice è la regola.
+
 ## Verifica
 
 Misure reali sul repo (8 novembre 2026), non stime:
