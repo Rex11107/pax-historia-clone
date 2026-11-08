@@ -1598,6 +1598,12 @@ async function main() {
     routes.push({ a: a.k, b: b.k, name: `${from} – ${to}`, km: Math.round(turf.length(turf.lineString(line))), pts: flatArc(line) });
   }
   log(`${routes.length} piste carovaniere`);
+  // Province dichiarate deserto per scelta storica: l'Adrar mauritano e il Tiris hanno troppe
+  // oasi e ksour perché la densità di località scenda sotto la soglia, ma sono deserto
+  // (altopiano dell'Akchâr, Tiris). Il nome è quello finale, quindi la regola vale dopo il
+  // raggruppamento e non dipende dagli atomi.
+  const DESERT_BY_NAME = new Set(['Tiris', 'Adrar mauro (nord)', 'Adrar mauro (sud)']);
+  for (const p of provinces) if (!p.info.desert && DESERT_BY_NAME.has(p.info.name)) { p.info.desert = 'Sahara'; p.info.owner = ''; }
   const out = {
     version: 1,
     scenario: 'europe1881',
