@@ -146,7 +146,7 @@ export function buildAfrica({ ms, RAW, TMP, BBOX, log, geoCities, freed = null }
   const freedGeo = freed ? readJSON(freed.file).features.filter((f) => f.geometry).map((f) => ({ f, bb: turf.bbox(f) })) : [];
   const inFreed = (c) => freedGeo.some((q) => c[0] >= q.bb[0] && c[0] <= q.bb[2] && c[1] >= q.bb[1] && c[1] <= q.bb[3] && turf.booleanPointInPolygon(c, q.f));
   // bacini di HydroBASINS livello 6: Africa, Europa e Medio Oriente (Arabia, Persia), Asia (Turkestan, Afghanistan)
-  const hyb = ['af', 'eu', 'as', 'si', 'au', 'sa', 'na', 'ar'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev06_v1c.shp`)).filter((f) => fs.existsSync(f));
+  const hyb = ['af', 'eu', 'as', 'si', 'au', 'sa', 'na', 'ar'].map((r) => path.join(RAW, 'hydro', `hybas_${r}_lev07_v1c.shp`)).filter((f) => fs.existsSync(f));
   ms('-i', ...hyb, 'combine-files', '-merge-layers', 'force', '-clip', P('detail_land.geojson'), '-each', 'bas=HYBAS_ID', '-filter-fields', 'bas', '-o', P('basins.geojson'));
   if (ARZ.length) {
     // fasce arabe divise dai bacini: pezzi piccoli che l'unione taglia bene, con i soli bordi della fascia come linee nuove
