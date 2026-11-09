@@ -1607,9 +1607,10 @@ async function main() {
   const out = {
     version: 1,
     scenario: 'europe1881',
-    projection: 'LAEA 52N 10E, km, archi delta-codificati in decimi di km',
+    projection: 'Miller cilindrica, km all\'equatore, cucitura a 168° O, archi delta-codificati in decimi di km',
     sources: ['Natural Earth (public domain)', 'aourednik/historical-basemaps world_1880 (GPL-3.0)', 'HydroBASINS (Lehner & Grill 2013)',
-      'HistoGIS, ACDH-CH, Austrian Academy of Sciences (CC BY 4.0)', 'Kessler & Markevich, RISTAT Russian Empire 1897 maps (CC0)'],
+      'HistoGIS, ACDH-CH, Austrian Academy of Sciences (CC BY 4.0)', 'Kessler & Markevich, RISTAT Russian Empire 1897 maps (CC0)',
+      'DataMeet, distretti dell\'India 2011 (CC BY 4.0)', 'GeoNames, cities500 (CC BY 4.0)'],
     arcs: outArcs,
     arcSides,
     provinces: provinces.map((p) => ({
