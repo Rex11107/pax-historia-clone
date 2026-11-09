@@ -547,7 +547,7 @@ export const RULES: Rule[] = [
   [{ modern: ['URY'] }, 'uruguaiani 75, spagnoli 10, italiani 10, brasiliani 5', true],
   // Oceania e isole
   [{ iso: ['AU-NT'] }, 'aborigeni 80, inglesi 10, cinesi 10', true],
-  [{ modern: ['AUS'], name: ['Kimberley', 'Gran Deserto Sabbioso', 'Gibson', 'Gran Deserto Vittoria', 'Pilbara', 'Musgrave', 'Lago Eyre', 'Nullarbor', 'Capo York', 'Cloncurry', 'Gregory', 'Coolgardie', 'Murchison', 'Gascoyne'] }, 'aborigeni 85, inglesi 15', true],
+  [{ modern: ['AUS'], name: ['Kimberley', 'Gran Deserto Sabbioso', 'Deserto di Gibson', 'Gran Deserto Vittoria', 'La Grange', 'Canning', 'Eucla', 'Pilbara', 'Musgrave', 'Lago Eyre', 'Nullarbor', 'Capo York', 'Cloncurry', 'Gregory', 'Coolgardie', 'Murchison', 'Gascoyne'] }, 'aborigeni 85, inglesi 15', true],
   [{ modern: ['AUS'] }, 'inglesi 60, irlandesi 25, scozzesi 10, tedeschi 3, aborigeni 2', true],
   [{ modern: ['NZL'], name: ['Paese del Re', 'Urewera', 'Taupo', 'Poverty Bay', 'Northland', 'Chatham'] }, 'maori 80, inglesi 20', true],
   [{ modern: ['NZL'] }, 'inglesi 55, scozzesi 25, irlandesi 15, maori 5', true],

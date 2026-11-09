@@ -12,8 +12,10 @@
 //     vogliono lo stesso gruppo (una provincia divisa in due a mano) il secondo ne diventa una copia;
 //   - una provincia generata ridotta a meno del 20% della sua terra (assorbita a mano, come il Tafilalt
 //     nel Ksar es-Souk) sparisce: i ritagli rimasti vanno alla provincia ritoccata più vicina;
-//   - la terra di quel gruppo rimasta fuori dal poligono, se è un pezzo grande, resta una provincia generata;
-//   - un punto applica solo le proprietà (deserto, padrone, oasi) alla provincia che lo contiene;
+//   - la terra di quel gruppo rimasta fuori dal poligono, se è un pezzo grande (più di 300 km², o di `minResto`
+//     del poligono), resta una provincia generata; i pezzi più piccoli restano alla provincia ritoccata;
+//   - un punto applica solo le proprietà (deserto, padrone, oasi) alla provincia che lo contiene; con `soloNome`
+//     la rinomina soltanto (serve a dare un nome al resto di una provincia da cui un deserto ha preso la terra);
 //   - il nome di un poligono è definitivo (come quello delle province della mappa bloccata).
 import fs from 'node:fs';
 import * as turf from '@turf/turf';
@@ -78,7 +80,9 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     if (!resto.length) continue;
     const u = resto.length === 1 ? resto[0].f : turf.union(turf.featureCollection(resto.map((x) => x.f)));
     if (!u) continue;
-    const comps = (u.geometry.type === 'Polygon' ? [u.geometry.coordinates] : u.geometry.coordinates).map((c) => turf.polygon(c)).filter((c) => km2(c) > 300);
+    // soglia sotto la quale il resto resta al deserto: 300 km² (default) o `minResto` del poligono
+    const minResto = Math.max(300, ...formeBB.filter((r) => r.g === g).map((r) => r.f.properties.minResto || 0));
+    const comps = (u.geometry.type === 'Polygon' ? [u.geometry.coordinates] : u.geometry.coordinates).map((c) => turf.polygon(c)).filter((c) => km2(c) > minResto);
     if (!comps.length) continue;
     const ng = gInfo.length;
     gInfo.push({ ...gInfo[g], lockName: undefined, byNameList: gInfo[g].byNameList, gsum: 0 });
@@ -132,7 +136,8 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
   for (const r of formeBB) if (r.g != null) imposta(gInfo[r.g], r.f.properties);
   for (const pt of punti) {
     const x = list.find((y) => boxHit(y.bb, [...pt.geometry.coordinates, ...pt.geometry.coordinates]) && turf.booleanPointInPolygon(pt, y.f));
-    if (x) imposta(gInfo[x.f.properties.g], pt.properties, false);
+    if (x && pt.properties.soloNome) gInfo[x.f.properties.g].lockName = pt.properties.name; // rinomina senza toccare le proprietà
+    else if (x) imposta(gInfo[x.f.properties.g], pt.properties, false);
     else log(`ritocco ${pt.properties.name}: punto fuori dalle terre, saltato`);
   }
   // area delle province toccate, dalla terra dopo il taglio
