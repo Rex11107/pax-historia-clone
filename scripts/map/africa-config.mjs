@@ -466,13 +466,20 @@ export const AF_OASES = [
   { name: 'Ghat', at: [10.17, 24.96], r: 30, owner: 'TUR', pop: 4000 }, // presidio ottomano dal 1875
   { name: 'Gianet', at: [9.48, 24.55], r: 30, owner: '', pop: 2000 },
   { name: 'Hoggar', at: [5.52, 22.8], r: 60, owner: '', pop: 6000 }, // Tuareg Kel Ahaggar
+  // Aïr, Tagant, Walata, Suakin e Tokar non sono più province (assorbite a mano, vedi scripts/map/ritocchi.geojson):
+  // i cerchi restano perché tagliano gli atomi, e senza di loro l'Africa intera si raggrupperebbe in altro modo
+  { name: 'Aïr', at: [8.0, 17.5], r: 90, owner: '', pop: 30000 }, // sultanato di Agadez
   { name: 'Bilma', at: [12.92, 18.69], r: 35, owner: '', pop: 3000 },
   { name: 'Tibesti', at: [17.0, 21.0], r: 70, owner: '', pop: 8000 },
   { name: 'Borcu', at: [19.1, 17.9], r: 50, owner: '', pop: 6000 }, // Faya
   { name: 'Ennedi', at: [21.85, 17.0], r: 50, owner: '', pop: 5000 },
   { name: 'Adrar', at: [-13.05, 20.5], r: 60, owner: '', pop: 15000 }, // emirato di Adrar, Atar e Chinguetti
+  { name: 'Tagant', at: [-11.4, 18.55], r: 50, owner: '', pop: 15000 }, // Tidjikja
+  { name: 'Walata', at: [-7.03, 17.3], r: 35, owner: '', pop: 3000 },
   { name: 'Taudeni', at: [-3.97, 22.68], r: 25, owner: '', pop: 500 }, // miniere di sale
   { name: 'Selima', at: [29.32, 21.37], r: 20, owner: '', pop: 200 },
+  { name: 'Suakin', at: [37.33, 19.1], r: 30, owner: 'EGY', pop: 10000 }, // porto egiziano del Mar Rosso
+  { name: 'Tokar', at: [37.73, 18.43], r: 25, owner: 'EGY', pop: 6000 },
   // Arabia
   { name: 'Giabrin', at: [49.6, 23.3], r: 25, owner: '', pop: 500 },
   { name: 'Liwa', at: [53.75, 23.1], r: 35, owner: 'TRU', pop: 3000 },

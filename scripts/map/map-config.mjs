@@ -421,6 +421,13 @@ export const OASES = [
   { name: 'Béchar', at: [-2.22, 31.62], r: 30, owner: null, pop: 4000 }, // Kenadsa, 1903
   { name: 'Figuig', at: [-1.23, 32.11], r: 25, owner: 'MOR', pop: 15000 },
   { name: 'Tindouf', at: [-8.15, 27.67], r: 30, owner: null, pop: 2000 },
+  // Tafilalt, Draa, Tata, Djerid e Nefzaoua non sono più province (assorbite a mano, vedi scripts/map/ritocchi.geojson):
+  // i loro cerchi restano perché tagliano gli atomi, e senza di loro la mappa intera si raggrupperebbe in altro modo
+  { name: 'Tafilalt', at: [-4.27, 31.28], r: 35, owner: 'MOR', pop: 60000 },
+  { name: 'Draa', at: [-5.84, 30.33], r: 35, owner: 'MOR', pop: 40000 }, // Zagora
+  { name: 'Tata', at: [-7.97, 29.74], r: 30, owner: 'MOR', pop: 10000 },
+  { name: 'Djerid', at: [8.13, 33.92], r: 30, owner: 'TUN', pop: 25000 }, // Tozeur, Nefta
+  { name: 'Nefzaoua', at: [8.97, 33.7], r: 30, owner: 'TUN', pop: 15000 }, // Kebili
   { name: 'Gadames', at: [9.5, 30.13], r: 30, owner: 'TUR', pop: 7000 },
   { name: 'Giofra', at: [15.95, 29.13], r: 40, owner: 'TUR', pop: 8000 }, // Hun, Uaddan, Socna
   { name: 'Fezzan', at: [14.35, 27.3], r: 45, owner: 'TUR', pop: 15000 }, // Sebha, Brak (Murzuk è più a sud)
