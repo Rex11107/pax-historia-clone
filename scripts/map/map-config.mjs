@@ -421,6 +421,8 @@ export const OASES = [
   { name: 'Béchar', at: [-2.22, 31.62], r: 30, owner: null, pop: 4000 }, // Kenadsa, 1903
   { name: 'Figuig', at: [-1.23, 32.11], r: 25, owner: 'MOR', pop: 15000 },
   { name: 'Tindouf', at: [-8.15, 27.67], r: 30, owner: null, pop: 2000 },
+  // Tafilalt, Draa, Tata, Djerid e Nefzaoua non sono più province (assorbite a mano, vedi scripts/map/ritocchi.geojson):
+  // i loro cerchi restano perché tagliano gli atomi, e senza di loro la mappa intera si raggrupperebbe in altro modo
   { name: 'Tafilalt', at: [-4.27, 31.28], r: 35, owner: 'MOR', pop: 60000 },
   { name: 'Draa', at: [-5.84, 30.33], r: 35, owner: 'MOR', pop: 40000 }, // Zagora
   { name: 'Tata', at: [-7.97, 29.74], r: 30, owner: 'MOR', pop: 10000 },
@@ -445,9 +447,6 @@ export const CARAVAN_ROUTES = [
   ['Biskra', 'Touggourt', [[5.73, 34.85], [5.95, 34.0], [6.07, 33.1]]],
   ['Touggourt', 'Ouargla', [[6.07, 33.1], [5.7, 32.5], [5.33, 31.95]]],
   ['Touggourt', 'Souf', [[6.07, 33.1], [6.86, 33.37]]],
-  ['Souf', 'Djerid', [[6.86, 33.37], [7.88, 33.87], [8.13, 33.92]]],
-  ['Djerid', 'Nefzaoua', [[8.13, 33.92], [8.55, 33.8], [8.97, 33.7]]],
-  ['Nefzaoua', 'Gabès', [[8.97, 33.7], [9.6, 33.8], [10.1, 33.88]]],
   ['Mzab', 'El Goléa', [[3.67, 32.49], [3.2, 31.5], [2.88, 30.57]]],
   ['El Goléa', 'Tidikelt', [[2.88, 30.57], [2.6, 28.9], [2.3, 27.25]]],
   ['El Goléa', 'Gourara', [[2.88, 30.57], [1.5, 29.9], [0.23, 29.26]]],
@@ -456,11 +455,7 @@ export const CARAVAN_ROUTES = [
   ['Béchar', 'Saoura', [[-2.22, 31.62], [-2.1, 30.8], [-2.0, 30.0]]],
   ['Saoura', 'Touat', [[-2.0, 30.0], [-1.42, 29.45], [-0.29, 27.87]]],
   ['Figuig', 'Béchar', [[-1.23, 32.11], [-1.8, 31.85], [-2.22, 31.62]]],
-  ['Aïn Sefra', 'Figuig', [[-0.58, 32.75], [-1.23, 32.11]]],
-  ['Tafilalt', 'Figuig', [[-4.27, 31.28], [-3.6, 31.95], [-2.5, 32.1], [-1.23, 32.11]]],
-  ['Tafilalt', 'Draa', [[-4.27, 31.28], [-5.2, 30.6], [-5.84, 30.33]]],
-  ['Draa', 'Tata', [[-5.84, 30.33], [-7.0, 29.9], [-7.97, 29.74]]],
-  ['Tata', 'Tindouf', [[-7.97, 29.74], [-8.1, 28.7], [-8.15, 27.67]]],
+  ['Agdz', 'Tindouf', [[-7.97, 29.74], [-8.1, 28.7], [-8.15, 27.67]]],
   ['Tindouf', 'Goulimine', [[-8.15, 27.67], [-9.2, 28.4], [-10.06, 28.99]]],
   ['Ouargla', 'Gadames', [[5.33, 31.95], [7.5, 31.0], [9.5, 30.13]]],
   ['Gadames', 'Nalut', [[9.5, 30.13], [10.3, 31.0], [10.98, 31.87]]],
@@ -474,7 +469,6 @@ export const CARAVAN_ROUTES = [
   ['Siwa', 'Bahariya', [[25.52, 29.2], [27.3, 28.9], [28.95, 28.35]]],
   ['Bahariya', 'Farafra', [[28.95, 28.35], [27.97, 27.15]]],
   ['Bahariya', 'Fayyum', [[28.95, 28.35], [29.9, 28.9], [30.84, 29.31]]],
-  ['Suez', 'Nakhl', [[32.68, 29.95], [33.2, 29.95], [33.75, 29.92]]],
   ['Nakhl', 'El Arish', [[33.75, 29.92], [33.8, 30.6], [33.8, 31.13]]],
   ['Nakhl', 'Aqaba', [[33.75, 29.92], [34.5, 29.7], [35.0, 29.53]]],
 ];

@@ -466,6 +466,8 @@ export const AF_OASES = [
   { name: 'Ghat', at: [10.17, 24.96], r: 30, owner: 'TUR', pop: 4000 }, // presidio ottomano dal 1875
   { name: 'Gianet', at: [9.48, 24.55], r: 30, owner: '', pop: 2000 },
   { name: 'Hoggar', at: [5.52, 22.8], r: 60, owner: '', pop: 6000 }, // Tuareg Kel Ahaggar
+  // Aïr, Tagant, Walata, Suakin e Tokar non sono più province (assorbite a mano, vedi scripts/map/ritocchi.geojson):
+  // i cerchi restano perché tagliano gli atomi, e senza di loro l'Africa intera si raggrupperebbe in altro modo
   { name: 'Aïr', at: [8.0, 17.5], r: 90, owner: '', pop: 30000 }, // sultanato di Agadez
   { name: 'Bilma', at: [12.92, 18.69], r: 35, owner: '', pop: 3000 },
   { name: 'Tibesti', at: [17.0, 21.0], r: 70, owner: '', pop: 8000 },
@@ -490,22 +492,14 @@ export const AF_ROUTES = [
   ['Murzuk', 'Ghat', [[13.92, 25.92], [11.5, 25.3], [10.17, 24.96]]],
   ['Gadames', 'Ghat', [[9.5, 30.13], [10.0, 27.5], [10.17, 24.96]]],
   ['Murzuk', 'Bilma', [[13.92, 25.92], [14.1, 22.6], [12.92, 18.69]]],
-  ['Bilma', 'Cuca', [[12.92, 18.69], [13.6, 16.8], [13.3, 15.2]]],
-  ['Ghat', 'Aïr', [[10.17, 24.96], [8.4, 19.07], [8.0, 17.5]]],
-  ['Bilma', 'Aïr', [[12.92, 18.69], [10.5, 18.0], [8.0, 17.5]]],
-  ['Hoggar', 'Aïr', [[5.52, 22.8], [6.0, 20.0], [8.0, 17.5]]],
   ['Tidikelt', 'Hoggar', [[2.3, 27.25], [3.75, 25.3], [5.52, 22.8]]],
   ['Hoggar', 'Gianet', [[5.52, 22.8], [7.5, 23.8], [9.48, 24.55]]],
   ['Touat', 'Taudeni', [[-0.29, 27.87], [-1.8, 25.0], [-3.97, 22.68]]],
   ['Taudeni', 'Timbuctù', [[-3.97, 22.68], [-3.4, 18.9], [-3.0, 16.9]]],
-  ['Walata', 'Timbuctù', [[-7.03, 17.3], [-5.0, 16.8], [-3.0, 16.9]]],
-  ['Tagant', 'Adrar', [[-11.4, 18.55], [-12.3, 19.6], [-13.05, 20.5]]],
   ['Adrar', 'Trarza', [[-13.05, 20.5], [-14.5, 19.0], [-15.5, 18.0]]],
   ['Adrar', 'Tindouf', [[-13.05, 20.5], [-11.0, 24.5], [-8.15, 27.67]]],
-  ['Tagant', 'Walata', [[-11.4, 18.55], [-9.0, 17.8], [-7.03, 17.3]]],
   ['Augila', 'Cufra', [[21.4, 29.05], [22.2, 27.0], [23.3, 24.2]]],
   ['Cufra', 'Ennedi', [[23.3, 24.2], [22.5, 20.0], [21.85, 17.0]]],
-  ['Ennedi', 'Uara', [[21.85, 17.0], [21.2, 15.8], [20.8, 14.9]]],
   ['Borcu', 'Tibesti', [[19.1, 17.9], [18.0, 19.5], [17.0, 21.0]]],
   ['Borcu', 'Kanem', [[19.1, 17.9], [18.0, 16.6], [17.0, 15.5]]],
   ['Tibesti', 'Murzuk', [[17.0, 21.0], [15.0, 23.5], [13.92, 25.92]]],
@@ -515,8 +509,15 @@ export const AF_ROUTES = [
   ['Kharga', 'Esna', [[30.55, 25.44], [31.6, 25.3], [32.55, 25.29]]],
   ['Kharga', 'Selima', [[30.55, 25.44], [30.0, 23.5], [29.32, 21.37]]],
   ['Selima', 'Darfur', [[29.32, 21.37], [27.5, 17.5], [25.6, 15.2]]], // Darb el-Arbain, la via dei quaranta giorni
-  ['Suakin', 'Berber', [[37.33, 19.1], [35.6, 18.6], [33.98, 18.02]]],
-  ['Rub al-Khali', 'Najran', [[49.6, 23.3], [46.5, 19.5], [44.15, 17.5]]],
+  // ritracciate a mano l'8-9 novembre 2026 (PR #7-#9)
+  ['Bilma', 'Manga (nord)', [[12.92, 18.69], [12.24, 17.5], [11.57, 16.31]]],
+  ['Ennedi (nord)', 'Ennedi', [[21.84, 17.0], [21.7, 16.25], [21.8, 15.5]]],
+  ['Ghat', 'Gianet', [[10.17, 24.96], [9.79, 24.81], [9.48, 24.55]]],
+  ['Hoggar', 'Adar (nord)', [[5.52, 22.8], [4.81, 19.59], [5.17, 16.29]]],
+  ['Augila', 'Giofra', [[21.4, 29.05], [18.69, 29.49], [15.95, 29.13]]],
+  ['Marmarica', 'Giarabub', [[24.52, 31.42], [24.38, 30.58], [24.52, 29.74]]],
+  ['Murzuk', 'Cufra', [[14.34, 26.04], [18.67, 24.45], [23.3, 24.2]]],
+  ['Bilma', 'Hoggar', [[12.92, 18.69], [9.57, 21.32], [5.52, 22.8]]],
 ];
 
 // valli fluviali transitabili nel deserto (buffer in km attorno al fiume di Natural Earth)
