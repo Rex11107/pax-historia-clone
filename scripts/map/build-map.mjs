@@ -27,6 +27,7 @@ import * as topojson from 'topojson-client';
 import { prepareBasins, splitByBasins } from './basins.mjs';
 import { buildHistoricalBase } from './historical.mjs';
 import { OASES, CARAVAN_ROUTES } from './map-config.mjs';
+import { applicaRitocchi } from './ritocchi.mjs';
 import { HIST_TO_TAG, OVERRIDES, NATION_POP_1881, MOUNTAINS, HILLS, CHECKS, CORRECTION_POLYGONS, RENAMES, PROTECTED, POLISH_AREAS, ANACHRONISTIC } from './map-config.mjs';
 import { regionOf } from './regions.mjs';
 import { loadLock } from './lock.mjs';
@@ -141,16 +142,19 @@ async function download() {
     if (!res.ok) throw new Error(`download fallito ${url}: ${res.status}`);
     fs.writeFileSync(dest, Buffer.from(await res.arrayBuffer()));
   }
-  // HydroBASINS livello 7 (HydroSHEDS, uso libero con attribuzione): Europa/Medio Oriente e Africa
+  // HydroBASINS (HydroSHEDS, uso libero con attribuzione)
   const hydro = path.join(RAW, 'hydro');
   fs.mkdirSync(hydro, { recursive: true });
-  for (const r of ['eu', 'af']) {
-    if (fs.existsSync(path.join(hydro, `hybas_${r}_lev07_v1c.shp`))) continue;
-    const url = `https://data.hydrosheds.org/file/HydroBASINS/standard/hybas_${r}_lev07_v1c.zip`;
+  // livello 7 per l'Europa e il Mediterraneo (basins.mjs), livello 6 per il resto del mondo (africa.mjs): i bacini
+  // più grandi tengono il numero di atomi sotto la soglia di memoria
+  const want = [...['eu', 'af'].map((r) => [r, '07']), ...['af', 'eu', 'as', 'si', 'au', 'sa', 'na', 'ar'].map((r) => [r, '06'])];
+  for (const [r, lev] of want) {
+    if (fs.existsSync(path.join(hydro, `hybas_${r}_lev${lev}_v1c.shp`))) continue;
+    const url = `https://data.hydrosheds.org/file/HydroBASINS/standard/hybas_${r}_lev${lev}_v1c.zip`;
     log('scarico', url);
     const res = await fetch(url);
     if (!res.ok) { log(`HydroBASINS non raggiungibile (${res.status}): uso i fiumi di Natural Earth`); continue; }
-    const zip = path.join(hydro, `hybas_${r}_lev07.zip`);
+    const zip = path.join(hydro, `hybas_${r}_lev${lev}.zip`);
     fs.writeFileSync(zip, Buffer.from(await res.arrayBuffer()));
     execFileSync('unzip', ['-oq', zip, '-d', hydro]);
   }
@@ -1286,7 +1290,9 @@ async function main() {
   const afFeats = af.pieces.map((f) => ({ type: 'Feature', geometry: f.geometry, properties: { g: f.properties.g + afOff } }));
   const allFeats = [...P.filter((p) => !freedG.has(p.feat.properties.g)).map((p) => p.feat), ...afFeats];
   stitchSeam(allFeats);
-  fs.writeFileSync(path.join(TMP, 'grouped.geojson'), JSON.stringify(turf.featureCollection(allFeats)));
+  // ritocchi fatti a mano sulla mappa pubblicata (scripts/map/ritocchi.geojson, vedi ritocchi.mjs)
+  const finalFeats = applicaRitocchi(allFeats, gInfo, path.join(ROOT, 'scripts/map/ritocchi.geojson'), log);
+  fs.writeFileSync(path.join(TMP, 'grouped.geojson'), JSON.stringify(turf.featureCollection(finalFeats)));
   log(`${roots.length} province di gioco in Europa e Mediterraneo, ${af.infos.length} in Africa e Arabia`);
 
   // 4. dissolve + semplificazione per la visualizzazione

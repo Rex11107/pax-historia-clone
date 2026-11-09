@@ -595,7 +595,7 @@ export function sendExpedition(w: World, tag: Tag, targets: number[], sink: Game
 // --- la crisi egiziana ---
 
 const MAHDI_A = ['Kordofan', 'El Obeid', 'Monti Nuba', 'Talodi', 'Duem', 'Dara', 'Darà', 'El Fasher', 'Kebkabiya egiziana', 'Shakka', 'Bahr el-Ghazal', 'Dem Zubeir', 'Rumbek'];
-const MAHDI_B = ['Sennar', 'Uad Medani', 'Fazogli', 'Gallabat', 'Berber', 'Tokar', 'Khartum (ovest)'];
+const MAHDI_B = ['Sennar', 'Uad Medani', 'Fazogli', 'Gallabat', 'Berber', 'Khartum (ovest)'];
 const MAHDI_C = ['Khartum', 'Dongola', 'Taka', 'Cassala'];
 const EQUATORIA = ['Equatoria', 'Lado', 'Bor', 'Rohl', 'Sobat', 'Fascioda'];
 const LIQUIDATION = ['Massaua', 'Zula', 'Bogos', 'Sahel', 'Barca', 'Zeila', 'Berbera', 'Harar', 'Gildessa', 'Beni Shangul'];
