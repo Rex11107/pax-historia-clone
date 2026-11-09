@@ -17,6 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { checkOasi } from './check-oasi.mjs';
+import { checkRiferimenti } from './check-riferimenti.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const args = Object.fromEntries(process.argv.slice(2).map((a) => { const [k, v] = a.replace(/^--/, '').split('='); return [k, v ?? true]; }));
@@ -96,7 +97,10 @@ for (const [n, list] of byName) if (list.length > 1) add('nome', list[0], `${lis
 const oasi = checkOasi(M, arcs, ringPts, polysOf);
 for (const x of oasi.issues) add('oasi', P[x.id], x.text, x.ids);
 
-const order = ['exclave', 'enclave', 'deserto', 'forma', 'dentro', 'nome', 'oasi'];
+// riferimenti tra province (scripts/map/check-riferimenti.mjs): vicini, stretti e piste
+for (const x of checkRiferimenti(M, allow.piste ?? [])) add('rif', P[x.id], x.text, x.ids);
+
+const order = ['exclave', 'enclave', 'deserto', 'forma', 'dentro', 'nome', 'oasi', 'rif'];
 const counts = Object.fromEntries(order.map((c) => [c, issues.filter((x) => x.cat === c).length]));
 console.log(`[controllo] province da ${FROM}: ${Object.entries(counts).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 for (const c of order) for (const x of issues.filter((y) => y.cat === c)) console.log(`  ${c.padEnd(8)} ${String(x.id).padStart(5)} ${x.name} [${x.owner || '-'}]: ${x.text}`);
@@ -138,3 +142,5 @@ if (args.png) {
   console.log(`[controllo] immagine: ${args.png}`);
 }
 if (args.strict && (counts.exclave || counts.enclave)) { console.error('[controllo] exclavi o enclavi non accettate'); process.exit(1); }
+// un riferimento sbagliato è sempre un errore (sposta eserciti e rotte sulla provincia sbagliata)
+if (counts.rif) { console.error('[controllo] riferimenti tra province incoerenti'); process.exit(1); }
