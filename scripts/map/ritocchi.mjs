@@ -135,8 +135,10 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     else log(`ritocco ${pt.properties.name}: punto fuori dalle terre, saltato`);
   }
   // area delle province toccate, dalla terra dopo il taglio
+  // (le province fissate solo perché stanno attorno ai ritocchi tengono l'area calcolata dal generatore)
   const nuova = new Map();
-  const toccati = new Set([...areaPrima.keys(), ...ritoccati]);
+  const fisse = new Set(formeBB.filter((r) => r.f.properties.zona && r.g != null).map((r) => r.g));
+  const toccati = new Set([...areaPrima.keys(), ...ritoccati].filter((g) => !fisse.has(g) || spostata.has(g)));
   for (const x of list) { const g = x.f.properties.g; if (toccati.has(g)) nuova.set(g, (nuova.get(g) || 0) + km2(x.f)); }
   for (const [g, a] of nuova) gInfo[g].area = a;
   log(`ritocchi: ${formeBB.length} forme e ${punti.length} proprietà applicate, ${sparite.length} province assorbite`);

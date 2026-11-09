@@ -69,6 +69,16 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const coords = g.map((poly) => poly.map((r) => r.map(unproj)));
     features.push(turf.feature(coords.length === 1 ? { type: 'Polygon', coordinates: coords[0] } : { type: 'MultiPolygon', coordinates: coords }, { name: p.name, ...proprieta(p), zona: true }));
   }
+  // anche gli omonimi delle province fissate (Erg Chech (sud) accanto a (nord) e (ovest)): altrimenti, rimasti soli,
+  // la rigenerazione toglierebbe loro il suffisso
+  const radice = (n) => n.replace(/ \((nord|sud|est|ovest|centro)\)( [IVX]+)?$/, '');
+  const radici = new Set(features.map((f) => radice(f.properties.name)));
+  for (const p of B.provinces) {
+    const g = gB[p.id];
+    if (!g || features.some((f) => f.properties.name === p.name) || p.name === radice(p.name) || !radici.has(radice(p.name))) continue;
+    const coords = g.map((poly) => poly.map((r) => r.map(unproj)));
+    features.push(turf.feature(coords.length === 1 ? { type: 'Polygon', coordinates: coords[0] } : { type: 'MultiPolygon', coordinates: coords }, { name: p.name, ...proprieta(p), zona: true }));
+  }
   const rimosse = A.provinces.filter((p) => !nomiB.has(p.name)).map((p) => p.name);
   const out = { type: 'FeatureCollection', rimosse, features };
   fs.writeFileSync(fo, JSON.stringify(out, null, 0).replace(/\},\{"type":"Feature"/g, '},\n{"type":"Feature"') + '\n');
