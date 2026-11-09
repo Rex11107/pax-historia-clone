@@ -72,7 +72,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   // anche gli omonimi delle province fissate (Erg Chech (sud) accanto a (nord) e (ovest)): altrimenti, rimasti soli,
   // la rigenerazione toglierebbe loro il suffisso
   const radice = (n) => n.replace(/ \((nord|sud|est|ovest|centro)\)( [IVX]+)?$/, '');
-  const radici = new Set(features.map((f) => radice(f.properties.name)));
+  const radici = new Set(features.filter((f) => f.geometry.type !== 'Point').map((f) => radice(f.properties.name)));
   for (const p of B.provinces) {
     const g = gB[p.id];
     if (!g || features.some((f) => f.properties.name === p.name) || p.name === radice(p.name) || !radici.has(radice(p.name))) continue;

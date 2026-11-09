@@ -59,7 +59,8 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     if (r.g == null) continue;
     const next = [];
     for (const x of list) {
-      if (x.inR || !boxHit(x.bb, r.bb)) { next.push(x); continue; }
+      // i microterritori (Melilla, Ceuta) non si tagliano: il poligono semplificato del vicino li sfiora
+      if (x.inR || !boxHit(x.bb, r.bb) || (gInfo[x.f.properties.g]?.prot && x.f.properties.g !== r.g)) { next.push(x); continue; }
       const dentro = turf.intersect(turf.featureCollection([x.f, r.f]));
       if (!pieno(dentro)) { next.push(x); continue; }
       const fuori = turf.difference(turf.featureCollection([x.f, r.f]));
@@ -138,7 +139,8 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
   // (le province fissate solo perché stanno attorno ai ritocchi tengono l'area calcolata dal generatore)
   const nuova = new Map();
   const fisse = new Set(formeBB.filter((r) => r.f.properties.zona && r.g != null).map((r) => r.g));
-  const toccati = new Set([...areaPrima.keys(), ...ritoccati].filter((g) => !fisse.has(g) || spostata.has(g)));
+  const cambiata = (g) => areaPrima.has(g) && Math.abs((areaDopo.get(g) || 0) - areaPrima.get(g)) > 0.05 * areaPrima.get(g);
+  const toccati = new Set([...areaPrima.keys(), ...ritoccati].filter((g) => (ritoccati.has(g) && !fisse.has(g)) || cambiata(g)));
   for (const x of list) { const g = x.f.properties.g; if (toccati.has(g)) nuova.set(g, (nuova.get(g) || 0) + km2(x.f)); }
   for (const [g, a] of nuova) gInfo[g].area = a;
   log(`ritocchi: ${formeBB.length} forme e ${punti.length} proprietà applicate, ${sparite.length} province assorbite`);
