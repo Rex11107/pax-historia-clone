@@ -56,9 +56,22 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       features.push(turf.feature(coords.length === 1 ? { type: 'Polygon', coordinates: coords[0] } : { type: 'MultiPolygon', coordinates: coords }, props));
     } else if (flag) features.push(turf.point(p.lonlat, props));
   }
+  // zona: anche le province attorno ai ritocchi (entro un grado) tengono la forma pubblicata, altrimenti la
+  // rigenerazione le raggruppa in altro modo (senza le oasi tolte gli atomi si dividono diversamente)
+  const bbOf = (g) => { const pts = g.flat(2).map(unproj); return [Math.min(...pts.map((q) => q[0])) - 1, Math.min(...pts.map((q) => q[1])) - 1, Math.max(...pts.map((q) => q[0])) + 1, Math.max(...pts.map((q) => q[1])) + 1]; };
+  const zone = features.filter((f) => f.geometry.type !== 'Point').map((f) => bbOf(gB[B.provinces.find((p) => p.name === f.properties.name).id]));
+  const gia = new Set(features.map((f) => f.properties.name));
+  for (const p of B.provinces) {
+    const g = gB[p.id];
+    if (!g || gia.has(p.name)) continue;
+    const b = bbOf(g).map((v, i) => v + (i < 2 ? 1 : -1));
+    if (!zone.some((z) => b[0] <= z[2] && b[2] >= z[0] && b[1] <= z[3] && b[3] >= z[1])) continue;
+    const coords = g.map((poly) => poly.map((r) => r.map(unproj)));
+    features.push(turf.feature(coords.length === 1 ? { type: 'Polygon', coordinates: coords[0] } : { type: 'MultiPolygon', coordinates: coords }, { name: p.name, ...proprieta(p), zona: true }));
+  }
   const rimosse = A.provinces.filter((p) => !nomiB.has(p.name)).map((p) => p.name);
   const out = { type: 'FeatureCollection', rimosse, features };
   fs.writeFileSync(fo, JSON.stringify(out, null, 0).replace(/\},\{"type":"Feature"/g, '},\n{"type":"Feature"') + '\n');
-  console.log(`${features.filter((f) => f.geometry.type !== 'Point').length} forme, ${features.filter((f) => f.geometry.type === 'Point').length} solo proprietà, rimosse: ${rimosse.join(', ')}`);
-  for (const f of features) console.log(' ', f.geometry.type === 'Point' ? 'proprietà' : 'forma    ', f.properties.name, JSON.stringify(f.properties));
+  console.log(`${features.filter((f) => f.geometry.type !== 'Point' && !f.properties.zona).length} forme ritoccate e ${features.filter((f) => f.properties.zona).length} attorno, ${features.filter((f) => f.geometry.type === 'Point').length} solo proprietà, rimosse: ${rimosse.join(', ')}`);
+  for (const f of features.filter((x) => !x.properties.zona)) console.log(' ', f.geometry.type === 'Point' ? 'proprietà' : 'forma    ', f.properties.name, JSON.stringify(f.properties));
 }
