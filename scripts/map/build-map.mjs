@@ -1709,6 +1709,15 @@ async function main() {
   for (const p of out.provinces) if (seen2.get(p.name) > 1) { const n = (cnt.get(p.name) || 0) + 1; cnt.set(p.name, n); p.name = `${p.name} ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n - 1] || n}`; }
 
   for (const p of out.provinces) { delete p._region; delete p._town; delete p._lock; }
+  // popolazioni fissate a mano sulla mappa pubblicata (scripts/map/popolazioni-estrai.mjs): il generatore le ripartisce
+  // per paese, e ogni ritocco le sposterebbe di qualche migliaio
+  {
+    const f = path.join(ROOT, 'scripts/map/ritocchi.geojson');
+    const fisse = fs.existsSync(f) ? readJSON(f).popolazioni ?? {} : {};
+    let n = 0;
+    for (const p of out.provinces) if (fisse[p.name] != null && fisse[p.name] !== p.pop) { p.pop = fisse[p.name]; n++; }
+    if (n) log(`popolazioni fissate: ${n} province`);
+  }
   // identificativi stabili: prima le province europee (con quelle-simbolo), poi le africane
   {
     const order = [...out.provinces.filter((p) => !p._af), ...out.provinces.filter((p) => p._af)];
