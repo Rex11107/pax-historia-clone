@@ -82,7 +82,8 @@ M.arcSides = M.arcSides.filter((_, i) => !shared.has(i)).map(([s, t]) => [s === 
 for (const p of P) if (p.arcs?.length) p.arcs = typeof p.arcs[0][0] === 'number' ? p.arcs.map((ring) => ring.map(ra)) : p.arcs.map((poly) => poly.map((ring) => ring.map(ra)));
 
 // rinumerazione delle province (b sparisce, gli id dopo scalano di uno)
-const pm = (i) => (i === b ? a : i > b ? i - 1 : i);
+const sh = (i) => (i > b ? i - 1 : i);
+const pm = (i) => sh(i === b ? a : i);
 P.splice(b, 1);
 for (const p of P) {
   p.id = pm(p.id);
