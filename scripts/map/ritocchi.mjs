@@ -69,7 +69,16 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
       const from = x.f.properties.g;
       if (from !== r.g) { if (!spostata.has(from)) spostata.set(from, []); spostata.get(from).push([r.g, km2(dentro)]); }
       next.push({ f: { type: 'Feature', geometry: dentro.geometry, properties: { ...x.f.properties, g: r.g } }, bb: turf.bbox(dentro), inR: true });
-      if (pieno(fuori)) next.push({ f: { type: 'Feature', geometry: fuori.geometry, properties: { ...x.f.properties } }, bb: turf.bbox(fuori) });
+      if (!pieno(fuori)) continue;
+      if (!r.f.properties.minResto) { next.push({ f: { type: 'Feature', geometry: fuori.geometry, properties: { ...x.f.properties } }, bb: turf.bbox(fuori) }); continue; }
+      // un atomo grande tagliato da un deserto lascia più pezzi: ognuno viaggia per conto suo, e i frammenti
+      // minuscoli (meno di 3000 km²) tra il deserto e il resto passano al deserto
+      for (const c of fuori.geometry.type === 'Polygon' ? [fuori.geometry.coordinates] : fuori.geometry.coordinates) {
+        const parte = turf.polygon(c);
+        const piccolo = km2(parte) < 3000;
+        next.push({ f: { type: 'Feature', geometry: parte.geometry, properties: { ...x.f.properties, ...(piccolo ? { g: r.g } : {}) } }, bb: turf.bbox(parte), inR: piccolo });
+        if (piccolo && from !== r.g) { if (!spostata.has(from)) spostata.set(from, []); spostata.get(from).push([r.g, km2(parte)]); }
+      }
     }
     list = next;
   }
