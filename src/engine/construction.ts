@@ -4,6 +4,7 @@ import { maxLevel, siteLots, techEffects, unlockTech } from './research';
 // cantieri con costo e durata, industria effettiva e capacità logistica dell'esercito.
 
 import { BUILDINGS_1881, type BuildingId } from '../scenario/buildings1881';
+import { colonialWeight } from './ethnic';
 import { RESOURCES, type ResourceId } from './resources';
 import type { GameEvent, Tag } from './types';
 import { emit, newId, rand, type World } from './world';
@@ -60,9 +61,11 @@ export function buildings(w: World): Levels[] {
   const s = w.state;
   if (s.buildings && s.buildings.length === w.map.size) return s.buildings;
   const out: Levels[] = w.map.provinces.map(() => ({}));
-  // ferrovie: rete nazionale × densità della provincia
+  // ferrovie: rete nazionale × densità della provincia. Nelle colonie abitate da altri popoli la rete della
+  // madrepatria non c'è: lì valgono solo le linee esistenti nel 1881 (India, Giava, Capo…), da BUILDINGS_1881
   for (const p of w.map.provinces) {
     if (p.impassable || !p.owner) continue;
+    if (colonialWeight(w, p.owner, p.id) < 1) continue;
     const pr = w.profiles[p.owner];
     if (!pr) continue;
     const dens = p.pop / Math.max(1, p.area);

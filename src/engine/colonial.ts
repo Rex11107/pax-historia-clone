@@ -583,6 +583,8 @@ export function sendExpedition(w: World, tag: Tag, targets: number[], sink: Game
   for (const c of cand) {
     const plan = planPath(w, unit, c.p, false);
     if (!plan || plan.days > 80) continue;
+    // chi entra in una terra di nessuno la annette: la spedizione non ci passa se non è fra i suoi obiettivi
+    if (plan.path.some((q) => q !== c.p && s.controller[q] === NOBODY && !tset.has(q))) continue;
     const v = val(c.p) / (1 + plan.days / 20);
     if (!best || v > best.v) best = { p: c.p, v };
   }
