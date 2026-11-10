@@ -139,7 +139,14 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     const tagliati = new Set([...spostata.keys(), ...grandi.map((r) => r.g), ...target].filter((g) => list.some((x) => x.f.properties.g === g && inZona(x))));
     // il deserto si legge dai poligoni: le proprietà dei gruppi si impostano più avanti
     const deserto = (g) => !!gInfo[g]?.desert || formeBB.some((r) => r.g === g && r.f.properties.deserto);
-    const unione = (xs) => (xs.length === 1 ? xs[0].f : turf.union(turf.featureCollection(xs.map((x) => x.f))));
+    // polyclip a volte fallisce su vertici quasi coincidenti: si riprova a coppie, poi con le coordinate arrotondate
+    const tondo = (f) => JSON.parse(JSON.stringify(f, (k, v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)));
+    const unione = (xs) => {
+      if (xs.length === 1) return xs[0].f;
+      try { return turf.union(turf.featureCollection(xs.map((x) => x.f))); } catch { /* sotto */ }
+      try { return xs.slice(1).reduce((u, x) => turf.union(turf.featureCollection([u, x.f])) ?? u, xs[0].f); } catch { /* sotto */ }
+      try { return turf.union(turf.featureCollection(xs.map((x) => tondo(x.f)))); } catch { return null; }
+    };
     const sposta = (from, to, a) => { if (!spostata.has(from)) spostata.set(from, []); spostata.get(from).push([to, a]); forzati.add(from); forzati.add(to); };
     // i pezzi multipli (terraferma più isole nello stesso atomo) si separano, così ogni parte può cambiare provincia
     list = list.flatMap((x) => (tagliati.has(x.f.properties.g) && x.f.geometry.type === 'MultiPolygon'
@@ -148,6 +155,7 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     for (const g of tagliati) {
       const mie = list.filter((x) => x.f.properties.g === g);
       const u = mie.length && unione(mie);
+      if (u === null) log(`ritocchi: pezzi staccati di ${gInfo[g].lockName || gInfo[g].name} non verificati (unione fallita)`);
       if (!u || u.geometry.type !== 'MultiPolygon') continue;
       const comps = u.geometry.coordinates.map((c) => turf.polygon(c)).sort((a, b) => km2(b) - km2(a));
       for (const c of comps.slice(1)) {
@@ -169,6 +177,7 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
         if (!contatto.size) continue;
         const a = km2(c);
         let to;
+        const mostra = a >= 1; // le schegge sotto 1 km² passano al vicino senza rumore nel log
         if (a >= soglia && !deserto(g)) {
           to = gInfo.length;
           gInfo.push({ ...gInfo[g], lockName: undefined, gsum: 0 });
@@ -176,7 +185,7 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
           log(`ritocchi: pezzo staccato di ${gInfo[g].lockName || gInfo[g].name} (${Math.round(a)} km²) diventa provincia generata`);
         } else {
           to = [...contatto.entries()].sort((p, q) => q[1] - p[1])[0][0];
-          log(`ritocchi: pezzo staccato di ${gInfo[g].lockName || gInfo[g].name} (${Math.round(a)} km²) passa a ${gInfo[to].lockName || gInfo[to].name}`);
+          if (mostra) log(`ritocchi: pezzo staccato di ${gInfo[g].lockName || gInfo[g].name} (${Math.round(a)} km²) passa a ${gInfo[to].lockName || gInfo[to].name}`);
         }
         for (const x of dentro) x.f.properties.g = to;
         sposta(g, to, a);
