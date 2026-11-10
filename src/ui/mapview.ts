@@ -12,6 +12,8 @@ import type { World } from '../engine/world';
 export const INK = '#1f2a33';
 const SEA = '#c4d3d4';
 const SEA_DEEP = '#b5c7c9';
+const FRAME = '#26303b'; // fuori dalla mappa
+const FRAME_LINE = '#8c7b56';
 const BRASS = '#b08d3c';
 const WAX = '#8e2430';
 const SAND = '#ead9ad';      // deserto di nessuno
@@ -59,6 +61,8 @@ export class MapView {
   private world: World;
   private paths: Path2D[] = [];
   private bboxes: Float32Array;
+  /** Limite reale della mappa (coordinate di disegno): oltre c'è la cornice e la telecamera non ci va. */
+  private frame = { x0: 0, y0: 0, x1: 0, y1: 0 };
   private arcPaths: Path2D[] = [];
   private coast = new Path2D();
   private national = new Path2D();
@@ -118,6 +122,15 @@ export class MapView {
       this.paths.push(path);
       this.bboxes.set([x0, y0, x1, y1], i * 4);
     });
+    // la mappa finisce dove finiscono le terre: a est e a ovest la cucitura dello stretto di Bering (le terre ci
+    // arrivano tagliate), a nord e a sud un poco di mare oltre l'ultima costa
+    let fx0 = Infinity, fy0 = Infinity, fx1 = -Infinity, fy1 = -Infinity;
+    for (let i = 0; i < world.map.size; i++) {
+      fx0 = Math.min(fx0, this.bboxes[i * 4]); fy0 = Math.min(fy0, this.bboxes[i * 4 + 1]);
+      fx1 = Math.max(fx1, this.bboxes[i * 4 + 2]); fy1 = Math.max(fy1, this.bboxes[i * 4 + 3]);
+    }
+    const sea = (fy1 - fy0) * 0.03;
+    this.frame = { x0: fx0, y0: fy0 - sea, x1: fx1, y1: fy1 + sea };
     this.arcPaths = arcs.map((a) => {
       const p = new Path2D();
       for (let i = 0; i < a.length; i += 2) if (i === 0) p.moveTo(a[i], a[i + 1]); else p.lineTo(a[i], a[i + 1]);
@@ -335,6 +348,7 @@ export class MapView {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
+    this.clampCam(W, H);
     const k = this.cam.scale;
     ctx.setTransform(this.dpr * k, 0, 0, this.dpr * k, this.dpr * (W / 2 - this.cam.x * k), this.dpr * (H / 2 - this.cam.y * k));
     const [vx0, vy0] = this.screenToWorld(0, 0), [vx1, vy1] = this.screenToWorld(W, H);
@@ -500,6 +514,8 @@ export class MapView {
       ctx.stroke();
     }
     ctx.setLineDash([]);
+    // per ultima la cornice, sopra l'alone delle coste tagliate dalla cucitura di Bering
+    this.drawFrame(ctx, vx0, vy0, vx1, vy1, k);
 
     // etichette: nazioni da lontano, province da vicino
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -693,6 +709,33 @@ export class MapView {
     c.addEventListener('pointerup', up);
     c.addEventListener('pointercancel', (e) => { pts.delete(e.pointerId); pinch = null; });
     c.addEventListener('wheel', (e) => { e.preventDefault(); this.zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+  }
+
+  /** Tiene la vista dentro la mappa: zoom minimo = mondo intero, niente spostamenti oltre il bordo. */
+  private clampCam(W: number, H: number) {
+    const f = this.frame, ew = f.x1 - f.x0, eh = f.y1 - f.y0;
+    if (!(ew > 0 && eh > 0)) return;
+    const min = Math.min(W / ew, H / eh);
+    if (this.cam.scale < min) this.cam.scale = min;
+    const hw = W / 2 / this.cam.scale, hh = H / 2 / this.cam.scale;
+    // al bordo si vede una fascia di cornice (fino al 15% dello schermo), così è chiaro che la mappa finisce lì;
+    // se la vista è più larga della mappa, la mappa sta al centro
+    const mx = (W * 0.15) / this.cam.scale, my = (H * 0.15) / this.cam.scale;
+    this.cam.x = hw * 2 >= ew + 2 * mx ? (f.x0 + f.x1) / 2 : Math.min(f.x1 - hw + mx, Math.max(f.x0 + hw - mx, this.cam.x));
+    this.cam.y = hh * 2 >= eh + 2 * my ? (f.y0 + f.y1) / 2 : Math.min(f.y1 - hh + my, Math.max(f.y0 + hh - my, this.cam.y));
+  }
+
+  /** Cornice fuori dal limite della mappa e linea del bordo. */
+  private drawFrame(ctx: CanvasRenderingContext2D, vx0: number, vy0: number, vx1: number, vy1: number, k: number) {
+    const f = this.frame;
+    ctx.fillStyle = FRAME;
+    if (vx0 < f.x0) ctx.fillRect(vx0, vy0, f.x0 - vx0, vy1 - vy0);
+    if (vx1 > f.x1) ctx.fillRect(f.x1, vy0, vx1 - f.x1, vy1 - vy0);
+    if (vy0 < f.y0) ctx.fillRect(vx0, vy0, vx1 - vx0, f.y0 - vy0);
+    if (vy1 > f.y1) ctx.fillRect(vx0, f.y1, vx1 - vx0, vy1 - f.y1);
+    ctx.strokeStyle = FRAME_LINE;
+    ctx.lineWidth = 2.5 / k;
+    ctx.strokeRect(f.x0, f.y0, f.x1 - f.x0, f.y1 - f.y0);
   }
 
   zoomAt(cx: number, cy: number, f: number) {
