@@ -45,10 +45,10 @@ export const BUILDINGS: Record<BuildingId, BuildingInfo> = {
   miniera: { label: 'miniera', icon: '⛏️', max: 3, cost: (l) => 6 * l, weeks: (l) => 8 + 3 * l, desc: 'un lotto in più a livello delle risorse minerarie della provincia' },
 };
 
-const MINERAL = new Set<ResourceId>(['carbone', 'ferro', 'metalli', 'zolfo', 'petrolio', 'sale']);
+const MINERAL = new Set<ResourceId>(['carbone', 'ferro', 'metalli', 'zolfo', 'petrolio', 'sale', 'argento', 'stagno', 'nitrati']);
 const INPUTS: Partial<Record<BuildingId, ResourceId[][]>> = {
-  tessile: [['cotone', 'seta', 'bestiame']],
-  chimica: [['zolfo', 'sale', 'carbone']],
+  tessile: [['cotone', 'seta', 'lana', 'iuta', 'bestiame']],
+  chimica: [['zolfo', 'sale', 'nitrati', 'carbone']],
   siderurgia: [['carbone'], ['ferro']],
   bellica: [['ferro']],
 };

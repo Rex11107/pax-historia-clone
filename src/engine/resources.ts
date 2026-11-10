@@ -3,13 +3,16 @@
 // zolfo, metalli, sale) e le colture di pregio (cotone, seta, tabacco). Chi controlla la provincia ne ricava
 // un'entrata settimanale; carbone e ferro rendono di più alle nazioni industriali.
 // Il deserto non ha truppe ma può avere risorse (le saline del Sahara): appartiene a chi controlla le terre attorno.
+// Fuori da Europa, Africa e Arabia valgono le regole e i giacimenti di resources-world.ts.
 
 import type { GameMap } from './map';
 import type { ProvinceData, Tag } from './types';
+import { worldResource, WORLD_SITES } from './resources-world';
 
 export type ResourceId = 'grano' | 'bestiame' | 'legname' | 'pesce' | 'datteri' | 'olio' | 'vino' | 'tabacco' | 'seta' | 'cotone'
   | 'sale' | 'zolfo' | 'metalli' | 'petrolio' | 'ferro' | 'carbone'
-  | 'oro' | 'diamanti' | 'avorio' | 'gomma' | 'palma' | 'caffe' | 'spezie' | 'zucchero' | 'perle';
+  | 'oro' | 'diamanti' | 'avorio' | 'gomma' | 'palma' | 'caffe' | 'spezie' | 'zucchero' | 'perle'
+  | 'te' | 'riso' | 'oppio' | 'argento' | 'stagno' | 'nitrati' | 'lana' | 'pellicce' | 'iuta' | 'cacao';
 
 export interface ResourceInfo { label: string; icon: string; value: number; strategic: boolean; industrial: boolean }
 
@@ -27,7 +30,7 @@ export const RESOURCES: Record<ResourceId, ResourceInfo> = {
   cotone: { label: 'cotone', icon: '☁️', value: 0.12, strategic: false, industrial: false },
   sale: { label: 'sale', icon: '🧂', value: 0.06, strategic: true, industrial: false },
   zolfo: { label: 'zolfo', icon: '🟡', value: 0.12, strategic: true, industrial: false },
-  metalli: { label: 'rame, piombo e mercurio', icon: '⚒️', value: 0.15, strategic: true, industrial: false },
+  metalli: { label: 'rame, piombo e altri metalli', icon: '⚒️', value: 0.15, strategic: true, industrial: false },
   petrolio: { label: 'petrolio', icon: '🛢️', value: 0.12, strategic: true, industrial: true },
   ferro: { label: 'ferro', icon: '🔩', value: 0.2, strategic: true, industrial: true },
   carbone: { label: 'carbone', icon: '⚫', value: 0.25, strategic: true, industrial: true },
@@ -41,6 +44,17 @@ export const RESOURCES: Record<ResourceId, ResourceInfo> = {
   spezie: { label: 'chiodi di garofano e spezie', icon: '🌶️', value: 0.1, strategic: false, industrial: false },
   zucchero: { label: 'zucchero', icon: '🍬', value: 0.08, strategic: false, industrial: false },
   perle: { label: 'perle', icon: '🦪', value: 0.08, strategic: false, industrial: false },
+  // Asia, Americhe e Oceania
+  te: { label: 'tè', icon: '🍵', value: 0.1, strategic: false, industrial: false },
+  riso: { label: 'riso', icon: '🍚', value: 0.04, strategic: false, industrial: false },
+  oppio: { label: 'oppio', icon: '🌺', value: 0.12, strategic: false, industrial: false },
+  argento: { label: 'argento', icon: '🥈', value: 0.25, strategic: true, industrial: false }, // metallo monetario: il Messico conia il peso del commercio asiatico
+  stagno: { label: 'stagno', icon: '🥫', value: 0.12, strategic: true, industrial: true }, // banda stagnata e bronzo
+  nitrati: { label: 'nitrati e guano', icon: '🧪', value: 0.15, strategic: true, industrial: false }, // concimi e polvere da sparo
+  lana: { label: 'lana', icon: '🐑', value: 0.05, strategic: false, industrial: false },
+  pellicce: { label: 'pellicce', icon: '🦫', value: 0.06, strategic: false, industrial: false },
+  iuta: { label: 'iuta', icon: '🪢', value: 0.06, strategic: false, industrial: false },
+  cacao: { label: 'cacao', icon: '🍫', value: 0.07, strategic: false, industrial: false },
 };
 
 /** Giacimenti e distretti noti nel 1881: [risorsa, lon, lat, nome]. */
@@ -94,6 +108,7 @@ export const SITES: [ResourceId, number, number, string][] = [
   // vino di pregio fuori dalla fascia mediterranea
   ['vino', 0.0, 44.85, 'Bordeaux'], ['vino', 4.8, 47.0, 'Borgogna'], ['vino', 4.0, 49.1, 'Champagne'], ['vino', 8.0, 50.0, 'Rheingau'], ['vino', 6.9, 49.95, 'Mosella'],
   ['vino', 21.4, 48.13, 'Tokaj'], ['vino', -8.6, 41.15, 'Porto'], ['vino', -6.1, 36.7, 'Jerez'], ['vino', 11.25, 43.5, 'Chianti'], ['vino', 8.0, 44.7, 'Langhe'],
+  ...WORLD_SITES,
 ];
 
 const MED = new Set(['ITA', 'ESP', 'PRT', 'GRC', 'ALB', 'HRV', 'MNE', 'CYP', 'MLT', 'ISR', 'PSX', 'LBN', 'SYR', 'TUN', 'DZA', 'MAR', 'LBY']);
@@ -121,11 +136,21 @@ function africanResource(p: ProvinceData, h: number): ResourceId {
   return h < 0.4 ? 'avorio' : h < 0.75 ? 'bestiame' : 'grano'; // savana
 }
 
+/** Scelta pesata deterministica: h in 0..1, pesi normalizzati (un peso 0 esclude la voce). */
+const weighted = (h: number) => (...w: [ResourceId, number][]): ResourceId => {
+  const tot = w.reduce((a, [, x]) => a + x, 0);
+  let acc = 0;
+  for (const [r, x] of w) { acc += x / tot; if (h < acc && x > 0) return r; }
+  return w.filter(([, x]) => x > 0).pop()![0];
+};
+
 /** Risorsa di base dalla geografia. */
 export function baseResource(p: ProvinceData): ResourceId | null {
   const [lon, lat] = p.lonlat;
   if (p.impassable) return null;
   if (p.oasis) return 'datteri';
+  const world = worldResource(p, weighted(hash(p.name + ':' + p.id)));
+  if (world) return world;
   if (AFRICA_SOUTH(lon, lat)) return africanResource(p, hash(p.name + ':' + p.id));
   if (p.modern === 'EGY') return lat > 30.2 ? 'cotone' : 'grano';
   if (p.terrain === 'desert') return lat < 33 && hash(p.name) < 0.4 ? 'datteri' : 'bestiame';
@@ -142,7 +167,7 @@ export function baseResource(p: ProvinceData): ResourceId | null {
   if (p.terrain === 'marsh') return 'legname';
   // pianure e colline: miscela secondo il clima, deterministica per provincia
   const h = hash(p.name + ':' + p.id);
-  const pick = (...w: [ResourceId, number][]) => { let acc = 0; for (const [r, x] of w) { acc += x; if (h < acc) return r; } return w[w.length - 1][0]; };
+  const pick = weighted(h);
   const fishing = p.coast && lat > 47 && lon < 30;
   if (['FIN', 'SWE', 'EST', 'LVA'].includes(p.modern) || (lat > 56 && lon > 25)) return pick(['legname', 0.5], [fishing ? 'pesce' : 'bestiame', 0.2], ['grano', 0.3]);
   if (['IRL', 'GBR', 'NLD', 'DNK', 'CHE', 'BEL'].includes(p.modern) || (p.modern === 'FRA' && lon < 0 && lat > 46.5)) return pick(['bestiame', 0.45], [fishing ? 'pesce' : 'legname', 0.2], ['grano', 0.35]);
