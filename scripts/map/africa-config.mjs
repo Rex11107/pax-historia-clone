@@ -518,6 +518,9 @@ export const AF_ROUTES = [
   ['Marmarica', 'Giarabub', [[24.52, 31.42], [24.38, 30.58], [24.52, 29.74]]],
   ['Murzuk', 'Cufra', [[14.34, 26.04], [18.67, 24.45], [23.3, 24.2]]],
   ['Bilma', 'Hoggar', [[12.92, 18.69], [9.57, 21.32], [5.52, 22.8]]],
+  // Asia centrale: le vie carovaniere che attraversano i deserti delle ecoregioni (deserti-asia.mjs, deserti-mondo.mjs)
+  ['Kungrad', 'Mangyshlak', [[58.9, 43.07], [56.5, 43.8], [54.0, 44.2], [51.5, 44.4], [50.4, 44.5]]], // l'Ustyurt fino al forte Aleksandrovsk
+  ['Ejin', 'Sain Noyon (sud)', [[101.2, 42.3], [101.4, 43.4], [101.6, 44.9]]], // da Juyan attraverso il Gobi verso la Khalkha
 ];
 
 // valli fluviali transitabili nel deserto (buffer in km attorno al fiume di Natural Earth)
