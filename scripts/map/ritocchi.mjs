@@ -12,8 +12,10 @@
 //     vogliono lo stesso gruppo (una provincia divisa in due a mano) il secondo ne diventa una copia;
 //   - una provincia generata ridotta a meno del 20% della sua terra (assorbita a mano, come il Tafilalt
 //     nel Ksar es-Souk) sparisce: i ritagli rimasti vanno alla provincia ritoccata più vicina;
-//   - la terra di quel gruppo rimasta fuori dal poligono, se è un pezzo grande, resta una provincia generata;
-//   - un punto applica solo le proprietà (deserto, padrone, oasi) alla provincia che lo contiene;
+//   - la terra di quel gruppo rimasta fuori dal poligono, se è un pezzo grande (più di 300 km², o di `minResto`
+//     del poligono), resta una provincia generata; i pezzi più piccoli restano alla provincia ritoccata;
+//   - un punto applica solo le proprietà (deserto, padrone, oasi) alla provincia che lo contiene; con `soloNome`
+//     la rinomina soltanto (serve a dare un nome al resto di una provincia da cui un deserto ha preso la terra);
 //   - il nome di un poligono è definitivo (come quello delle province della mappa bloccata).
 import fs from 'node:fs';
 import * as turf from '@turf/turf';
@@ -67,7 +69,16 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
       const from = x.f.properties.g;
       if (from !== r.g) { if (!spostata.has(from)) spostata.set(from, []); spostata.get(from).push([r.g, km2(dentro)]); }
       next.push({ f: { type: 'Feature', geometry: dentro.geometry, properties: { ...x.f.properties, g: r.g } }, bb: turf.bbox(dentro), inR: true });
-      if (pieno(fuori)) next.push({ f: { type: 'Feature', geometry: fuori.geometry, properties: { ...x.f.properties } }, bb: turf.bbox(fuori) });
+      if (!pieno(fuori)) continue;
+      if (!r.f.properties.minResto) { next.push({ f: { type: 'Feature', geometry: fuori.geometry, properties: { ...x.f.properties } }, bb: turf.bbox(fuori) }); continue; }
+      // un atomo grande tagliato da un deserto lascia più pezzi: ognuno viaggia per conto suo, e i frammenti
+      // minuscoli (meno di 3000 km²) tra il deserto e il resto passano al deserto
+      for (const c of fuori.geometry.type === 'Polygon' ? [fuori.geometry.coordinates] : fuori.geometry.coordinates) {
+        const parte = turf.polygon(c);
+        const piccolo = km2(parte) < 3000;
+        next.push({ f: { type: 'Feature', geometry: parte.geometry, properties: { ...x.f.properties, ...(piccolo ? { g: r.g } : {}) } }, bb: turf.bbox(parte), inR: piccolo });
+        if (piccolo && from !== r.g) { if (!spostata.has(from)) spostata.set(from, []); spostata.get(from).push([r.g, km2(parte)]); }
+      }
     }
     list = next;
   }
@@ -78,7 +89,9 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     if (!resto.length) continue;
     const u = resto.length === 1 ? resto[0].f : turf.union(turf.featureCollection(resto.map((x) => x.f)));
     if (!u) continue;
-    const comps = (u.geometry.type === 'Polygon' ? [u.geometry.coordinates] : u.geometry.coordinates).map((c) => turf.polygon(c)).filter((c) => km2(c) > 300);
+    // soglia sotto la quale il resto resta al deserto: 300 km² (default) o `minResto` del poligono
+    const minResto = Math.max(300, ...formeBB.filter((r) => r.g === g).map((r) => r.f.properties.minResto || 0));
+    const comps = (u.geometry.type === 'Polygon' ? [u.geometry.coordinates] : u.geometry.coordinates).map((c) => turf.polygon(c)).filter((c) => km2(c) > minResto);
     if (!comps.length) continue;
     const ng = gInfo.length;
     gInfo.push({ ...gInfo[g], lockName: undefined, byNameList: gInfo[g].byNameList, gsum: 0 });
@@ -113,6 +126,73 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
     log(`ritocchi: ${gInfo[g].lockName || gInfo[g].name} assorbita (${Math.round(areaDopo.get(g) || 0)} km² di ritagli su ${Math.round(areaPrima.get(g))})`);
   }
 
+  // pezzi staccati: un deserto grande (con `minResto`) può spezzare in due una provincia vicina, o lasciare al
+  // deserto un ritaglio lontano dal deserto stesso. Per ogni provincia tagliata da questi deserti (comprese quelle
+  // nate dai resti) il pezzo più grande resta suo; degli altri, quelli che toccano terra altrui (le isole no):
+  // i grandi (più di `minResto`) diventano province generate a sé, i piccoli passano al vicino che toccano di più.
+  const forzati = new Set();
+  const grandi = formeBB.filter((r) => r.g != null && r.f.properties.minResto);
+  if (grandi.length) {
+    const soglia = Math.max(...grandi.map((r) => r.f.properties.minResto));
+    const zona = grandi.map((r) => [r.bb[0] - 3, r.bb[1] - 3, r.bb[2] + 3, r.bb[3] + 3]);
+    const inZona = (x) => zona.some((b) => boxHit(x.bb, b));
+    const tagliati = new Set([...spostata.keys(), ...grandi.map((r) => r.g), ...target].filter((g) => list.some((x) => x.f.properties.g === g && inZona(x))));
+    // il deserto si legge dai poligoni: le proprietà dei gruppi si impostano più avanti
+    const deserto = (g) => !!gInfo[g]?.desert || formeBB.some((r) => r.g === g && r.f.properties.deserto);
+    // polyclip a volte fallisce su vertici quasi coincidenti: si riprova a coppie, poi con le coordinate arrotondate
+    const tondo = (f) => JSON.parse(JSON.stringify(f, (k, v) => (typeof v === 'number' ? Math.round(v * 1e6) / 1e6 : v)));
+    const unione = (xs) => {
+      if (xs.length === 1) return xs[0].f;
+      try { return turf.union(turf.featureCollection(xs.map((x) => x.f))); } catch { /* sotto */ }
+      try { return xs.slice(1).reduce((u, x) => turf.union(turf.featureCollection([u, x.f])) ?? u, xs[0].f); } catch { /* sotto */ }
+      try { return turf.union(turf.featureCollection(xs.map((x) => tondo(x.f)))); } catch { return null; }
+    };
+    const sposta = (from, to, a) => { if (!spostata.has(from)) spostata.set(from, []); spostata.get(from).push([to, a]); forzati.add(from); forzati.add(to); };
+    // i pezzi multipli (terraferma più isole nello stesso atomo) si separano, così ogni parte può cambiare provincia
+    list = list.flatMap((x) => (tagliati.has(x.f.properties.g) && x.f.geometry.type === 'MultiPolygon'
+      ? x.f.geometry.coordinates.map((c) => { const f = { type: 'Feature', geometry: { type: 'Polygon', coordinates: c }, properties: { ...x.f.properties } }; return { ...x, f, bb: turf.bbox(f) }; })
+      : [x]));
+    for (const g of tagliati) {
+      const mie = list.filter((x) => x.f.properties.g === g);
+      const u = mie.length && unione(mie);
+      if (u === null) log(`ritocchi: pezzi staccati di ${gInfo[g].lockName || gInfo[g].name} non verificati (unione fallita)`);
+      if (!u || u.geometry.type !== 'MultiPolygon') continue;
+      const comps = u.geometry.coordinates.map((c) => turf.polygon(c)).sort((a, b) => km2(b) - km2(a));
+      for (const c of comps.slice(1)) {
+        const bb = turf.bbox(c), bbL = [bb[0] - 0.05, bb[1] - 0.05, bb[2] + 0.05, bb[3] + 0.05];
+        const dentro = mie.filter((x) => boxHit(x.bb, bb) && turf.booleanPointInPolygon(turf.pointOnFeature(x.f), c));
+        const contatti = (km, d) => {
+          const alone = turf.buffer(c, km, { units: 'kilometers', steps: 2 }), m = new Map();
+          for (const y of list) {
+            const h = y.f.properties.g;
+            if (h === g || !boxHit(y.bb, [bbL[0] - d, bbL[1] - d, bbL[2] + d, bbL[3] + d]) || (km > 2 && deserto(h))) continue;
+            const i = turf.intersect(turf.featureCollection([y.f, alone]));
+            if (pieno(i)) m.set(h, (m.get(h) || 0) + km2(i));
+          }
+          return m;
+        };
+        let contatto = contatti(2, 0);
+        // un'isola resta della sua provincia, ma non di un deserto: passa alla terra non desertica più vicina
+        if (!contatto.size && deserto(g)) contatto = contatti(80, 1);
+        if (!contatto.size) continue;
+        const a = km2(c);
+        let to;
+        const mostra = a >= 1; // le schegge sotto 1 km² passano al vicino senza rumore nel log
+        if (a >= soglia && !deserto(g)) {
+          to = gInfo.length;
+          gInfo.push({ ...gInfo[g], lockName: undefined, gsum: 0 });
+          target.add(to);
+          log(`ritocchi: pezzo staccato di ${gInfo[g].lockName || gInfo[g].name} (${Math.round(a)} km²) diventa provincia generata`);
+        } else {
+          to = [...contatto.entries()].sort((p, q) => q[1] - p[1])[0][0];
+          if (mostra) log(`ritocchi: pezzo staccato di ${gInfo[g].lockName || gInfo[g].name} (${Math.round(a)} km²) passa a ${gInfo[to].lockName || gInfo[to].name}`);
+        }
+        for (const x of dentro) x.f.properties.g = to;
+        sposta(g, to, a);
+      }
+    }
+  }
+
   // peso delle località (province africane): segue la terra spostata
   for (const [from, moves] of spostata) {
     const src = gInfo[from];
@@ -132,7 +212,8 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
   for (const r of formeBB) if (r.g != null) imposta(gInfo[r.g], r.f.properties);
   for (const pt of punti) {
     const x = list.find((y) => boxHit(y.bb, [...pt.geometry.coordinates, ...pt.geometry.coordinates]) && turf.booleanPointInPolygon(pt, y.f));
-    if (x) imposta(gInfo[x.f.properties.g], pt.properties, false);
+    if (x && pt.properties.soloNome) gInfo[x.f.properties.g].lockName = pt.properties.name; // rinomina senza toccare le proprietà
+    else if (x) imposta(gInfo[x.f.properties.g], pt.properties, false);
     else log(`ritocco ${pt.properties.name}: punto fuori dalle terre, saltato`);
   }
   // area delle province toccate, dalla terra dopo il taglio
@@ -140,7 +221,7 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
   const nuova = new Map();
   const fisse = new Set(formeBB.filter((r) => r.f.properties.zona && r.g != null).map((r) => r.g));
   const cambiata = (g) => areaPrima.has(g) && Math.abs((areaDopo.get(g) || 0) - areaPrima.get(g)) > 0.05 * areaPrima.get(g);
-  const toccati = new Set([...areaPrima.keys(), ...ritoccati].filter((g) => (ritoccati.has(g) && !fisse.has(g)) || cambiata(g)));
+  const toccati = new Set([...areaPrima.keys(), ...ritoccati, ...forzati].filter((g) => (ritoccati.has(g) && !fisse.has(g)) || cambiata(g) || forzati.has(g)));
   for (const x of list) { const g = x.f.properties.g; if (toccati.has(g)) nuova.set(g, (nuova.get(g) || 0) + km2(x.f)); }
   for (const [g, a] of nuova) gInfo[g].area = a;
   log(`ritocchi: ${formeBB.length} forme e ${punti.length} proprietà applicate, ${sparite.length} province assorbite`);

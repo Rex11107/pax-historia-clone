@@ -1545,7 +1545,7 @@ export const AF_DETAIL_REGIONS = [
   ['Taklamakan', 83.0, 39.0, ['CN-XJ'], 160000, 'CHI'], ['Lop Nor', 89.5, 40.0, ['CN-XJ'], 160000, 'CHI'], ['Kunlun', 80.0, 35.8, ['CN-XJ'], 135700, 'CHI'], ['Dzungaria', 86.0, 45.5, ['CN-XJ'], 138800, 'CHI'],
   ['Shara Süme', 88.1, 47.85, ['CN-XJ'], 140700, 'CHI'],
   // Qinghai
-  ['Kokonor', 100.2, 37.0, ['CN-QH'], 160000, 'CHI'], ['Tsaidam', 95.0, 37.0, ['CN-QH'], 160000, 'CHI'], ['Golog', 100.5, 34.0, ['CN-QH'], 107600, ''], ['Yushu', 97.0, 33.0, ['CN-QH'], 160000, 'CHI'],
+  ['Kokonor', 100.2, 37.0, ['CN-QH'], 160000, 'CHI'], ['Tsaidam', 95.0, 37.0, ['CN-QH'], 160000, 'CHI'], ['Golog', 100.5, 34.0, ['CN-QH'], 107600, 'CHI'], ['Yushu', 97.0, 33.0, ['CN-QH'], 160000, 'CHI'],
   ['Huangnan', 101.8, 35.3, ['CN-QH'], 43300, 'CHI'], ['Tanggula', 92.0, 34.0, ['CN-QH'], 160000, 'CHI'],
   // Tibet
   ['Lhasa', 91.13, 29.65, ['CN-XZ'], 70900, 'TIB'], ['Shigatse', 88.88, 29.27, ['CN-XZ'], 142400, 'TIB'], ['Ngari', 80.1, 32.5, ['CN-XZ'], 160000, 'TIB'], ['Changtang', 87.0, 33.5, ['CN-XZ'], 160000, 'TIB'],

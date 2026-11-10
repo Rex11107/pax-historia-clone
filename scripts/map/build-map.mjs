@@ -8,6 +8,8 @@
 //  - aourednik/historical-basemaps world_1880 (GPL-3.0) -> confini politici 1880
 //  - HydroBASINS v1c (HydroSHEDS, Lehner & Grill 2013; uso libero con attribuzione) -> spartiacque
 //  - HistoGIS (ACDH-CH, CC BY 4.0) -> distretti prussiani, bavaresi, badensi, cisleitani; Kronländer (scripts/map/historical.mjs)
+//  - IBRA7 (Commonwealth of Australia, DCCEEW, CC BY 4.0) -> deserti australiani (scripts/map/deserti-australia.mjs -> ritocchi.geojson)
+//  - Ecoregions 2017 (RESOLVE, CC BY 4.0) -> deserti dell'Asia centrale (scripts/map/deserti-asia.mjs -> ritocchi.geojson)
 //  - RISTAT, Kessler & Markevich (CC0) -> uezd e governatorati russi del 1897
 //
 // Pipeline:
@@ -1616,7 +1618,7 @@ async function main() {
     projection: 'Miller cilindrica, km all\'equatore, cucitura a 168° O, archi delta-codificati in decimi di km',
     sources: ['Natural Earth (public domain)', 'aourednik/historical-basemaps world_1880 (GPL-3.0)', 'HydroBASINS (Lehner & Grill 2013)',
       'HistoGIS, ACDH-CH, Austrian Academy of Sciences (CC BY 4.0)', 'Kessler & Markevich, RISTAT Russian Empire 1897 maps (CC0)',
-      'DataMeet, distretti dell\'India 2011 (CC BY 4.0)', 'GeoNames, cities500 (CC BY 4.0)'],
+      'DataMeet, distretti dell\'India 2011 (CC BY 4.0)', 'GeoNames, cities500 (CC BY 4.0)', 'IBRA7, Commonwealth of Australia (DCCEEW), deserti australiani (CC BY 4.0)', 'Ecoregions 2017, RESOLVE (Dinerstein et al. 2017), deserti dell\'Asia centrale (CC BY 4.0)'],
     arcs: outArcs,
     arcSides,
     provinces: provinces.map((p) => ({
@@ -1709,6 +1711,15 @@ async function main() {
   for (const p of out.provinces) if (seen2.get(p.name) > 1) { const n = (cnt.get(p.name) || 0) + 1; cnt.set(p.name, n); p.name = `${p.name} ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][n - 1] || n}`; }
 
   for (const p of out.provinces) { delete p._region; delete p._town; delete p._lock; }
+  // popolazioni fissate a mano sulla mappa pubblicata (scripts/map/popolazioni-estrai.mjs): il generatore le ripartisce
+  // per paese, e ogni ritocco le sposterebbe di qualche migliaio
+  {
+    const f = path.join(ROOT, 'scripts/map/ritocchi.geojson');
+    const fisse = fs.existsSync(f) ? readJSON(f).popolazioni ?? {} : {};
+    let n = 0;
+    for (const p of out.provinces) if (fisse[p.name] != null && fisse[p.name] !== p.pop) { p.pop = fisse[p.name]; n++; }
+    if (n) log(`popolazioni fissate: ${n} province`);
+  }
   // identificativi stabili: prima le province europee (con quelle-simbolo), poi le africane
   {
     const order = [...out.provinces.filter((p) => !p._af), ...out.provinces.filter((p) => p._af)];
