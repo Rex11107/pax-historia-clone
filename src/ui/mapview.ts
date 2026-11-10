@@ -13,8 +13,10 @@ export const INK = '#1f2a33';
 const SEA = '#c4d3d4';
 const SEA_DEEP = '#b5c7c9';
 const FRAME = '#26303b'; // fuori dalla mappa
-const LOD_K = 0.1; // sotto questa scala (1 pixel > 10 km) si disegna il livello semplificato
-const LOD_TOL = 6; // km fra due punti tenuti negli archi semplificati
+// livelli semplificati della vista da lontano: [scala sotto cui si usano, km fra due punti tenuti negli archi].
+// Il secondo serve alla vista del mondo intero (1 pixel ≈ 100 km), dove anche 6 km sono decine di punti per pixel
+// e la sola costa costava 200 ms per fotogramma sul telefono.
+const LODS: [number, number][] = [[0.1, 6], [0.03, 25]];
 const FRAME_LINE = '#8c7b56';
 const BRASS = '#b08d3c';
 const WAX = '#8e2430';
@@ -68,12 +70,8 @@ export class MapView {
   private arcPaths: Path2D[] = [];
   private coast = new Path2D();
   private national = new Path2D();
-  // livello semplificato per la vista da lontano (1 pixel > LOD_K km): stessi archi condivisi, meno punti
-  private pathsLo: Path2D[] = [];
-  private arcPathsLo: Path2D[] = [];
-  private coastLo = new Path2D();
-  private nationalLo = new Path2D();
-  private regionBorderLo = new Path2D();
+  // livelli semplificati per la vista da lontano (LODS): stessi archi condivisi, meno punti
+  private lods: { k: number; paths: Path2D[]; arcPaths: Path2D[]; coast: Path2D; national: Path2D; regionBorder: Path2D; groupsKey: string; groups: [string, Path2D][] }[] = [];
   private internal = new Path2D();
   private hatches = new Map<string, CanvasPattern>();
   private hit: CanvasRenderingContext2D;
@@ -146,31 +144,35 @@ export class MapView {
     });
     world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) this.coast.addPath(this.arcPaths[i]); });
     // da lontano migliaia di province a piena risoluzione rallentano il telefono: archi sfoltiti (un punto ogni
-    // LOD_TOL km, estremi sempre tenuti, così province vicine e confini restano agganciati)
-    const arcsLo = arcs.map((a) => {
-      const out = [a[0], a[1]];
-      for (let i = 2; i < a.length - 2; i += 2) if (Math.abs(a[i] - out[out.length - 2]) + Math.abs(a[i + 1] - out[out.length - 1]) >= LOD_TOL) out.push(a[i], a[i + 1]);
-      if (a.length > 2) out.push(a[a.length - 2], a[a.length - 1]);
-      return Float32Array.from(out);
-    });
-    this.arcPathsLo = arcsLo.map((a) => {
-      const p = new Path2D();
-      for (let i = 0; i < a.length; i += 2) if (i === 0) p.moveTo(a[i], a[i + 1]); else p.lineTo(a[i], a[i + 1]);
-      return p;
-    });
-    for (const p of world.map.provinces) {
-      const path = new Path2D();
-      for (const ring of provinceRings(p, arcsLo)) {
-        for (let j = 0; j < ring.length; j += 2) if (j === 0) path.moveTo(ring[j], ring[j + 1]); else path.lineTo(ring[j], ring[j + 1]);
-        path.closePath();
-      }
-      this.pathsLo.push(path);
+    // tol km, estremi sempre tenuti, così province vicine e confini restano agganciati)
+    for (const [lk, tol] of LODS) {
+      const arcsLo = arcs.map((a) => {
+        const out = [a[0], a[1]];
+        for (let i = 2; i < a.length - 2; i += 2) if (Math.abs(a[i] - out[out.length - 2]) + Math.abs(a[i + 1] - out[out.length - 1]) >= tol) out.push(a[i], a[i + 1]);
+        if (a.length > 2) out.push(a[a.length - 2], a[a.length - 1]);
+        return Float32Array.from(out);
+      });
+      const arcPaths = arcsLo.map((a) => {
+        const p = new Path2D();
+        for (let i = 0; i < a.length; i += 2) if (i === 0) p.moveTo(a[i], a[i + 1]); else p.lineTo(a[i], a[i + 1]);
+        return p;
+      });
+      const paths = world.map.provinces.map((p) => {
+        const path = new Path2D();
+        for (const ring of provinceRings(p, arcsLo)) {
+          for (let j = 0; j < ring.length; j += 2) if (j === 0) path.moveTo(ring[j], ring[j + 1]); else path.lineTo(ring[j], ring[j + 1]);
+          path.closePath();
+        }
+        return path;
+      });
+      const coast = new Path2D();
+      world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) coast.addPath(arcPaths[i]); });
+      this.lods.push({ k: lk, paths, arcPaths, coast, national: new Path2D(), regionBorder: new Path2D(), groupsKey: '', groups: [] });
     }
-    world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) this.coastLo.addPath(this.arcPathsLo[i]); });
     this.tiny = world.map.provinces.filter((p) => p.tiny).map((p) => p.id);
     // regioni del deserto (Sahara, Deserto Libico…): province maggiori che ne contengono altre
     const reg = (i: number) => (i >= 0 ? world.map.provinces[i].region : undefined);
-    world.map.data.arcSides.forEach(([a, b], i) => { if (b >= 0 && (reg(a) || reg(b)) && reg(a) !== reg(b)) { this.regionBorder.addPath(this.arcPaths[i]); this.regionBorderLo.addPath(this.arcPathsLo[i]); } });
+    world.map.data.arcSides.forEach(([a, b], i) => { if (b >= 0 && (reg(a) || reg(b)) && reg(a) !== reg(b)) { this.regionBorder.addPath(this.arcPaths[i]); for (const l of this.lods) l.regionBorder.addPath(l.arcPaths[i]); } });
     const byRegion = new Map<string, { x: number; y: number; a: number }>();
     for (const p of world.map.provinces) {
       if (!p.region) continue;
@@ -260,11 +262,11 @@ export class MapView {
   refreshPolitical() {
     const s = this.world.state;
     this.national = new Path2D();
-    this.nationalLo = new Path2D();
+    for (const l of this.lods) l.national = new Path2D();
     this.internal = new Path2D();
     this.world.map.data.arcSides.forEach(([a, b], i) => {
       if (b < 0) return;
-      if (s.owner[a] !== s.owner[b]) { this.national.addPath(this.arcPaths[i]); this.nationalLo.addPath(this.arcPathsLo[i]); }
+      if (s.owner[a] !== s.owner[b]) { this.national.addPath(this.arcPaths[i]); for (const l of this.lods) l.national.addPath(l.arcPaths[i]); }
       else this.internal.addPath(this.arcPaths[i]);
     });
     // etichette: nel blocco di territorio contiguo che contiene la capitale (la Francia in Francia, non in Algeria);
@@ -315,6 +317,25 @@ export class MapView {
     this.canvas.width = Math.max(1, Math.round(r.width * this.dpr));
     this.canvas.height = Math.max(1, Math.round(r.height * this.dpr));
     this.dirty = true;
+  }
+
+  /** Province della vista lontana raggruppate per colore (velatura già mescolata), rifatte quando cambiano i padroni. */
+  private loGroups(lod: MapView['lods'][number]): [string, Path2D][] {
+    const s = this.world.state, prof = this.world.profiles, map = this.world.map;
+    const key = s.player + '|' + s.owner.join(',');
+    if (key === lod.groupsKey) return lod.groups;
+    const groups = new Map<string, Path2D>();
+    for (let i = 0; i < lod.paths.length; i++) {
+      const owner = s.owner[i];
+      const base = owner === '' ? (map.provinces[i].impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
+      const color = owner === s.player ? base : this.veiled(base);
+      let path = groups.get(color);
+      if (!path) groups.set(color, (path = new Path2D()));
+      path.addPath(lod.paths[i]);
+    }
+    lod.groupsKey = key;
+    lod.groups = [...groups];
+    return lod.groups;
   }
 
   /** Colore già coperto dalla velatura carta (238,240,234 al 18%), per la vista da lontano. */
@@ -397,15 +418,21 @@ export class MapView {
     const k = this.cam.scale;
     ctx.setTransform(this.dpr * k, 0, 0, this.dpr * k, this.dpr * (W / 2 - this.cam.x * k), this.dpr * (H / 2 - this.cam.y * k));
     const [vx0, vy0] = this.screenToWorld(0, 0), [vx1, vy1] = this.screenToWorld(W, H);
-    const lo = k < LOD_K, P = lo ? this.pathsLo : this.paths;
+    let lod: MapView['lods'][number] | undefined;
+    for (const l of this.lods) if (k < l.k) lod = l;
+    const lo = !!lod, P = lod ? lod.paths : this.paths;
     const visible = (i: number) => !(this.bboxes[i * 4 + 2] < vx0 || this.bboxes[i * 4] > vx1 || this.bboxes[i * 4 + 3] < vy0 || this.bboxes[i * 4 + 1] > vy1);
 
     // costa: alone d'acqua bassa
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 7 / k;
     ctx.lineJoin = 'round';
-    ctx.stroke(lo ? this.coastLo : this.coast);
+    ctx.stroke(lod ? lod.coast : this.coast);
 
+    // da lontano le province dello stesso colore si riempiono in un colpo solo: con 4500 riempimenti separati
+    // la vista del mondo costava 230 ms per fotogramma, con un riempimento per colore pochi millisecondi
+    const grouped = lo && !this.showEthnic;
+    if (grouped) for (const [color, path] of this.loGroups(lod!)) { ctx.fillStyle = color; ctx.fill(path); }
     for (let i = 0; i < this.paths.length; i++) {
       if (!visible(i)) continue;
       const owner = s.owner[i], ctrl = s.controller[i];
@@ -423,10 +450,10 @@ export class MapView {
         if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(P[i]); }
         continue;
       }
-      const base = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
-      // da lontano la velatura è già mescolata nel colore: un riempimento in meno per provincia
-      ctx.fillStyle = lo && owner !== s.player ? this.veiled(base) : base;
-      ctx.fill(P[i]);
+      if (!grouped) {
+        ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
+        ctx.fill(P[i]);
+      }
       if (pv.impassable) {
         const pat = this.desertPattern();
         pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
@@ -493,15 +520,15 @@ export class MapView {
 
     ctx.strokeStyle = 'rgba(31,42,51,0.55)';
     ctx.lineWidth = 0.9 / k;
-    ctx.stroke(lo ? this.coastLo : this.coast);
+    ctx.stroke(lod ? lod.coast : this.coast);
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.1 / k;
-    ctx.stroke(lo ? this.nationalLo : this.national);
+    ctx.stroke(lod ? lod.national : this.national);
     // regioni del deserto: contorno tratteggiato color sabbia bruciata
     ctx.strokeStyle = 'rgba(128,88,34,0.75)';
     ctx.lineWidth = 2.4 / k;
     ctx.setLineDash([10 / k, 5 / k]);
-    ctx.stroke(lo ? this.regionBorderLo : this.regionBorder);
+    ctx.stroke(lod ? lod.regionBorder : this.regionBorder);
     ctx.setLineDash([]);
     // piste carovaniere: un filo tenue per la continuita, puntini radi per la pista,
     // nodi alle oasi. A zoom lontano restano solo i puntini, piu leggeri del tratteggio.
