@@ -8,6 +8,7 @@ import { effectiveResources } from './trade';
 import { govEffects } from './politics';
 import { buildingIncome, industryOf, maintenanceOf, manpowerBonus, recruitDiscount } from './construction';
 import { tributeOf } from './vassals';
+import { colonyIncome } from './colonial';
 
 // Effetti meccanici delle politiche interne (il pannello "Interno" li mostra così come sono).
 export const POLICY_EFFECTS = {
@@ -81,7 +82,8 @@ export function budget(w: World, tag: Tag): Budget {
   const tradeNet = res.earn - res.pay;
   const tribute = tributeOf(w, tag);
   const repar = reparationsOf(w, tag);
-  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), reparations: r(repar), works: r(works), upkeep: r(upkeep), administration: r(administration), civil: r(civil), maintenance: r(maintenance), research: r(researchSpend), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute + repar - upkeep - administration - civil - maintenance - researchSpend - interest - infrastructure), manpowerGain };
+  const colonies = colonyIncome(w, tag);
+  return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), reparations: r(repar), colonies: r(colonies), works: r(works), upkeep: r(upkeep), administration: r(administration), civil: r(civil), maintenance: r(maintenance), research: r(researchSpend), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute + repar + colonies - upkeep - administration - civil - maintenance - researchSpend - interest - infrastructure), manpowerGain };
 }
 
 export function stabilityTarget(w: World, tag: Tag): number {
@@ -93,11 +95,13 @@ export function stabilityTarget(w: World, tag: Tag): number {
 /** Aggiornamento economico settimanale (fine turno). */
 export function weeklyEconomy(w: World, sink: GameEvent[]) {
   const s = w.state;
-  for (const tag of Object.keys(s.nations)) {
+  // i bilanci si calcolano tutti prima di applicarne uno: tributi e spese di ricerca in comune leggono le entrate
+  // dell'altra parte, e così tutte e due usano la stessa settimana (quello che uno paga, l'altro lo incassa)
+  const budgets = new Map<Tag, Budget>();
+  for (const tag of Object.keys(s.nations)) if (s.nations[tag].alive) budgets.set(tag, budget(w, tag));
+  for (const [tag, b] of budgets) {
     const n = s.nations[tag];
-    if (!n.alive) continue;
     const pr = w.profiles[tag];
-    const b = budget(w, tag);
     n.lastBudget = b;
     n.treasury += b.net;
     if (n.treasury < 0) {

@@ -468,6 +468,21 @@ function weeklyDecisions(w: World, sink: GameEvent[]) {
 
 // --- amministrazione delle colonie ---
 
+/** Saldo settimanale delle colonie amministrate (milioni, sulla popolazione): concessioni e commercio rendono,
+ *  investimenti e consigli elettivi costano. È la voce "Colonie" del bilancio. */
+export function colonyIncome(w: World, tag: Tag): number {
+  const s = w.state, c = s.colonial;
+  if (!c) return 0;
+  let tot = 0;
+  for (const [id, ad] of Object.entries(c.admin)) {
+    const seed = BY_ID.get(id);
+    if (!seed || seed.nation !== tag) continue;
+    const popM = popOf(w, interestProvinces(w, seed).filter((p) => s.owner[p] === tag)) / 1e6;
+    tot += popM * ({ commercio: 0.08, concessioni: 0.22, investimenti: -0.15 }[ad.economia] + (ad.rappresentanza === 'consigli' ? -0.05 : 0));
+  }
+  return Math.round(tot * 100) / 100;
+}
+
 function weeklyAdmin(w: World, sink: GameEvent[]) {
   const s = w.state, c = colonial(w);
   for (const [id, ad] of Object.entries(c.admin)) {
@@ -486,10 +501,7 @@ function weeklyAdmin(w: World, sink: GameEvent[]) {
     const target = clamp(30 + { tolleranza: -5, missioni: 8, assimilazione: 25 }[ad.culto] + { commercio: 0, concessioni: 15, investimenti: -8 }[ad.economia]
       + { governatore: garrison ? 0 : 15, notabili: 0, consigli: -10 }[ad.rappresentanza] - ad.integration * 0.35 - Math.min(20, garrison / 2000), 0, 100);
     ad.resistance = Math.round((ad.resistance + (target - ad.resistance) * 0.1) * 10) / 10;
-    // entrate e spese (milioni a settimana, sulla popolazione della colonia)
-    const popM = popOf(w, own) / 1e6;
-    const money = popM * ({ commercio: 0.08, concessioni: 0.22, investimenti: -0.15 }[ad.economia] + (ad.rappresentanza === 'consigli' ? -0.05 : 0));
-    s.nations[tag].treasury += Math.round(money * 100) / 100;
+    // entrate e spese della colonia: sono una voce del bilancio (colonyIncome), non toccano le casse da qui
     // rivolta: una provincia senza truppe torna terra di nessuno
     if (ad.resistance >= 70 && rand(s.seed, 'rivolta', id, s.day) < 0.04) {
       const free = own.filter((p) => !s.units.some((u) => u.nation === tag && u.location === p) && p !== s.nations[tag].capital);

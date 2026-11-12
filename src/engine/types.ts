@@ -222,6 +222,8 @@ export interface Budget {
   tribute?: number;
   /** indennità di guerra a rate: incassate (+) o pagate (−) */
   reparations?: number;
+  /** saldo dell'amministrazione delle colonie (concessioni e commercio meno investimenti), non compreso in income */
+  colonies?: number;
   /** entrate delle opere (campi, industrie, porti), già comprese in income */
   works?: number;
   upkeep: number;

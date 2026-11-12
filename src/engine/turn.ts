@@ -28,38 +28,49 @@ function snapshot(w: World): Record<string, [number, number]> {
   return f;
 }
 
-/** Esegue un turno: 7 giorni di simulazione deterministica + aggiornamento settimanale. */
-export function runTurn(w: World): TurnReport {
+/** Fasi di fine settimana, nell'ordine in cui girano. L'ordine è una regola di gioco (docs/SPEC.md, "Ordine del
+ *  turno"): ogni fase legge lo stato lasciato dalle precedenti. */
+export const WEEKLY_PHASES: [string, (w: World, sink: GameEvent[]) => void][] = [
+  ['commercio', weeklyTrade],
+  ['economia', weeklyEconomy],
+  ['riparazioni', (w) => weeklyReparations(w)],
+  ['politica', weeklyPolitics],
+  ['ministri', weeklyMinisters],
+  ['costruzione', weeklyConstruction],
+  ['soggetti', weeklySubjects],
+  ['ricerca', weeklyResearch],
+  ['ia', aiEndOfTurn],
+  ['colonie', weeklyColonial],
+  ['espansione', aiColonize],
+  ['trattati', expireTreaties],
+  ['deserti', updateDeserts],
+];
+
+/** Esegue un turno: 7 giorni di simulazione deterministica + aggiornamento settimanale.
+ *  `probe` (solo strumenti e test) è chiamato dopo ogni fase col suo nome. */
+export function runTurn(w: World, probe?: (phase: string) => void): TurnReport {
   const s = w.state;
   const sink: GameEvent[] = [];
   const report: TurnReport = { turn: s.turn, fromDay: s.day, toDay: s.day + DAYS_PER_TURN, events: sink, frames: [snapshot(w)], orderErrors: [] };
   invalidatePresence(w);
   aiPlan(w);
+  probe?.('piani');
   for (let d = 0; d < DAYS_PER_TURN; d++) {
     s.day++;
     invalidatePresence(w);
     const order = [...s.units].sort((a, b) => (a.id < b.id ? -1 : 1));
     for (const u of order) if (s.units.includes(u)) processUnit(w, u, sink);
+    probe?.('ordini');
     invalidatePresence(w);
     resolveBattles(w, sink);
+    probe?.('battaglie');
     invalidatePresence(w);
     updateSupply(w, sink);
+    probe?.('rifornimenti');
     report.frames.push(snapshot(w));
-    if (d === 3) { invalidatePresence(w); aiPlan(w); }
+    if (d === 3) { invalidatePresence(w); aiPlan(w); probe?.('piani'); }
   }
-  weeklyTrade(w, sink);
-  weeklyEconomy(w, sink);
-  weeklyReparations(w);
-  weeklyPolitics(w, sink);
-  weeklyMinisters(w, sink);
-  weeklyConstruction(w, sink);
-  weeklySubjects(w, sink);
-  weeklyResearch(w, sink);
-  aiEndOfTurn(w, sink);
-  weeklyColonial(w, sink);
-  aiColonize(w, sink);
-  expireTreaties(w, sink);
-  updateDeserts(w, sink);
+  for (const [name, phase] of WEEKLY_PHASES) { phase(w, sink); probe?.(name); }
   s.turn++;
   if (s.events.length > MAX_EVENTS) s.events.splice(0, s.events.length - MAX_EVENTS);
   return report;

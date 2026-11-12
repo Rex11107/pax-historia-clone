@@ -104,7 +104,8 @@ export function placeArmies(w: World, tag: Tag) {
   const own = w.map.provinces.filter((p) => p.owner === tag && !p.impassable).map((p) => p.id);
   if (!own.length) return;
   const n = Math.max(1, Math.min(28, Math.round(pr.armyPeace / 30000)));
-  const each = Math.round(pr.armyPeace / n / 1000) * 1000;
+  // i piccoli eserciti (qualche centinaio di uomini) si arrotondano al centinaio: al migliaio diventavano unità vuote
+  const each = pr.armyPeace / n >= 1000 ? Math.round(pr.armyPeace / n / 1000) * 1000 : Math.max(100, Math.round(pr.armyPeace / n / 100) * 100);
   // candidati: capitale, province di confine verso rivali e grandi potenze, poi le più popolose
   const cap = s.nations[tag].capital;
   const borderScore = (id: number) => {
