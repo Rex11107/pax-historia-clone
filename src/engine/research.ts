@@ -201,14 +201,18 @@ export function proposeCollab(w: World, from: Tag, to: Tag, id: string, mySci?: 
 
 // --- effetti ---
 
-const effCache = new Map<string, { key: string; eff: Required<Omit<TechEffects, 'fortArmor'>> & { fortArmor: boolean } }>();
+// una cache per partita (per oggetto di stato della ricerca): due partite nello stesso processo, anche con lo
+// stesso seme, non si passano gli effetti l'una con l'altra
+const effCache = new WeakMap<object, Map<string, { key: string; eff: Required<Omit<TechEffects, 'fortArmor'>> & { fortArmor: boolean } }>>();
 /** Effetti combinati delle ricerche conosciute. */
 export function techEffects(w: World, tag: Tag) {
   const r = research(w);
   // solo ciò che si è ricercato dopo il 1881: il resto è già nei profili (industria, qualità militare…)
   const list = (r.known[tag] ?? []).slice(r.start?.[tag] ?? 0);
-  const key = `${w.state.seed}:${list.length}:${list[list.length - 1] ?? ''}`;
-  const c = effCache.get(tag);
+  const key = `${list.length}:${list[list.length - 1] ?? ''}`;
+  let per = effCache.get(r);
+  if (!per) effCache.set(r, (per = new Map()));
+  const c = per.get(tag);
   if (c && c.key === key) return c.eff;
   const e = { income: 1, quality: 1, exhaustion: 1, manpower: 1, logistics: 1, railSpeed: 1, agri: 1, industrialYield: 1, attrition: 1, oilValue: 1, upkeep: 1, stability: 0, industry: 0, coalRelief: 0, fortBreak: 0, fortArmor: false };
   for (const id of list) {
@@ -219,7 +223,7 @@ export function techEffects(w: World, tag: Tag) {
     if (x.fortArmor) e.fortArmor = true;
   }
   e.coalRelief = Math.min(1, e.coalRelief);
-  effCache.set(tag, { key, eff: e });
+  per.set(tag, { key, eff: e });
   return e;
 }
 

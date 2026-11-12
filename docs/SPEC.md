@@ -143,6 +143,12 @@ Corretto in questo passo: le entrate delle colonie venivano versate in cassa fuo
 
 Misure (104 turni, sole nazioni non giocanti): partita identica se rigiocata e identica dopo salva e carica a ogni turno (dieci anni prima delle correzioni, due anni dopo); nessuna cassa negativa, nessun numero non finito, nessuna unità nel deserto o di una nazione scomparsa; i punti lenti del turno sono i rifornimenti (85 ms) e l'economia (83 ms) su circa 320 ms, da ottimizzare nel passo 7.
 
+## Determinismo
+
+Fase 2, passo 2 (12 novembre 2026). Stesso seme e stesse mosse danno la stessa partita, turno per turno: lo prova `tests/determinism.test.ts` (otto turni con tre guerre, la partita ricaricata da zero a ogni turno mentre nello stesso processo ne gira un'altra con un altro seme; e nessun orologio o numero casuale di sistema nei sorgenti di `src/engine/`), e sul lungo `npx tsx scripts/sim/determinismo.mts [turni]`. Il caso viene solo da `rand(seme, …)`.
+
+Le cache del motore non devono cambiare il risultato. Per questo: gli effetti della ricerca sono in cache per partita (prima per sigla di nazione, con una chiave che due partite con lo stesso seme potevano condividere); il turno confronta padroni e controllori dopo ogni fase e, se sono cambiati, azzera le cache di province controllate, industria, logistica e rifornimenti in pace (prima restavano quelle di inizio giornata: una provincia presa a metà settimana non contava fino al giorno dopo, e in pace fino al turno dopo); l'interfaccia le azzera a ogni ridisegno, così bilancio e logistica seguono subito una cessione o una pace.
+
 ## AI
 
 - Game Master `translate`: direttive libere → JSON di ordini/politiche/arruolamenti/guerre, validato pezzo per pezzo. Nomi di provincia risolti dal codice.

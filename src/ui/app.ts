@@ -5,7 +5,7 @@ import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } 
 import { nearX, TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
-import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, type BuildingId } from '../engine/construction';
+import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, touchBuildings, type BuildingId } from '../engine/construction';
 import { annex, annexRefusal, declareIndependence, LEVEL_INFO, libertyTarget, loosen, subjectOf, subjects, tighten } from '../engine/vassals';
 import { appoint, cabinetOf, candidates, describeEffects, headMinister, minister, OFFICE_LABEL, OFFICES, type Office } from '../engine/ministers';
 import { ResearchView } from './research-view';
@@ -155,6 +155,7 @@ export class App {
   closeSheet() { this.sheetOpen = false; $('#sheet').classList.remove('open'); this.cancelPick(); }
 
   render() {
+    touchBuildings(); // un'azione del giocatore (cessione, pace, annessione) può aver cambiato i padroni: bilancio e logistica da rifare
     const body = $('#sheet-body');
     const title = $('#sheet-title');
     const views: Record<Tab, () => [string, Node]> = {

@@ -100,6 +100,8 @@ const works = (w: World, tag: Tag, p: number) => w.state.owner[p] === tag && w.s
 // Cache per nazione, rinnovata quando cambia il giorno, un id (contratti, cantieri) o un'opera finita.
 let version = 0;
 export const touchBuildings = () => { version++; };
+/** Versione corrente delle cache (cambia a ogni opera finita e a ogni cambio di padrone visto dal turno). */
+export const cacheVersion = () => version;
 const memo = new WeakMap<object, { key: string; per: Map<Tag, { res?: Set<ResourceId>; points?: number; logistics?: ReturnType<typeof computeLogistics> }>; ctrl?: Map<Tag, number[]> }>();
 function memoOf(w: World) {
   const s = w.state;
