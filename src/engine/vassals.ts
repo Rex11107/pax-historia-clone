@@ -9,7 +9,7 @@
 // forza relativa del soggetto, debolezza del signore (guerre, stanchezza, instabilità), sostegno
 // straniero, meno la stima verso il signore, i commerci con lui, gli investimenti e le sue truppe.
 
-import { declareWar, makePeace } from './diplomacy';
+import { checkAlive, declareWar, makePeace, settleOccupations } from './diplomacy';
 import type { GameEvent, Tag } from './types';
 import { atWar, changeOpinion, clamp, emit, nationName, opinion, rand, warsOf, type World } from './world';
 
@@ -97,6 +97,17 @@ export function subjects(w: World): Subject[] {
   const s = w.state;
   if (!s.subjects) s.subjects = INITIAL.filter((x) => s.nations[x.subject] && s.nations[x.overlord]).map((x) => ({ ...x }));
   return s.subjects;
+}
+/** Unico punto in cui nasce un legame di soggezione: toglie il vecchio signore del soggetto e, se il nuovo
+ *  signore era a sua volta soggetto del suo nuovo soggetto, quel legame (niente catene circolari). */
+export function setSubject(w: World, subject: Tag, overlord: Tag, level: SubjectLevel, liberty: number) {
+  const s = w.state;
+  s.subjects = subjects(w).filter((x) => x.subject !== subject && !(x.subject === overlord && x.overlord === subject));
+  s.subjects.push({ subject, overlord, level, liberty, since: s.day });
+}
+/** Fine del legame fra due nazioni, in qualunque verso (indipendenza, guerra fra signore e soggetto). */
+export function endSubjection(w: World, a: Tag, b: Tag) {
+  w.state.subjects = subjects(w).filter((x) => !((x.subject === a && x.overlord === b) || (x.subject === b && x.overlord === a)));
 }
 export const subjectOf = (w: World, tag: Tag) => subjects(w).find((x) => x.subject === tag);
 export const subjectsOf = (w: World, tag: Tag) => subjects(w).filter((x) => x.overlord === tag);
@@ -199,9 +210,7 @@ export function annex(w: World, overlord: Tag, sub: Tag, sink: GameEvent[] = [])
   if (err) return err;
   const s = w.state;
   for (let p = 0; p < s.owner.length; p++) if (s.owner[p] === sub) { s.owner[p] = overlord; s.controller[p] = overlord; }
-  s.units = s.units.filter((u) => u.nation !== sub);
-  s.nations[sub].alive = false;
-  s.subjects = subjects(w).filter((y) => y.subject !== sub && y.overlord !== sub);
+  checkAlive(w); // la nazione annessa esce da guerre, trattati, contratti, cantieri e ricerche
   for (const t of Object.keys(s.nations)) if (t !== overlord && t !== sub && w.profiles[t]?.major) changeOpinion(s, t, overlord, -6);
   emit(w, { type: 'subject', nations: [overlord, sub], text: `${nationName(w, overlord)} annette ${nationName(w, sub)}.` }, sink);
   return null;
@@ -246,8 +255,7 @@ export function imposeProtectorate(w: World, overlord: Tag, target: Tag, sink: G
   const old = subjectOf(w, target);
   makePeace(w, overlord, target, {}, sink);
   if (old && old.overlord !== overlord) { changeOpinion(s, old.overlord, overlord, -20); emit(w, { type: 'subject', nations: [old.overlord, target], text: `${nationName(w, old.overlord)} perde ogni sovranità su ${nationName(w, target)}.` }, sink); }
-  s.subjects = subjects(w).filter((y) => y.subject !== target);
-  s.subjects.push({ subject: target, overlord, level: 'protettorato', liberty: 55, since: s.day });
+  setSubject(w, target, overlord, 'protettorato', 55);
   for (const t of Object.keys(s.nations)) if (t !== overlord && t !== target && w.profiles[t]?.major) changeOpinion(s, t, overlord, -3);
   emit(w, { type: 'subject', nations: [overlord, target], text: `Trattato di pace: ${nationName(w, target)} diventa protettorato ${di(w, overlord)}.` }, sink);
   return null;
@@ -271,4 +279,6 @@ export function weeklySubjects(w: World, sink: GameEvent[]) {
       else if (x.liberty < 20 && r > 0.95) tighten(w, x.overlord, x.subject, sink);
     }
   }
+  // un legame finito toglie il passaggio alle truppe del signore e del soggetto
+  settleOccupations(w);
 }

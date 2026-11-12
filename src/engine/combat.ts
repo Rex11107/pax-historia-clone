@@ -5,7 +5,7 @@ import { govEffects } from './politics';
 import { TERRAIN_DEFENSE } from './map';
 import { UNIT_STATS } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
-import { allied, atWar, clamp, di, emit, rand, the, The, treatyBetween, type World } from './world';
+import { allied, atWar, clamp, di, emit, rand, sameSide, the, The, treatyBetween, type World } from './world';
 
 // Costanti di bilanciamento: un corpo da 20.000 uomini contro uno uguale in pianura
 // perde circa l'1% al giorno; trincee e colline possono quasi raddoppiare la difesa.
@@ -104,7 +104,7 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
     if (winner && b.sides[0].includes(winner) && atWar(s, winner, s.controller[b.province])) {
       const owner = s.owner[b.province];
       const prev = s.controller[b.province];
-      s.controller[b.province] = owner !== prev && allied(s, winner, owner) ? owner : winner;
+      s.controller[b.province] = owner !== prev && (allied(s, winner, owner) || sameSide(s, winner, owner)) ? owner : winner;
       emit(w, { type: 'province_captured', province: b.province, nations: [winner, prev], text: `${w.map.provinces[b.province].name} è occupata dalle truppe ${di(w, winner)}.` }, sink);
     }
     delete s.battles[key];

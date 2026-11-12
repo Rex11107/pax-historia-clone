@@ -4,10 +4,10 @@
 import { transfer } from './ledger';
 import { claimOf, recordLoss } from './claims';
 import { buildings, touchBuildings, type BuildingId } from './construction';
-import { addTreaty, checkAlive, relocateStranded } from './diplomacy';
+import { addTreaty, checkAlive, settleOccupations } from './diplomacy';
 import { composition, ETHNICITIES, STATE_PEOPLES } from './ethnic';
 import { RESOURCES, type ResourceId } from './resources';
-import { subjectOf, subjects, type SubjectLevel } from './vassals';
+import { subjectOf, setSubject, type SubjectLevel } from './vassals';
 import type { GameEvent, NationState, Tag, War } from './types';
 import { changeOpinion, clamp, emit, nationName, type World } from './world';
 import { contracts } from './trade';
@@ -361,8 +361,7 @@ export function applyDemand(w: World, d: Demand, sink: GameEvent[]) {
       break;
     }
     case 'vassal': {
-      s.subjects = subjects(w).filter((x) => x.subject !== d.from);
-      s.subjects.push({ subject: d.from, overlord: d.to, level: d.level, liberty: 60, since: s.day });
+      setSubject(w, d.from, d.to, d.level, 60);
       emit(w, { type: 'subject', nations: [d.from, d.to], text: `${nationName(w, d.from)} diventa ${d.level} di ${nationName(w, d.to)}.` }, sink);
       break;
     }
@@ -426,7 +425,7 @@ export function concludePeace(w: World, war: War, demands: Demand[], sink: GameE
   // le occupazioni finiscono
   const parts = [...war.attackers, ...war.defenders];
   for (let p = 0; p < s.owner.length; p++) if (parts.includes(s.owner[p]) && s.owner[p] !== s.controller[p] && !s.wars.some((x) => (x.attackers.includes(s.owner[p]) && x.defenders.includes(s.controller[p])) || (x.defenders.includes(s.owner[p]) && x.attackers.includes(s.controller[p])))) s.controller[p] = s.owner[p];
-  relocateStranded(w);
+  settleOccupations(w);
   checkAlive(w, sink);
   for (const t of parts) if (t !== s.player && s.nations[t]?.alive && !s.wars.some((x) => x.attackers.includes(t) || x.defenders.includes(t))) s.nations[t].policies.mobilization = 'peace';
   emit(w, { type: 'peace', nations: parts, text: `Pace: finisce la ${war.name.charAt(0).toLowerCase()}${war.name.slice(1)}${demands.length ? '' : ', senza condizioni'}.` }, sink);
