@@ -1,12 +1,13 @@
 {
- "_": "eccezioni accettate dal controllo della mappa (nome della provincia): solo dove la storia o la geografia le giustificano",
+ "_": "eccezioni accettate dal controllo della mappa (nome della provincia): solo dove la storia o la geografia le giustificano. Papaguería: il Gran Desierto de Altar arriva davvero al golfo di California (Bahía Adair, costa disabitata) e la testa del golfo nella mappa è una linea dritta semplificata",
  "deserto": [
   "Deserto nubiano",
   "Deserto orientale",
   "Registan",
   "Deserto orientale (nord)",
   "Deserto orientale (sud)",
-  "Kyzylkum (est)"
+  "Kyzylkum (est)",
+  "Papaguería"
  ],
  "dentro": [
   "Altopiano di Jos",

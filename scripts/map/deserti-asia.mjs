@@ -160,7 +160,7 @@ for (const [name, owner, w, linea, tranne] of VALLI) {
 
 // sostituzione in ritocchi.geojson: i nuovi deserti prendono il posto dei vecchi poligoni del Gobi e del Taklamakan
 const fc = JSON.parse(fs.readFileSync(RITOCCHI, 'utf8'));
-const vecchio = (f) => f.geometry.type !== 'Point' && (Object.values(DESERTO).includes(f.properties.deserto) || f.properties.fonte === 'Ecoregions2017');
+const vecchio = (f) => f.geometry.type !== 'Point' && !f.properties.regione && (Object.values(DESERTO).includes(f.properties.deserto) || f.properties.fonte === 'Ecoregions2017'); // quelli con `regione` sono di deserti-mondo.mjs
 const at = fc.features.findIndex(vecchio);
 const resto = fc.features.filter((f) => !vecchio(f));
 const i = at < 0 ? resto.length : fc.features.slice(0, at).filter((f) => !vecchio(f)).length;

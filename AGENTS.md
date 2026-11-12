@@ -22,6 +22,11 @@ delle fasi; in caso di dubbio, vince questo file.
 6. **La mappa approvata è bloccata.** `scripts/map/lock/*.json` è il riferimento: le aree già
    approvate devono restare identiche. Se il lock non copre la zona che stai toccando, prima
    estendi il lock, poi rigenera.
+   Fuori dal generatore europeo vale il blocco mondiale (`scripts/map/check-blocco.mjs`, dentro
+   `npm run map:check`): `lock/mondo.json` è il riferimento di tutte le province, `lock/aperte.json`
+   le zone che la pull request cambia apposta. Una provincia cambiata, sparita o nuova fuori dalle
+   zone aperte fa fallire il controllo. A modifica approvata, `node scripts/map/check-blocco.mjs
+   --aggiorna` riscrive il riferimento e svuota le zone aperte.
 7. **`MAP_LOCK=0` solo per ricostruire il lock**, mai in un commit destinato alla pubblicazione.
 8. **Nomi d'epoca obbligatori**: 1881, non nomi moderni. "Impero ottomano", "Austria-Ungheria",
    "Regno d'Italia", "Cisleitania", non "Turchia", "Austria", "Italia".

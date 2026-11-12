@@ -133,7 +133,15 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
   const forzati = new Set();
   const grandi = formeBB.filter((r) => r.g != null && r.f.properties.minResto);
   if (grandi.length) {
-    const soglia = Math.max(...grandi.map((r) => r.f.properties.minResto));
+    // soglia della provincia: il minResto del ritocco che la prende o che le ha tolto terra (non il massimo di tutti:
+    // un solo ritocco con minResto altissimo, come Uzboy, toglieva le province nuove in tutto il mondo)
+    const sogliaDi = (g) => {
+      const mie = grandi.filter((r) => r.g === g).map((r) => r.f.properties.minResto);
+      if (mie.length) return Math.max(...mie);
+      const verso = new Set((spostata.get(g) ?? []).map(([to]) => to));
+      const da = grandi.filter((r) => verso.has(r.g)).map((r) => r.f.properties.minResto);
+      return da.length ? Math.min(...da) : 15000;
+    };
     const zona = grandi.map((r) => [r.bb[0] - 3, r.bb[1] - 3, r.bb[2] + 3, r.bb[3] + 3]);
     const inZona = (x) => zona.some((b) => boxHit(x.bb, b));
     const tagliati = new Set([...spostata.keys(), ...grandi.map((r) => r.g), ...target].filter((g) => list.some((x) => x.f.properties.g === g && inZona(x))));
@@ -178,7 +186,7 @@ export function applicaRitocchi(feats, gInfo, file, log = () => {}) {
         const a = km2(c);
         let to;
         const mostra = a >= 1; // le schegge sotto 1 km² passano al vicino senza rumore nel log
-        if (a >= soglia && !deserto(g)) {
+        if (a >= sogliaDi(g) && !deserto(g)) {
           to = gInfo.length;
           gInfo.push({ ...gInfo[g], lockName: undefined, gsum: 0 });
           target.add(to);

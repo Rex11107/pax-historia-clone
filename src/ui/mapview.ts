@@ -12,6 +12,12 @@ import type { World } from '../engine/world';
 export const INK = '#1f2a33';
 const SEA = '#c4d3d4';
 const SEA_DEEP = '#b5c7c9';
+const FRAME = '#26303b'; // fuori dalla mappa
+// livelli semplificati della vista da lontano: [scala sotto cui si usano, km fra due punti tenuti negli archi].
+// Il secondo serve alla vista del mondo intero (1 pixel ≈ 100 km), dove anche 6 km sono decine di punti per pixel
+// e la sola costa costava 200 ms per fotogramma sul telefono.
+const LODS: [number, number][] = [[0.1, 6], [0.03, 25]];
+const FRAME_LINE = '#8c7b56';
 const BRASS = '#b08d3c';
 const WAX = '#8e2430';
 const SAND = '#ead9ad';      // deserto di nessuno
@@ -59,9 +65,13 @@ export class MapView {
   private world: World;
   private paths: Path2D[] = [];
   private bboxes: Float32Array;
+  /** Limite reale della mappa (coordinate di disegno): oltre c'è la cornice e la telecamera non ci va. */
+  private frame = { x0: 0, y0: 0, x1: 0, y1: 0 };
   private arcPaths: Path2D[] = [];
   private coast = new Path2D();
   private national = new Path2D();
+  // livelli semplificati per la vista da lontano (LODS): stessi archi condivisi, meno punti
+  private lods: { k: number; paths: Path2D[]; arcPaths: Path2D[]; coast: Path2D; national: Path2D; regionBorder: Path2D; groupsKey: string; groups: [string, Path2D][] }[] = [];
   private internal = new Path2D();
   private hatches = new Map<string, CanvasPattern>();
   private hit: CanvasRenderingContext2D;
@@ -118,16 +128,51 @@ export class MapView {
       this.paths.push(path);
       this.bboxes.set([x0, y0, x1, y1], i * 4);
     });
+    // la mappa finisce dove finiscono le terre: a est e a ovest la cucitura dello stretto di Bering (le terre ci
+    // arrivano tagliate), a nord e a sud un poco di mare oltre l'ultima costa
+    let fx0 = Infinity, fy0 = Infinity, fx1 = -Infinity, fy1 = -Infinity;
+    for (let i = 0; i < world.map.size; i++) {
+      fx0 = Math.min(fx0, this.bboxes[i * 4]); fy0 = Math.min(fy0, this.bboxes[i * 4 + 1]);
+      fx1 = Math.max(fx1, this.bboxes[i * 4 + 2]); fy1 = Math.max(fy1, this.bboxes[i * 4 + 3]);
+    }
+    const sea = (fy1 - fy0) * 0.03;
+    this.frame = { x0: fx0, y0: fy0 - sea, x1: fx1, y1: fy1 + sea };
     this.arcPaths = arcs.map((a) => {
       const p = new Path2D();
       for (let i = 0; i < a.length; i += 2) if (i === 0) p.moveTo(a[i], a[i + 1]); else p.lineTo(a[i], a[i + 1]);
       return p;
     });
     world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) this.coast.addPath(this.arcPaths[i]); });
+    // da lontano migliaia di province a piena risoluzione rallentano il telefono: archi sfoltiti (un punto ogni
+    // tol km, estremi sempre tenuti, così province vicine e confini restano agganciati)
+    for (const [lk, tol] of LODS) {
+      const arcsLo = arcs.map((a) => {
+        const out = [a[0], a[1]];
+        for (let i = 2; i < a.length - 2; i += 2) if (Math.abs(a[i] - out[out.length - 2]) + Math.abs(a[i + 1] - out[out.length - 1]) >= tol) out.push(a[i], a[i + 1]);
+        if (a.length > 2) out.push(a[a.length - 2], a[a.length - 1]);
+        return Float32Array.from(out);
+      });
+      const arcPaths = arcsLo.map((a) => {
+        const p = new Path2D();
+        for (let i = 0; i < a.length; i += 2) if (i === 0) p.moveTo(a[i], a[i + 1]); else p.lineTo(a[i], a[i + 1]);
+        return p;
+      });
+      const paths = world.map.provinces.map((p) => {
+        const path = new Path2D();
+        for (const ring of provinceRings(p, arcsLo)) {
+          for (let j = 0; j < ring.length; j += 2) if (j === 0) path.moveTo(ring[j], ring[j + 1]); else path.lineTo(ring[j], ring[j + 1]);
+          path.closePath();
+        }
+        return path;
+      });
+      const coast = new Path2D();
+      world.map.data.arcSides.forEach(([a, b], i) => { if (b < 0) coast.addPath(arcPaths[i]); });
+      this.lods.push({ k: lk, paths, arcPaths, coast, national: new Path2D(), regionBorder: new Path2D(), groupsKey: '', groups: [] });
+    }
     this.tiny = world.map.provinces.filter((p) => p.tiny).map((p) => p.id);
     // regioni del deserto (Sahara, Deserto Libico…): province maggiori che ne contengono altre
     const reg = (i: number) => (i >= 0 ? world.map.provinces[i].region : undefined);
-    world.map.data.arcSides.forEach(([a, b], i) => { if (b >= 0 && (reg(a) || reg(b)) && reg(a) !== reg(b)) this.regionBorder.addPath(this.arcPaths[i]); });
+    world.map.data.arcSides.forEach(([a, b], i) => { if (b >= 0 && (reg(a) || reg(b)) && reg(a) !== reg(b)) { this.regionBorder.addPath(this.arcPaths[i]); for (const l of this.lods) l.regionBorder.addPath(l.arcPaths[i]); } });
     const byRegion = new Map<string, { x: number; y: number; a: number }>();
     for (const p of world.map.provinces) {
       if (!p.region) continue;
@@ -217,10 +262,11 @@ export class MapView {
   refreshPolitical() {
     const s = this.world.state;
     this.national = new Path2D();
+    for (const l of this.lods) l.national = new Path2D();
     this.internal = new Path2D();
     this.world.map.data.arcSides.forEach(([a, b], i) => {
       if (b < 0) return;
-      if (s.owner[a] !== s.owner[b]) this.national.addPath(this.arcPaths[i]);
+      if (s.owner[a] !== s.owner[b]) { this.national.addPath(this.arcPaths[i]); for (const l of this.lods) l.national.addPath(l.arcPaths[i]); }
       else this.internal.addPath(this.arcPaths[i]);
     });
     // etichette: nel blocco di territorio contiguo che contiene la capitale (la Francia in Francia, non in Algeria);
@@ -271,6 +317,39 @@ export class MapView {
     this.canvas.width = Math.max(1, Math.round(r.width * this.dpr));
     this.canvas.height = Math.max(1, Math.round(r.height * this.dpr));
     this.dirty = true;
+  }
+
+  /** Province della vista lontana raggruppate per colore (velatura già mescolata), rifatte quando cambiano i padroni. */
+  private loGroups(lod: MapView['lods'][number]): [string, Path2D][] {
+    const s = this.world.state, prof = this.world.profiles, map = this.world.map;
+    const key = s.player + '|' + s.owner.join(',');
+    if (key === lod.groupsKey) return lod.groups;
+    const groups = new Map<string, Path2D>();
+    for (let i = 0; i < lod.paths.length; i++) {
+      const owner = s.owner[i];
+      const base = owner === '' ? (map.provinces[i].impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
+      const color = owner === s.player ? base : this.veiled(base);
+      let path = groups.get(color);
+      if (!path) groups.set(color, (path = new Path2D()));
+      path.addPath(lod.paths[i]);
+    }
+    lod.groupsKey = key;
+    lod.groups = [...groups];
+    return lod.groups;
+  }
+
+  /** Colore già coperto dalla velatura carta (238,240,234 al 18%), per la vista da lontano. */
+  private veiledCache = new Map<string, string>();
+  private veiled(c: string): string {
+    let v = this.veiledCache.get(c);
+    if (v) return v;
+    const m = /^#([0-9a-f]{6})$/i.exec(c) ?? /^#([0-9a-f])([0-9a-f])([0-9a-f])$/i.exec(c);
+    if (!m) return c;
+    const hex = m.length === 4 ? m.slice(1).map((x) => x + x).join('') : m[1];
+    const mix = (j: number, t: number) => Math.round(parseInt(hex.slice(j, j + 2), 16) * 0.82 + t * 0.18);
+    v = `rgb(${mix(0, 238)},${mix(2, 240)},${mix(4, 234)})`;
+    this.veiledCache.set(c, v);
+    return v;
   }
 
   private hatch(color: string): CanvasPattern {
@@ -335,17 +414,25 @@ export class MapView {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
 
+    this.clampCam(W, H);
     const k = this.cam.scale;
     ctx.setTransform(this.dpr * k, 0, 0, this.dpr * k, this.dpr * (W / 2 - this.cam.x * k), this.dpr * (H / 2 - this.cam.y * k));
     const [vx0, vy0] = this.screenToWorld(0, 0), [vx1, vy1] = this.screenToWorld(W, H);
+    let lod: MapView['lods'][number] | undefined;
+    for (const l of this.lods) if (k < l.k) lod = l;
+    const lo = !!lod, P = lod ? lod.paths : this.paths;
     const visible = (i: number) => !(this.bboxes[i * 4 + 2] < vx0 || this.bboxes[i * 4] > vx1 || this.bboxes[i * 4 + 3] < vy0 || this.bboxes[i * 4 + 1] > vy1);
 
     // costa: alone d'acqua bassa
     ctx.strokeStyle = 'rgba(255,255,255,0.35)';
     ctx.lineWidth = 7 / k;
     ctx.lineJoin = 'round';
-    ctx.stroke(this.coast);
+    ctx.stroke(lod ? lod.coast : this.coast);
 
+    // da lontano le province dello stesso colore si riempiono in un colpo solo: con 4500 riempimenti separati
+    // la vista del mondo costava 230 ms per fotogramma, con un riempimento per colore pochi millisecondi
+    const grouped = lo && !this.showEthnic;
+    if (grouped) for (const [color, path] of this.loGroups(lod!)) { ctx.fillStyle = color; ctx.fill(path); }
     for (let i = 0; i < this.paths.length; i++) {
       if (!visible(i)) continue;
       const owner = s.owner[i], ctrl = s.controller[i];
@@ -353,35 +440,37 @@ export class MapView {
       if (this.showEthnic && !pv.impassable) {
         const comp = [...composition(this.world, i)].sort((a, b) => b.share - a.share);
         ctx.fillStyle = ETHNICITIES[comp[0].eth]?.color ?? '#aaa';
-        ctx.fill(this.paths[i]);
+        ctx.fill(P[i]);
         if (comp[0].share < 50 && comp[1]) {
           const pat = this.hatch(ETHNICITIES[comp[1].eth]?.color ?? '#777');
           pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
           ctx.fillStyle = pat;
-          ctx.fill(this.paths[i]);
+          ctx.fill(P[i]);
         }
-        if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(this.paths[i]); }
+        if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(P[i]); }
         continue;
       }
-      ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
-      ctx.fill(this.paths[i]);
+      if (!grouped) {
+        ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
+        ctx.fill(P[i]);
+      }
       if (pv.impassable) {
         const pat = this.desertPattern();
         pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
         ctx.fillStyle = pat;
-        ctx.fill(this.paths[i]);
+        ctx.fill(P[i]);
       }
       if (ctrl !== owner) {
         const pat = this.hatch(prof[ctrl]?.color ?? '#000');
         pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
         ctx.fillStyle = pat;
-        ctx.fill(this.paths[i]);
+        ctx.fill(P[i]);
       }
-      if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(this.paths[i]); }
+      if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(P[i]); }
     }
     // velatura carta: le terre del giocatore restano piene, le altre leggermente schiarite
     ctx.fillStyle = 'rgba(238,240,234,0.18)';
-    for (let i = 0; i < this.paths.length; i++) if (visible(i) && s.owner[i] !== s.player) ctx.fill(this.paths[i]);
+    if (!lo || this.showEthnic) for (let i = 0; i < this.paths.length; i++) if (visible(i) && s.owner[i] !== s.player) ctx.fill(P[i]);
 
     // laghi, rilievi, fiumi
     if (this.phys) {
@@ -431,15 +520,15 @@ export class MapView {
 
     ctx.strokeStyle = 'rgba(31,42,51,0.55)';
     ctx.lineWidth = 0.9 / k;
-    ctx.stroke(this.coast);
+    ctx.stroke(lod ? lod.coast : this.coast);
     ctx.strokeStyle = INK;
     ctx.lineWidth = 2.1 / k;
-    ctx.stroke(this.national);
+    ctx.stroke(lod ? lod.national : this.national);
     // regioni del deserto: contorno tratteggiato color sabbia bruciata
     ctx.strokeStyle = 'rgba(128,88,34,0.75)';
     ctx.lineWidth = 2.4 / k;
     ctx.setLineDash([10 / k, 5 / k]);
-    ctx.stroke(this.regionBorder);
+    ctx.stroke(lod ? lod.regionBorder : this.regionBorder);
     ctx.setLineDash([]);
     // piste carovaniere: un filo tenue per la continuita, puntini radi per la pista,
     // nodi alle oasi. A zoom lontano restano solo i puntini, piu leggeri del tratteggio.
@@ -500,6 +589,8 @@ export class MapView {
       ctx.stroke();
     }
     ctx.setLineDash([]);
+    // per ultima la cornice, sopra l'alone delle coste tagliate dalla cucitura di Bering
+    this.drawFrame(ctx, vx0, vy0, vx1, vy1, k);
 
     // etichette: nazioni da lontano, province da vicino
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -693,6 +784,33 @@ export class MapView {
     c.addEventListener('pointerup', up);
     c.addEventListener('pointercancel', (e) => { pts.delete(e.pointerId); pinch = null; });
     c.addEventListener('wheel', (e) => { e.preventDefault(); this.zoomAt(e.clientX, e.clientY, Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
+  }
+
+  /** Tiene la vista dentro la mappa: zoom minimo = mondo intero, niente spostamenti oltre il bordo. */
+  private clampCam(W: number, H: number) {
+    const f = this.frame, ew = f.x1 - f.x0, eh = f.y1 - f.y0;
+    if (!(ew > 0 && eh > 0)) return;
+    const min = Math.min(W / ew, H / eh);
+    if (this.cam.scale < min) this.cam.scale = min;
+    const hw = W / 2 / this.cam.scale, hh = H / 2 / this.cam.scale;
+    // al bordo si vede una fascia di cornice (fino al 15% dello schermo), così è chiaro che la mappa finisce lì;
+    // se la vista è più larga della mappa, la mappa sta al centro
+    const mx = (W * 0.15) / this.cam.scale, my = (H * 0.15) / this.cam.scale;
+    this.cam.x = hw * 2 >= ew + 2 * mx ? (f.x0 + f.x1) / 2 : Math.min(f.x1 - hw + mx, Math.max(f.x0 + hw - mx, this.cam.x));
+    this.cam.y = hh * 2 >= eh + 2 * my ? (f.y0 + f.y1) / 2 : Math.min(f.y1 - hh + my, Math.max(f.y0 + hh - my, this.cam.y));
+  }
+
+  /** Cornice fuori dal limite della mappa e linea del bordo. */
+  private drawFrame(ctx: CanvasRenderingContext2D, vx0: number, vy0: number, vx1: number, vy1: number, k: number) {
+    const f = this.frame;
+    ctx.fillStyle = FRAME;
+    if (vx0 < f.x0) ctx.fillRect(vx0, vy0, f.x0 - vx0, vy1 - vy0);
+    if (vx1 > f.x1) ctx.fillRect(f.x1, vy0, vx1 - f.x1, vy1 - vy0);
+    if (vy0 < f.y0) ctx.fillRect(vx0, vy0, vx1 - vx0, f.y0 - vy0);
+    if (vy1 > f.y1) ctx.fillRect(vx0, f.y1, vx1 - vx0, vy1 - f.y1);
+    ctx.strokeStyle = FRAME_LINE;
+    ctx.lineWidth = 2.5 / k;
+    ctx.strokeRect(f.x0, f.y0, f.x1 - f.x0, f.y1 - f.y0);
   }
 
   zoomAt(cx: number, cy: number, f: number) {
