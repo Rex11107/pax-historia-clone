@@ -20,6 +20,20 @@ export interface MapData {
   canals?: { name: string; pts: number[] }[];
   /** piste carovaniere attraverso il deserto: collegano due province transitabili, più lente di una strada */
   routes?: { a: number; b: number; name: string; km: number; pts: number[] }[];
+  /** zone di mare per le rotte navali (scripts/map/mari.mjs) */
+  sea?: SeaData;
+}
+
+/** Grafo del mare: zone con un punto di riferimento, adiacenze in km, canali con data d'apertura, coste. */
+export interface SeaData {
+  /** punto di riferimento di ogni zona, [lon, lat] */
+  zones: [number, number][];
+  /** adiacenze piatte: a, b, km, a, b, km… (stretti compresi) */
+  adj: number[];
+  /** canali: zone collegate, lunghezza, giorno d'apertura dal 1° gennaio 1881, punto del canale [lon, lat] */
+  canals: { name: string; a: number; b: number; km: number; opens: number; at: [number, number] }[];
+  /** per provincia costiera: [provincia, zona, km, zona, km…] */
+  coast: number[][];
 }
 
 export interface ProvinceData {
@@ -98,7 +112,7 @@ export interface Movement {
   progress: number; // giorni già percorsi sulla tappa corrente
   legDays: number; // durata della tappa corrente
   /** tratto per mare (sbarco): da un porto proprio a una costa, fuori dai collegamenti di terra */
-  sea?: { from: number; to: number; days: number };
+  sea?: { from: number; to: number; days: number; pts?: number[]; via?: string[] };
 }
 
 export type Condition =

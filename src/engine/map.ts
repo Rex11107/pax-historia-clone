@@ -209,6 +209,16 @@ export function laea(lon0: number, lat: number): [number, number] {
   return [(R * lon * Math.PI) / 180, R * 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * p))];
 }
 
+/** Larghezza del mondo in km sulla mappa (un giro intero all'equatore): la mappa si ripete con questo passo,
+ *  così il Pacifico è continuo come in HOI4 (gli Stati Uniti guardano il Giappone, non l'Europa). */
+export const WRAP_KM = 2 * Math.PI * 6371;
+/** x della cucitura dello stretto di Bering (168° O): le terre stanno fra SEAM_X e SEAM_X + WRAP_KM. */
+export const SEAM_X = (6371 * -168 * Math.PI) / 180;
+/** La copia di x più vicina a `ref` (per disegnare e interpolare attraverso la cucitura). */
+export function nearX(x: number, ref: number): number {
+  return x + WRAP_KM * Math.round((ref - x) / WRAP_KM);
+}
+
 /** Distanza vera (km, sulla sfera) fra due punti lon/lat: la proiezione della mappa ingrandisce le alte latitudini. */
 export function geoKm(a: [number, number], b: [number, number]): number {
   const r = Math.PI / 180, dLat = (b[1] - a[1]) * r, dLon = (b[0] - a[0]) * r;
