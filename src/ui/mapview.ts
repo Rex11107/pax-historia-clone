@@ -1,7 +1,7 @@
 // Mappa su canvas: province come Path2D, confini disegnati per arco (spessi dove cambia il
 // proprietario), occupazioni tratteggiate, unità come pedine. Disegno solo quando serve.
 
-import { decodeArcs, provinceRings } from '../engine/map';
+import { decodeArcs, nearX, provinceRings, SEAM_X, WRAP_KM } from '../engine/map';
 import { unitPosition } from '../engine/orders';
 import { RESOURCES } from '../engine/resources';
 import { BUILDINGS, buildings, type BuildingId } from '../engine/construction';
@@ -89,6 +89,8 @@ export class MapView {
   private phys: { relief: { cls: string; path: Path2D; bb: number[] }[]; rivers: { rank: number; path: Path2D; bb: number[] }[]; lakes: Path2D } | null = null;
   private mountainPattern: CanvasPattern | null = null;
   previewPath: number[] | null = null;
+  /** tratto per mare del percorso in anteprima (rotta fra le zone di mare) */
+  previewSea: { from: number; to: number; pts?: number[] } | null = null;
   /** posizioni animate (durante il riepilogo del turno) */
   override: Record<string, [number, number]> | null = null;
   highlight: Set<number> | null = null;
@@ -367,7 +369,7 @@ export class MapView {
 
   private worldToScreen(x: number, y: number): [number, number] {
     const W = this.canvas.width / this.dpr, H = this.canvas.height / this.dpr;
-    return [(x - this.cam.x) * this.cam.scale + W / 2, (y - this.cam.y) * this.cam.scale + H / 2];
+    return [(nearX(x, this.cam.x) - this.cam.x) * this.cam.scale + W / 2, (y - this.cam.y) * this.cam.scale + H / 2];
   }
   private screenToWorld(sx: number, sy: number): [number, number] {
     const W = this.canvas.width / this.dpr, H = this.canvas.height / this.dpr;
@@ -383,7 +385,8 @@ export class MapView {
 
   /** Inquadra due province nella parte alta dello schermo (sopra il pannello, su telefono). */
   focusBetween(a: number, b: number) {
-    const pa = this.world.map.provinces[a].c, pb = this.world.map.provinces[b].c;
+    const pa = this.world.map.provinces[a].c, pb0 = this.world.map.provinces[b].c;
+    const pb = [nearX(pb0[0], pa[0]), pb0[1]]; // attraverso il Pacifico se è più corto
     const W = this.canvas.width / this.dpr, H = this.canvas.height / this.dpr;
     const mobile = window.innerWidth < 900;
     const usableH = mobile ? H * 0.38 : H * 0.8;
@@ -395,6 +398,26 @@ export class MapView {
     const targetScreenY = mobile ? H * 0.22 : H / 2;
     this.cam.y = midY - (targetScreenY - H / 2) / this.cam.scale;
     this.dirty = true;
+  }
+
+  /** Linea di un percorso (km, y verso il basso): centri delle province, e per la tappa in mare la rotta fra le
+   *  zone di mare (dalla frazione `t` già percorsa); senza salti alla cucitura del Pacifico. */
+  private routeLine(start: [number, number], from: number, path: number[], sea: { from: number; to: number; pts?: number[] } | null | undefined, t: number): number[] {
+    const pv = this.world.map.provinces;
+    const raw: number[] = [...start];
+    let prev = from;
+    path.forEach((id, i) => {
+      if (sea?.pts && prev === sea.from && id === sea.to) {
+        // punti della rotta oltre la frazione già percorsa (sulla prima tappa)
+        const p = sea.pts, seg: number[] = [0];
+        for (let j = 2; j < p.length; j += 2) seg.push(seg[seg.length - 1] + Math.hypot(p[j] - p[j - 2], p[j + 1] - p[j - 1]));
+        const done = (i === 0 ? t : 0) * seg[seg.length - 1];
+        for (let j = 1; j < seg.length; j++) if (seg[j] > done) raw.push(p[2 * j], p[2 * j + 1]);
+      } else raw.push(pv[id].c[0], -pv[id].c[1]);
+      prev = id;
+    });
+    for (let i = 2; i < raw.length; i += 2) raw[i] = nearX(raw[i], raw[i - 2]);
+    return raw;
   }
 
   unitScreenPos(u: Unit): [number, number] {
@@ -416,181 +439,193 @@ export class MapView {
 
     this.clampCam(W, H);
     const k = this.cam.scale;
-    ctx.setTransform(this.dpr * k, 0, 0, this.dpr * k, this.dpr * (W / 2 - this.cam.x * k), this.dpr * (H / 2 - this.cam.y * k));
-    const [vx0, vy0] = this.screenToWorld(0, 0), [vx1, vy1] = this.screenToWorld(W, H);
+    const [sx0, vy0] = this.screenToWorld(0, 0), [sx1, vy1] = this.screenToWorld(W, H);
     let lod: MapView['lods'][number] | undefined;
     for (const l of this.lods) if (k < l.k) lod = l;
     const lo = !!lod, P = lod ? lod.paths : this.paths;
-    const visible = (i: number) => !(this.bboxes[i * 4 + 2] < vx0 || this.bboxes[i * 4] > vx1 || this.bboxes[i * 4 + 3] < vy0 || this.bboxes[i * 4 + 1] > vy1);
+    // la mappa si ripete in orizzontale (WRAP_KM): si disegnano le copie che cadono nella vista, al massimo due
+    const offs = [-WRAP_KM, 0, WRAP_KM].filter((o) => this.frame.x1 + o > sx0 && this.frame.x0 + o < sx1);
+    for (const off of offs) {
+      ctx.setTransform(this.dpr * k, 0, 0, this.dpr * k, this.dpr * (W / 2 - (this.cam.x - off) * k), this.dpr * (H / 2 - this.cam.y * k));
+      const vx0 = sx0 - off, vx1 = sx1 - off;
+      const visible = (i: number) => !(this.bboxes[i * 4 + 2] < vx0 || this.bboxes[i * 4] > vx1 || this.bboxes[i * 4 + 3] < vy0 || this.bboxes[i * 4 + 1] > vy1);
 
-    // costa: alone d'acqua bassa
-    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
-    ctx.lineWidth = 7 / k;
-    ctx.lineJoin = 'round';
-    ctx.stroke(lod ? lod.coast : this.coast);
+      // costa: alone d'acqua bassa
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 7 / k;
+      ctx.lineJoin = 'round';
+      ctx.stroke(lod ? lod.coast : this.coast);
 
-    // da lontano le province dello stesso colore si riempiono in un colpo solo: con 4500 riempimenti separati
-    // la vista del mondo costava 230 ms per fotogramma, con un riempimento per colore pochi millisecondi
-    const grouped = lo && !this.showEthnic;
-    if (grouped) for (const [color, path] of this.loGroups(lod!)) { ctx.fillStyle = color; ctx.fill(path); }
-    for (let i = 0; i < this.paths.length; i++) {
-      if (!visible(i)) continue;
-      const owner = s.owner[i], ctrl = s.controller[i];
-      const pv = this.world.map.provinces[i];
-      if (this.showEthnic && !pv.impassable) {
-        const comp = [...composition(this.world, i)].sort((a, b) => b.share - a.share);
-        ctx.fillStyle = ETHNICITIES[comp[0].eth]?.color ?? '#aaa';
-        ctx.fill(P[i]);
-        if (comp[0].share < 50 && comp[1]) {
-          const pat = this.hatch(ETHNICITIES[comp[1].eth]?.color ?? '#777');
+      // da lontano le province dello stesso colore si riempiono in un colpo solo: con 4500 riempimenti separati
+      // la vista del mondo costava 230 ms per fotogramma, con un riempimento per colore pochi millisecondi
+      const grouped = lo && !this.showEthnic;
+      if (grouped) for (const [color, path] of this.loGroups(lod!)) { ctx.fillStyle = color; ctx.fill(path); }
+      for (let i = 0; i < this.paths.length; i++) {
+        if (!visible(i)) continue;
+        const owner = s.owner[i], ctrl = s.controller[i];
+        const pv = this.world.map.provinces[i];
+        if (this.showEthnic && !pv.impassable) {
+          const comp = [...composition(this.world, i)].sort((a, b) => b.share - a.share);
+          ctx.fillStyle = ETHNICITIES[comp[0].eth]?.color ?? '#aaa';
+          ctx.fill(P[i]);
+          if (comp[0].share < 50 && comp[1]) {
+            const pat = this.hatch(ETHNICITIES[comp[1].eth]?.color ?? '#777');
+            pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
+            ctx.fillStyle = pat;
+            ctx.fill(P[i]);
+          }
+          if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(P[i]); }
+          continue;
+        }
+        if (!grouped) {
+          ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
+          ctx.fill(P[i]);
+        }
+        if (pv.impassable) {
+          const pat = this.desertPattern();
+          pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
+          ctx.fillStyle = pat;
+          ctx.fill(P[i]);
+        }
+        if (ctrl !== owner) {
+          const pat = this.hatch(prof[ctrl]?.color ?? '#000');
           pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
           ctx.fillStyle = pat;
           ctx.fill(P[i]);
         }
         if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(P[i]); }
-        continue;
       }
-      if (!grouped) {
-        ctx.fillStyle = owner === '' ? (pv.impassable ? SAND : NOMANS) : prof[owner]?.color ?? '#aaa';
-        ctx.fill(P[i]);
-      }
-      if (pv.impassable) {
-        const pat = this.desertPattern();
-        pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
-        ctx.fillStyle = pat;
-        ctx.fill(P[i]);
-      }
-      if (ctrl !== owner) {
-        const pat = this.hatch(prof[ctrl]?.color ?? '#000');
-        pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
-        ctx.fillStyle = pat;
-        ctx.fill(P[i]);
-      }
-      if (this.highlight?.has(i)) { ctx.fillStyle = 'rgba(255,255,255,0.35)'; ctx.fill(P[i]); }
-    }
-    // velatura carta: le terre del giocatore restano piene, le altre leggermente schiarite
-    ctx.fillStyle = 'rgba(238,240,234,0.18)';
-    if (!lo || this.showEthnic) for (let i = 0; i < this.paths.length; i++) if (visible(i) && s.owner[i] !== s.player) ctx.fill(P[i]);
+      // velatura carta: le terre del giocatore restano piene, le altre leggermente schiarite
+      ctx.fillStyle = 'rgba(238,240,234,0.18)';
+      if (!lo || this.showEthnic) for (let i = 0; i < this.paths.length; i++) if (visible(i) && s.owner[i] !== s.player) ctx.fill(P[i]);
 
-    // laghi, rilievi, fiumi
-    if (this.phys) {
-      const inView = (bb: number[]) => !(bb[2] < vx0 || bb[0] > vx1 || bb[3] < vy0 || bb[1] > vy1);
-      if (this.showRelief) {
-        for (const r of this.phys.relief) {
-          if (!inView(r.bb)) continue;
-          ctx.fillStyle = r.cls === 'Range/mtn' ? 'rgba(96,72,46,0.22)' : 'rgba(140,112,70,0.12)';
-          ctx.fill(r.path);
-          if (r.cls === 'Range/mtn') {
-            const pat = this.reliefPattern();
-            pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
-            ctx.fillStyle = pat;
+      // laghi, rilievi, fiumi
+      if (this.phys) {
+        const inView = (bb: number[]) => !(bb[2] < vx0 || bb[0] > vx1 || bb[3] < vy0 || bb[1] > vy1);
+        if (this.showRelief) {
+          for (const r of this.phys.relief) {
+            if (!inView(r.bb)) continue;
+            ctx.fillStyle = r.cls === 'Range/mtn' ? 'rgba(96,72,46,0.22)' : 'rgba(140,112,70,0.12)';
             ctx.fill(r.path);
+            if (r.cls === 'Range/mtn') {
+              const pat = this.reliefPattern();
+              pat.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, 0, 0]));
+              ctx.fillStyle = pat;
+              ctx.fill(r.path);
+            }
           }
         }
+        ctx.fillStyle = SEA;
+        ctx.fill(this.phys.lakes);
+        const maxRank = this.showRelief ? (k > 0.4 ? 12 : 10) : k > 0.6 ? 9 : k > 0.3 ? 7 : 5;
+        ctx.strokeStyle = this.showRelief ? 'rgba(52,104,150,0.9)' : 'rgba(70,112,150,0.55)';
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        for (const r of this.phys.rivers) {
+          if (r.rank > maxRank || !inView(r.bb)) continue;
+          ctx.lineWidth = (r.rank <= 5 ? 2.2 : r.rank <= 7 ? 1.6 : r.rank <= 10 ? 1.1 : 0.8) / k;
+          ctx.stroke(r.path);
+        }
+        ctx.strokeStyle = 'rgba(31,42,51,0.4)';
+        ctx.lineWidth = 0.7 / k;
+        ctx.stroke(this.phys.lakes);
       }
-      ctx.fillStyle = SEA;
-      ctx.fill(this.phys.lakes);
-      const maxRank = this.showRelief ? (k > 0.4 ? 12 : 10) : k > 0.6 ? 9 : k > 0.3 ? 7 : 5;
-      ctx.strokeStyle = this.showRelief ? 'rgba(52,104,150,0.9)' : 'rgba(70,112,150,0.55)';
-      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-      for (const r of this.phys.rivers) {
-        if (r.rank > maxRank || !inView(r.bb)) continue;
-        ctx.lineWidth = (r.rank <= 5 ? 2.2 : r.rank <= 7 ? 1.6 : r.rank <= 10 ? 1.1 : 0.8) / k;
-        ctx.stroke(r.path);
+
+      // canali: acqua con un filo d'inchiostro ai lati
+      if (this.canals.length) {
+        ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
+        for (const c of this.canals) {
+          ctx.strokeStyle = 'rgba(31,42,51,0.6)'; ctx.lineWidth = 4.2 / k; ctx.stroke(c.path);
+          ctx.strokeStyle = SEA; ctx.lineWidth = 2.6 / k; ctx.stroke(c.path);
+        }
       }
-      ctx.strokeStyle = 'rgba(31,42,51,0.4)';
-      ctx.lineWidth = 0.7 / k;
-      ctx.stroke(this.phys.lakes);
-    }
 
-    // canali: acqua con un filo d'inchiostro ai lati
-    if (this.canals.length) {
-      ctx.lineJoin = 'round'; ctx.lineCap = 'butt';
-      for (const c of this.canals) {
-        ctx.strokeStyle = 'rgba(31,42,51,0.6)'; ctx.lineWidth = 4.2 / k; ctx.stroke(c.path);
-        ctx.strokeStyle = SEA; ctx.lineWidth = 2.6 / k; ctx.stroke(c.path);
+      if (k > 0.233) {
+        ctx.strokeStyle = 'rgba(31,42,51,0.28)';
+        ctx.lineWidth = 0.7 / k;
+        ctx.stroke(this.internal);
       }
-    }
 
-    if (k > 0.233) {
-      ctx.strokeStyle = 'rgba(31,42,51,0.28)';
-      ctx.lineWidth = 0.7 / k;
-      ctx.stroke(this.internal);
-    }
-
-    ctx.strokeStyle = 'rgba(31,42,51,0.55)';
-    ctx.lineWidth = 0.9 / k;
-    ctx.stroke(lod ? lod.coast : this.coast);
-    ctx.strokeStyle = INK;
-    ctx.lineWidth = 2.1 / k;
-    ctx.stroke(lod ? lod.national : this.national);
-    // regioni del deserto: contorno tratteggiato color sabbia bruciata
-    ctx.strokeStyle = 'rgba(128,88,34,0.75)';
-    ctx.lineWidth = 2.4 / k;
-    ctx.setLineDash([10 / k, 5 / k]);
-    ctx.stroke(lod ? lod.regionBorder : this.regionBorder);
-    ctx.setLineDash([]);
-    // piste carovaniere: un filo tenue per la continuita, puntini radi per la pista,
-    // nodi alle oasi. A zoom lontano restano solo i puntini, piu leggeri del tratteggio.
-    if (k > 0.14) {
-      ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-      ctx.strokeStyle = 'rgba(107,74,34,0.22)';
-      ctx.lineWidth = 1 / k;
-      ctx.stroke(this.routes);
-      ctx.strokeStyle = 'rgba(107,74,34,0.72)';
+      ctx.strokeStyle = 'rgba(31,42,51,0.55)';
+      ctx.lineWidth = 0.9 / k;
+      ctx.stroke(lod ? lod.coast : this.coast);
+      ctx.strokeStyle = INK;
       ctx.lineWidth = 2.1 / k;
-      ctx.setLineDash([0.01, 9 / k]);
-      ctx.stroke(this.routes);
+      ctx.stroke(lod ? lod.national : this.national);
+      // regioni del deserto: contorno tratteggiato color sabbia bruciata
+      ctx.strokeStyle = 'rgba(128,88,34,0.75)';
+      ctx.lineWidth = 2.4 / k;
+      ctx.setLineDash([10 / k, 5 / k]);
+      ctx.stroke(lod ? lod.regionBorder : this.regionBorder);
       ctx.setLineDash([]);
-      if (k > 0.26 && this.routeEnds.length) {
-        const r = 2.1 / k;
-        ctx.beginPath();
-        for (const [x, y] of this.routeEnds) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); }
-        ctx.fillStyle = 'rgba(244,239,227,0.95)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(107,74,34,0.7)';
-        ctx.lineWidth = 0.9 / k;
-        ctx.stroke();
-      }
-    }
-
-    if (this.selectedProvince !== null) {
-      ctx.strokeStyle = BRASS;
-      ctx.lineWidth = 3 / k;
-      ctx.stroke(this.paths[this.selectedProvince]);
-    }
-
-    // percorso in anteprima
-    if (this.previewPath?.length && this.selectedUnit) {
-      const u = s.units.find((x) => x.id === this.selectedUnit);
-      if (u) {
-        const pts = [u.location, ...this.previewPath].map((id) => this.world.map.provinces[id].c);
-        ctx.strokeStyle = WAX;
-        ctx.lineWidth = 3 / k;
-        ctx.setLineDash([8 / k, 6 / k]);
-        ctx.beginPath();
-        pts.forEach((c, i) => (i ? ctx.lineTo(c[0], -c[1]) : ctx.moveTo(c[0], -c[1])));
-        ctx.stroke();
+      // piste carovaniere: un filo tenue per la continuita, puntini radi per la pista,
+      // nodi alle oasi. A zoom lontano restano solo i puntini, piu leggeri del tratteggio.
+      if (k > 0.14) {
+        ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(107,74,34,0.22)';
+        ctx.lineWidth = 1 / k;
+        ctx.stroke(this.routes);
+        ctx.strokeStyle = 'rgba(107,74,34,0.72)';
+        ctx.lineWidth = 2.1 / k;
+        ctx.setLineDash([0.01, 9 / k]);
+        ctx.stroke(this.routes);
         ctx.setLineDash([]);
-        const end = pts[pts.length - 1];
-        ctx.fillStyle = WAX;
-        ctx.beginPath(); ctx.arc(end[0], -end[1], 6 / k, 0, Math.PI * 2); ctx.fill();
+        if (k > 0.26 && this.routeEnds.length) {
+          const r = 2.1 / k;
+          ctx.beginPath();
+          for (const [x, y] of this.routeEnds) { ctx.moveTo(x + r, y); ctx.arc(x, y, r, 0, Math.PI * 2); }
+          ctx.fillStyle = 'rgba(244,239,227,0.95)';
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(107,74,34,0.7)';
+          ctx.lineWidth = 0.9 / k;
+          ctx.stroke();
+        }
       }
+
+      if (this.selectedProvince !== null) {
+        ctx.strokeStyle = BRASS;
+        ctx.lineWidth = 3 / k;
+        ctx.stroke(this.paths[this.selectedProvince]);
+      }
+
+      // percorso in anteprima
+      if (this.previewPath?.length && this.selectedUnit) {
+        const u = s.units.find((x) => x.id === this.selectedUnit);
+        if (u) {
+          const c0 = this.world.map.provinces[u.location].c;
+          const line = this.routeLine([c0[0], -c0[1]], u.location, this.previewPath, this.previewSea, 0);
+          ctx.strokeStyle = WAX;
+          ctx.lineWidth = 3 / k;
+          ctx.setLineDash([8 / k, 6 / k]);
+          ctx.beginPath();
+          for (let i = 0; i < line.length; i += 2) if (i) ctx.lineTo(line[i], line[i + 1]); else ctx.moveTo(line[i], line[i + 1]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = WAX;
+          ctx.beginPath(); ctx.arc(line[line.length - 2], line[line.length - 1], 6 / k, 0, Math.PI * 2); ctx.fill();
+        }
+      }
+      // percorsi in corso delle unità del giocatore
+      ctx.strokeStyle = 'rgba(31,42,51,0.55)';
+      ctx.lineWidth = 1.6 / k;
+      ctx.setLineDash([4 / k, 4 / k]);
+      for (const u of s.units) {
+        if (u.nation !== s.player || !u.move?.path.length || this.override) continue;
+        const t = u.move.legDays > 0 ? Math.min(1, u.move.progress / u.move.legDays) : 0;
+        const line = this.routeLine(unitPosition(this.world, u), u.location, u.move.path, u.move.sea, t);
+        ctx.beginPath();
+        for (let i = 0; i < line.length; i += 2) if (i) ctx.lineTo(line[i], line[i + 1]); else ctx.moveTo(line[i], line[i + 1]);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
     }
-    // percorsi in corso delle unità del giocatore
-    ctx.strokeStyle = 'rgba(31,42,51,0.55)';
-    ctx.lineWidth = 1.6 / k;
-    ctx.setLineDash([4 / k, 4 / k]);
-    for (const u of s.units) {
-      if (u.nation !== s.player || !u.move?.path.length || this.override) continue;
-      const [ux, uy] = unitPosition(this.world, u);
-      ctx.beginPath(); ctx.moveTo(ux, uy);
-      for (const id of u.move.path) { const c = this.world.map.provinces[id].c; ctx.lineTo(c[0], -c[1]); }
-      ctx.stroke();
-    }
-    ctx.setLineDash([]);
-    // per ultima la cornice, sopra l'alone delle coste tagliate dalla cucitura di Bering
-    this.drawFrame(ctx, vx0, vy0, vx1, vy1, k);
+    // per ultima la cornice (solo a nord e a sud: a est e a ovest la mappa continua)
+    ctx.setTransform(this.dpr * k, 0, 0, this.dpr * k, this.dpr * (W / 2 - this.cam.x * k), this.dpr * (H / 2 - this.cam.y * k));
+    this.drawFrame(ctx, sx0, vy0, sx1, vy1, k);
+    // per le etichette e le pedine (coordinate di schermo) conta la copia più vicina al centro della vista
+    const visible = (i: number) => {
+      const b = i * 4, o = nearX(this.bboxes[b], this.cam.x) - this.bboxes[b];
+      return !(this.bboxes[b + 2] + o < sx0 || this.bboxes[b] + o > sx1 || this.bboxes[b + 3] < vy0 || this.bboxes[b + 1] > vy1);
+    };
 
     // etichette: nazioni da lontano, province da vicino
     ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
@@ -788,29 +823,32 @@ export class MapView {
 
   /** Tiene la vista dentro la mappa: zoom minimo = mondo intero, niente spostamenti oltre il bordo. */
   private clampCam(W: number, H: number) {
-    const f = this.frame, ew = f.x1 - f.x0, eh = f.y1 - f.y0;
-    if (!(ew > 0 && eh > 0)) return;
-    const min = Math.min(W / ew, H / eh);
+    const f = this.frame, eh = f.y1 - f.y0;
+    if (!(eh > 0)) return;
+    // zoom minimo: il giro del mondo intero sta nella larghezza dello schermo (mai due volte la stessa terra)
+    const min = W / WRAP_KM;
     if (this.cam.scale < min) this.cam.scale = min;
-    const hw = W / 2 / this.cam.scale, hh = H / 2 / this.cam.scale;
-    // al bordo si vede una fascia di cornice (fino al 15% dello schermo), così è chiaro che la mappa finisce lì;
-    // se la vista è più larga della mappa, la mappa sta al centro
-    const mx = (W * 0.15) / this.cam.scale, my = (H * 0.15) / this.cam.scale;
-    this.cam.x = hw * 2 >= ew + 2 * mx ? (f.x0 + f.x1) / 2 : Math.min(f.x1 - hw + mx, Math.max(f.x0 + hw - mx, this.cam.x));
+    const hh = H / 2 / this.cam.scale;
+    // in orizzontale la mappa continua: la camera resta nel giro [SEAM_X, SEAM_X + WRAP_KM)
+    this.cam.x = SEAM_X + (((this.cam.x - SEAM_X) % WRAP_KM) + WRAP_KM) % WRAP_KM;
+    // in verticale al bordo si vede una fascia di cornice (fino al 15% dello schermo); se la vista è più alta
+    // della mappa, la mappa sta al centro
+    const my = (H * 0.15) / this.cam.scale;
     this.cam.y = hh * 2 >= eh + 2 * my ? (f.y0 + f.y1) / 2 : Math.min(f.y1 - hh + my, Math.max(f.y0 + hh - my, this.cam.y));
   }
 
-  /** Cornice fuori dal limite della mappa e linea del bordo. */
+  /** Cornice oltre l'ultima costa a nord e a sud, con la linea del bordo. */
   private drawFrame(ctx: CanvasRenderingContext2D, vx0: number, vy0: number, vx1: number, vy1: number, k: number) {
     const f = this.frame;
     ctx.fillStyle = FRAME;
-    if (vx0 < f.x0) ctx.fillRect(vx0, vy0, f.x0 - vx0, vy1 - vy0);
-    if (vx1 > f.x1) ctx.fillRect(f.x1, vy0, vx1 - f.x1, vy1 - vy0);
     if (vy0 < f.y0) ctx.fillRect(vx0, vy0, vx1 - vx0, f.y0 - vy0);
     if (vy1 > f.y1) ctx.fillRect(vx0, f.y1, vx1 - vx0, vy1 - f.y1);
     ctx.strokeStyle = FRAME_LINE;
     ctx.lineWidth = 2.5 / k;
-    ctx.strokeRect(f.x0, f.y0, f.x1 - f.x0, f.y1 - f.y0);
+    ctx.beginPath();
+    ctx.moveTo(vx0, f.y0); ctx.lineTo(vx1, f.y0);
+    ctx.moveTo(vx0, f.y1); ctx.lineTo(vx1, f.y1);
+    ctx.stroke();
   }
 
   zoomAt(cx: number, cy: number, f: number) {
@@ -842,7 +880,8 @@ export class MapView {
       const [x, y] = this.worldToScreen(c[0], -c[1]);
       if (Math.hypot(x - sx, y - sy) < 14) { this.cb.onProvince(id); return; }
     }
-    const [wx, wy] = this.screenToWorld(sx, sy);
+    const [wx0, wy] = this.screenToWorld(sx, sy);
+    const wx = SEAM_X + (((wx0 - SEAM_X) % WRAP_KM) + WRAP_KM) % WRAP_KM; // il punto nel giro principale
     for (let i = 0; i < this.paths.length; i++) {
       if (wx < this.bboxes[i * 4] || wx > this.bboxes[i * 4 + 2] || wy < this.bboxes[i * 4 + 1] || wy > this.bboxes[i * 4 + 3]) continue;
       if (this.hit.isPointInPath(this.paths[i], wx, wy)) { this.cb.onProvince(i); return; }

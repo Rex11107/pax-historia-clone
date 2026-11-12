@@ -1,4 +1,5 @@
-import { geoKm } from './map';
+import { geoKm, nearX } from './map';
+import { hasSea, seaKm, seaLine, seaPassages, seaRoute } from './sea';
 import { techEffects } from './research';
 import { level } from './construction';
 import { TERRAIN_SPEED, type Edge } from './map';
@@ -30,13 +31,15 @@ export function canEmbark(w: World, tag: string, p: number): boolean {
   return naval >= 30 || level(w, p, 'porto') >= 1;
 }
 
-/** Giorni di navigazione fra due province costiere (rotta stimata: 1,25 volte la linea d'aria). */
-export function seaDays(w: World, a: number, b: number): number {
-  return Math.round((SEA_BASE + (geoKm(w.map.provinces[a].lonlat, w.map.provinces[b].lonlat) * 1.25) / SEA_KMDAY) * 10) / 10;
+/** Giorni di navigazione fra due province costiere: lungo le zone di mare (con stretti e canali aperti per
+ *  `nation`), oppure, sulle mappe senza zone di mare, 1,25 volte la linea d'aria. Infinity se il mare non le unisce. */
+export function seaDays(w: World, a: number, b: number, nation = ''): number {
+  const km = hasSea(w) ? seaKm(w, nation, a, b) : geoKm(w.map.provinces[a].lonlat, w.map.provinces[b].lonlat) * 1.25;
+  return isFinite(km) ? Math.round((SEA_BASE + km / SEA_KMDAY) * 10) / 10 : Infinity;
 }
 
 /** Percorso con un tratto per mare: terra fino al porto, nave, terra fino all'obiettivo. */
-function seaPlan(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number; sea: { from: number; to: number; days: number } } | null {
+function seaPlan(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number; sea: { from: number; to: number; days: number; pts?: number[]; via?: string[] } } | null {
   const s = w.state;
   if ((w.profiles[u.nation]?.naval ?? 0) < MIN_NAVAL) return null;
   const cost = moveCost(w, u, attack, target);
@@ -50,7 +53,8 @@ function seaPlan(w: World, u: Unit, target: number, attack: boolean): { path: nu
     if (!isFinite(dTo[l]) || !w.map.provinces[l].coast || !w.map.passable(l) || !canEnter(s, u.nation, l)) continue;
     for (const e of ports) {
       if (e === l) continue;
-      const sd = seaDays(w, e, l);
+      const sd = seaDays(w, e, l, u.nation);
+      if (!isFinite(sd)) continue;
       const tot = dFrom[e] + sd + dTo[l];
       if (!best || tot < best.days) best = { e, l, days: tot, sea: sd };
     }
@@ -59,7 +63,11 @@ function seaPlan(w: World, u: Unit, target: number, attack: boolean): { path: nu
   const a = best.e === u.location ? { path: [] as number[] } : w.map.shortestPath(u.location, best.e, cost);
   const b = best.l === target ? { path: [] as number[] } : w.map.shortestPath(best.l, target, cost);
   if (!a || !b) return null;
-  return { path: [...a.path, best.l, ...b.path], days: Math.round(best.days * 10) / 10, sea: { from: best.e, to: best.l, days: best.sea } };
+  // la rotta da disegnare (e per la posizione della nave durante il viaggio)
+  const route = hasSea(w) ? seaRoute(w, u.nation, best.e, best.l) : null;
+  const pts = route ? seaLine(w, best.e, best.l, route.zones) : undefined;
+  const via = route ? seaPassages(w, route.zones) : [];
+  return { path: [...a.path, best.l, ...b.path], days: Math.round(best.days * 10) / 10, sea: { from: best.e, to: best.l, days: best.sea, ...(pts ? { pts } : {}), ...(via.length ? { via } : {}) } };
 }
 /** sulle piste carovaniere si marcia a meno della metà della velocità (acqua, foraggio, guide) */
 const ROUTE_SPEED = 0.4;
@@ -94,7 +102,7 @@ export function moveCost(w: World, u: Unit, attack: boolean, target = -1) {
 }
 
 /** Percorso per un ordine di movimento. `attack` consente di attraversare province con nemici. */
-export function planPath(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number; sea?: { from: number; to: number; days: number } } | null {
+export function planPath(w: World, u: Unit, target: number, attack: boolean): { path: number[]; days: number; sea?: { from: number; to: number; days: number; pts?: number[]; via?: string[] } } | null {
   if (target < 0 || target >= w.map.size) return null;
   const res = w.map.shortestPath(u.location, target, moveCost(w, u, attack, target));
   const land = res ? { path: res.path, days: res.cost } : null;
@@ -212,7 +220,7 @@ export function processUnit(w: World, u: Unit, sink: GameEvent[]) {
         u.orders.shift(); u.move = null; continue;
       }
       u.move = { path: plan.path, progress: 0, legDays: 1, ...(plan.sea ? { sea: plan.sea } : {}) };
-      if (plan.sea && u.nation === w.state.player) emit(w, { type: 'embark', nations: [u.nation], province: plan.sea.from, text: `${u.name} si imbarca a ${w.map.provinces[plan.sea.from].name} per ${w.map.provinces[plan.sea.to].name} (${Math.round(plan.sea.days)} giorni di mare).` }, sink);
+      if (plan.sea && u.nation === w.state.player) emit(w, { type: 'embark', nations: [u.nation], province: plan.sea.from, text: `${u.name} si imbarca a ${w.map.provinces[plan.sea.from].name} per ${w.map.provinces[plan.sea.to].name}${plan.sea.via ? ` via ${plan.sea.via.join(', ')}` : ''} (${Math.round(plan.sea.days)} giorni di mare).` }, sink);
       startLeg(w, u);
     }
     advance(w, u, o, sink);
@@ -247,11 +255,29 @@ function advance(w: World, u: Unit, o: Order, sink: GameEvent[]) {
   }
 }
 
+/** Punto alla frazione t (0-1) della lunghezza di una linea [x0, y0, x1, y1, …]. */
+export function alongLine(pts: number[], t: number): [number, number] {
+  let tot = 0;
+  for (let i = 2; i < pts.length; i += 2) tot += Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+  let left = tot * t;
+  for (let i = 2; i < pts.length; i += 2) {
+    const d = Math.hypot(pts[i] - pts[i - 2], pts[i + 1] - pts[i - 1]);
+    if (left <= d && d > 0) { const f = left / d; return [pts[i - 2] + (pts[i] - pts[i - 2]) * f, pts[i - 1] + (pts[i + 1] - pts[i - 1]) * f]; }
+    left -= d;
+  }
+  return [pts[pts.length - 2], pts[pts.length - 1]];
+}
+
 /** Posizione disegnabile (km, y verso il basso) con interpolazione sulla tappa in corso. */
 export function unitPosition(w: World, u: Unit): [number, number] {
   const a = w.map.provinces[u.location].c;
   if (!u.move || !u.move.path.length || u.move.progress <= 0) return [a[0], -a[1]];
   const b = w.map.provinces[u.move.path[0]].c;
   const t = clamp(u.move.progress / u.move.legDays, 0, 1);
-  return [a[0] + (b[0] - a[0]) * t, -(a[1] + (b[1] - a[1]) * t)];
+  // in mare la nave segue la rotta fra le zone, non la linea d'aria sopra i continenti
+  const sea = u.move.sea;
+  if (sea?.pts && sea.from === u.location && sea.to === u.move.path[0]) return alongLine(sea.pts, t);
+  // una traversata del Pacifico passa per la cucitura, non attraverso tutta la mappa
+  const bx = nearX(b[0], a[0]);
+  return [a[0] + (bx - a[0]) * t, -(a[1] + (b[1] - a[1]) * t)];
 }

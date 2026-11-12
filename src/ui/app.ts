@@ -2,7 +2,7 @@ import { APP_VERSION, installUpdate, isNative, isNewer, latestRelease, type Rele
 import { Game, type Phase, type TurnOutcome } from '../game';
 import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diplomacy';
 import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
-import { TERRAIN_NAME } from '../engine/map';
+import { nearX, TERRAIN_NAME } from '../engine/map';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
 import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, type BuildingId } from '../engine/construction';
@@ -245,6 +245,7 @@ export class App {
     const plan = planPath(this.game.world, u, id, this.pick.type === 'attack');
     this.pending = plan ? { target: id, days: plan.days, path: plan.path } : null;
     this.map.previewPath = plan?.path ?? null;
+    this.map.previewSea = plan?.sea ?? null;
     this.map.selectedProvince = id;
     this.map.focusBetween(u.location, id);
     this.map.invalidate();
@@ -253,7 +254,7 @@ export class App {
     this.openSheet();
     this.render();
     if (!plan) this.toast(`${this.game.world.map.provinces[id].name} non è raggiungibile: territorio neutrale o nessun collegamento.`);
-    else if (plan.sea) { const pv = this.game.world.map.provinces; this.toast(`Via mare: imbarco a ${pv[plan.sea.from].name}, sbarco a ${pv[plan.sea.to].name} (${Math.round(plan.sea.days)} giorni di navigazione).`); }
+    else if (plan.sea) { const pv = this.game.world.map.provinces; this.toast(`Via mare: imbarco a ${pv[plan.sea.from].name}, sbarco a ${pv[plan.sea.to].name}${plan.sea.via ? `, via ${plan.sea.via.join(', ')}` : ''} (${Math.round(plan.sea.days)} giorni di navigazione).`); }
   }
 
   // --- viste ---
@@ -994,7 +995,7 @@ export class App {
         const f = Math.min(1, t - i);
         const a = frames[i], b = frames[i + 1];
         const cur: Record<string, [number, number]> = {};
-        for (const id of Object.keys(b)) { const pa = a[id] ?? b[id], pb = b[id]; cur[id] = [pa[0] + (pb[0] - pa[0]) * f, pa[1] + (pb[1] - pa[1]) * f]; }
+        for (const id of Object.keys(b)) { const pa = a[id] ?? b[id], pb = b[id], bx = nearX(pb[0], pa[0]); cur[id] = [pa[0] + (bx - pa[0]) * f, pa[1] + (pb[1] - pa[1]) * f]; }
         this.map.override = cur;
         banner.textContent = formatDate(out.report.fromDay + Math.min(7, Math.floor(t) + 1));
         this.map.invalidate();

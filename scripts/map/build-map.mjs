@@ -1739,6 +1739,8 @@ async function main() {
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(out));
+  // zone di mare e rotte navali sulla mappa appena scritta (non cambiano le province)
+  execFileSync(process.execPath, [path.join(path.dirname(fileURLToPath(import.meta.url)), 'mari.mjs'), OUT], { stdio: 'inherit' });
   const owners = {};
   for (const p of out.provinces) owners[p.owner] = (owners[p.owner] || 0) + 1;
   log(`scritto ${OUT}: ${out.provinces.length} province, ${strList.length} stretti, ${(fs.statSync(OUT).size / 1024).toFixed(0)} KB`);
