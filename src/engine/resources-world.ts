@@ -340,4 +340,12 @@ export const WORLD_SITES: [ResourceId, number, number, string][] = [
   ['sale', 73.03, 32.65, 'Khewra'], ['sale', 104.78, 29.35, 'Zigong'], ['sale', 117.2, 39.1, 'Changlu'],
   // diamanti
   ['diamanti', -43.6, -18.24, 'Diamantina'], ['diamanti', 80.19, 24.72, 'Panna'],
+  // altri distretti noti nel 1881
+  ['carbone', 112.55, 37.87, 'carbone dello Shanxi'], ['carbone', 113.3, 40.1, 'Datong'], ['carbone', 118.05, 36.8, 'Boshan'], ['carbone', 121.74, 25.13, 'Keelung'],
+  ['carbone', 130.7, 33.65, 'Chikuhō'], ['carbone', 142.05, 50.84, 'Due (Sachalin)'], ['carbone', 171.6, -41.75, 'Westport'],
+  ['ferro', 112.85, 35.5, 'ferro di Zezhou'], ['oro', 78.27, 12.95, 'Kolar'], ['oro', 127.5, 53.8, 'Zeja'], ['metalli', 73.0, 48.4, 'rame di Uspenskij'],
+  ['metalli', -67.5, -29.0, 'Famatina'], ['metalli', -76.6, 5.7, 'platino del Chocó'], ['sale', -74.0, 5.02, 'Zipaquirá'], ['diamanti', -41.4, -12.56, 'Chapada Diamantina'],
+  ['petrolio', -61.65, 10.23, 'lago d\'asfalto di Trinidad'], ['gomma', 173.8, -35.5, 'gomma di kauri'], ['gomma', -64.9, -14.8, 'Beni'], ['gomma', -73.25, -3.75, 'Iquitos'],
+  ['gomma', -74.5, -1.0, 'Putumayo'], ['seta', 104.07, 30.9, 'seta del Sichuan'], ['seta', 121.4, 37.5, 'seta selvatica dello Shandong'], ['zucchero', 116.7, 23.4, 'Shantou'],
+  ['pesce', 121.5, 38.9, 'golfo del Bohai'], ['sale', 120.5, 33.5, 'saline del Huai'], ['pellicce', 127.0, 49.0, 'Amur'], ['pellicce', 98.0, 52.0, 'Saiani'],
 ];

@@ -176,7 +176,11 @@ export function baseResource(p: ProvinceData): ResourceId | null {
   return pick(['grano', 0.6], ['bestiame', 0.25], ['legname', 0.15]);
 }
 
-/** Risorse di ogni provincia: giacimenti (fino a due) e risorsa di base. Deterministico. */
+/** Seconda risorsa di base di una provincia: vale metà nelle entrate (la provincia la produce, ma meno). */
+const SECONDARY = new WeakMap<ResourceId[], ResourceId>();
+export const resourceShare = (list: ResourceId[], r: ResourceId) => (SECONDARY.get(list) === r ? 0.5 : 1);
+
+/** Risorse di ogni provincia: giacimenti (fino a due), risorsa di base e, fuori dall'Europa, una seconda. Deterministico. */
 export function assignResources(map: GameMap): ResourceId[][] {
   const out: ResourceId[][] = map.provinces.map(() => []);
   for (const [res, lon, lat] of SITES) {
@@ -187,8 +191,28 @@ export function assignResources(map: GameMap): ResourceId[][] {
   map.provinces.forEach((p, i) => {
     const b = baseResource(p);
     if (b && !out[i].includes(b)) out[i].push(b);
+    const b2 = b && secondResource(p, b);
+    if (b2 && !out[i].includes(b2) && out[i].length < 3) { out[i].push(b2); SECONDARY.set(out[i], b2); }
   });
   return out;
+}
+
+/**
+ * Seconda risorsa di base fuori dall'Europa: un'altra produzione reale della stessa regione (legname e gomma
+ * in Amazzonia, riso e seta nel Jiangnan, lana e grano nella Pampa). Le province europee hanno già i distretti
+ * fitti di SITES; quelle del resto del mondo, grandi e con una sola risorsa, sembravano vuote.
+ * Dove la regione ha un solo prodotto (pascoli mongoli, Molucche) non c'è seconda risorsa.
+ */
+export function secondResource(p: ProvinceData, first: ResourceId): ResourceId | null {
+  if (p.impassable || p.oasis) return null;
+  const [lon, lat] = p.lonlat;
+  for (let k = 1; k <= 4; k++) {
+    const h = hash(`${p.name}:${p.id}:${k}`);
+    const r = worldResource(p, weighted(h)) ?? (AFRICA_SOUTH(lon, lat) ? africanResource(p, h) : null);
+    if (!r) return null; // Europa, Mediterraneo, Vicino Oriente
+    if (r !== first) return r;
+  }
+  return null;
 }
 
 /** Entrata settimanale di una risorsa per una nazione con quel livello industriale. */
@@ -206,7 +230,7 @@ export function nationResources(map: GameMap, res: ResourceId[][], controller: T
     const occupied = owner[i] !== tag;
     for (const r of extra ? [...res[i], ...extra(i)] : res[i]) {
       count[r] = (count[r] ?? 0) + 1;
-      income += resourceValue(r, industry) * (occupied ? 0.5 : 1);
+      income += resourceValue(r, industry) * resourceShare(res[i], r) * (occupied ? 0.5 : 1);
     }
   }
   const missing = (['carbone', 'ferro'] as ResourceId[]).filter((r) => !count[r]);
