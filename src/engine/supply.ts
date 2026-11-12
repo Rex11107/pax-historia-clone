@@ -1,6 +1,6 @@
 import { techEffects } from './research';
 import type { GameEvent, Tag } from './types';
-import { industryOf, level, logistics, provinceCapacity } from './construction';
+import { cacheVersion, industryOf, level, logistics, provinceCapacity } from './construction';
 import { allied, canEnter, clamp, emit, enemiesOf, presence, type World } from './world';
 
 /** Livello di rifornimento (0-1) per ogni provincia, dal punto di vista di una nazione. */
@@ -39,7 +39,7 @@ const peaceCache = new WeakMap<object, { key: string; maps: Map<Tag, Float32Arra
 export function updateSupply(w: World, sink: GameEvent[]) {
   const s = w.state;
   const cache = new Map<Tag, Float32Array>();
-  const key = `${s.turn}:${s.wars.length}`;
+  const key = `${s.turn}:${s.wars.length}:${cacheVersion()}`;
   let pc = peaceCache.get(s);
   if (!pc || pc.key !== key) { pc = { key, maps: new Map() }; peaceCache.set(s, pc); }
   const atPeace = (t: Tag) => !s.wars.some((x) => x.attackers.includes(t) || x.defenders.includes(t));

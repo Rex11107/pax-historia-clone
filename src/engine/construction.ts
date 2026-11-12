@@ -1,3 +1,4 @@
+import { post } from './ledger';
 import { reserveOf } from './economy';
 import { maxLevel, siteLots, techEffects, unlockTech } from './research';
 // Costruzione: opere per provincia (ferrovie, porti, fortezze, campi, industrie, arsenali, miniere),
@@ -100,6 +101,8 @@ const works = (w: World, tag: Tag, p: number) => w.state.owner[p] === tag && w.s
 // Cache per nazione, rinnovata quando cambia il giorno, un id (contratti, cantieri) o un'opera finita.
 let version = 0;
 export const touchBuildings = () => { version++; };
+/** Versione corrente delle cache (cambia a ogni opera finita e a ogni cambio di padrone visto dal turno). */
+export const cacheVersion = () => version;
 const memo = new WeakMap<object, { key: string; per: Map<Tag, { res?: Set<ResourceId>; points?: number; logistics?: ReturnType<typeof computeLogistics> }>; ctrl?: Map<Tag, number[]> }>();
 function memoOf(w: World) {
   const s = w.state;
@@ -303,7 +306,7 @@ export function startProject(w: World, tag: Tag, p: number, b: BuildingId, sink?
   const lvl = level(w, p, b) + 1;
   const info = BUILDINGS[b];
   const cost = info.cost(lvl);
-  s.nations[tag].treasury -= cost;
+  post(w, tag, 'cantieri', -cost);
   const days = info.weeks(lvl) * 7;
   projects(w).push({ id: newId(s, 'c'), nation: tag, province: p, type: b, level: lvl, daysLeft: days, total: days, cost });
   const sub = (s.subjects ?? []).find((x) => x.overlord === tag && x.subject === s.owner[p]);
@@ -319,7 +322,7 @@ export function cancelProject(w: World, id: string): string | null {
   if (i < 0) return 'cantiere inesistente';
   const pr = list[i];
   list.splice(i, 1);
-  w.state.nations[pr.nation].treasury += pr.cost / 2;
+  post(w, pr.nation, 'cantieri', pr.cost / 2);
   return null;
 }
 

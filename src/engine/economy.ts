@@ -9,6 +9,7 @@ import { govEffects } from './politics';
 import { buildingIncome, industryOf, maintenanceOf, manpowerBonus, recruitDiscount } from './construction';
 import { tributeOf } from './vassals';
 import { colonyIncome } from './colonial';
+import { applyBudget, post, repay } from './ledger';
 
 // Effetti meccanici delle politiche interne (il pannello "Interno" li mostra così come sono).
 export const POLICY_EFFECTS = {
@@ -103,10 +104,7 @@ export function weeklyEconomy(w: World, sink: GameEvent[]) {
     const n = s.nations[tag];
     const pr = w.profiles[tag];
     n.lastBudget = b;
-    n.treasury += b.net;
-    if (n.treasury < 0) {
-      n.debt += -n.treasury * 1.1;
-      n.treasury = 0;
+    if (applyBudget(w, tag, b.net) > 0) {
       n.stability = clamp(n.stability - (1.2 - pr.finance / 100), 0, 100);
       if (tag === s.player) emit(w, { type: 'deficit', nations: [tag], text: 'Le casse sono vuote: il governo emette nuovo debito.' }, sink);
     }
@@ -143,7 +141,7 @@ export function recruit(w: World, tag: Tag, type: UnitType, province: number, si
   const cost = Math.round(base * 10) / 10;
   if (n.treasury < cost) return `fondi insufficienti (servono ${cost} M)`;
   if (n.manpower < spec.men * 0.25) return 'riserva di uomini insufficiente';
-  n.treasury -= cost;
+  post(w, tag, 'arruolamenti', -cost);
   const men = Math.round(spec.men * 0.25);
   n.manpower -= men;
   const count = s.units.filter((u) => u.nation === tag && u.type === type).length + 1;
@@ -168,8 +166,7 @@ export function aiFinances(w: World, tag: Tag) {
   if (!b) return;
   const reserve = reserveOf(w, tag);
   if (n.treasury > reserve && n.debt > 0) {
-    const pay = Math.min(n.debt, (n.treasury - reserve) * 0.25);
-    n.treasury -= pay; n.debt -= pay;
+    repay(w, tag, (n.treasury - reserve) * 0.25);
   }
   if (b.net < 0 && n.treasury < 4 * b.income) n.policies.tax = 'high';
   else if (n.policies.tax === 'high' && b.net > 0.15 * b.income && n.stability < 60) n.policies.tax = 'normal';

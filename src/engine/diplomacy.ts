@@ -1,3 +1,4 @@
+import { transfer } from './ledger';
 import { geoKm } from './map';
 import { followers, subjectOf, warBlock } from './vassals';
 import type { GameEvent, Tag, TreatyType } from './types';
@@ -88,10 +89,9 @@ export function makePeace(w: World, a: Tag, b: Tag, terms: { cedeTo?: Tag; provi
   }
   if (terms.indemnity && terms.payer) {
     const recv = terms.payer === a ? b : a;
+    // al più ciò che ha in cassa più 300 milioni presi a prestito
     const amount = Math.min(terms.indemnity, s.nations[terms.payer].treasury + 300);
-    s.nations[terms.payer].treasury -= amount;
-    if (s.nations[terms.payer].treasury < 0) { s.nations[terms.payer].debt -= s.nations[terms.payer].treasury; s.nations[terms.payer].treasury = 0; }
-    s.nations[recv].treasury += amount;
+    transfer(w, terms.payer, recv, 'indennita', amount);
   }
   relocateStranded(w);
   for (const t of [a, b]) if (t !== s.player && !warsOf(s, t).length) s.nations[t].policies.mobilization = 'peace';
@@ -235,8 +235,7 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
     case 'subsidy': {
       const giver = p.giver ?? from;
       const receiver = giver === from ? to : from;
-      s.nations[giver].treasury -= p.amount!;
-      s.nations[receiver].treasury += p.amount!;
+      transfer(w, giver, receiver, 'sussidi', p.amount!);
       changeOpinion(s, receiver, giver, Math.min(20, p.amount! / 10));
       emit(w, { type: 'subsidy', nations: [giver, receiver], text: `${The(w, giver)} versa ${p.amount} milioni ${al(w, receiver)}.` }, sink);
       break;
