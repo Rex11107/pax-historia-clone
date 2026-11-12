@@ -149,6 +149,10 @@ Fase 2, passo 2 (12 novembre 2026). Stesso seme e stesse mosse danno la stessa p
 
 Le cache del motore non devono cambiare il risultato. Per questo: gli effetti della ricerca sono in cache per partita (prima per sigla di nazione, con una chiave che due partite con lo stesso seme potevano condividere); il turno confronta padroni e controllori dopo ogni fase e, se sono cambiati, azzera le cache di province controllate, industria, logistica e rifornimenti in pace (prima restavano quelle di inizio giornata: una provincia presa a metà settimana non contava fino al giorno dopo, e in pace fino al turno dopo); l'interfaccia le azzera a ogni ridisegno, così bilancio e logistica seguono subito una cessione o una pace.
 
+## Bilancio unico
+
+Fase 2, passo 3 (12 novembre 2026). Le casse cambiano in due soli modi: il saldo del bilancio settimanale (fase dell'economia) e i movimenti fuori bilancio, che passano tutti da `src/engine/ledger.ts`: cantieri (apertura e rimborso di metà all'annullamento), arruolamenti, trattati e acquisti coloniali, sussidi, il versamento immediato di un'indennità, rimborso del debito e nuovo debito. Ogni movimento resta scritto per voce nella settimana in corso (`extra`, poi `lastExtra` a turno chiuso) e si vede in Governo → Bilancio sotto la tabella. Se le casse non bastano la differenza diventa debito in un punto solo (`cover`, +10% di costo d'emissione): prima un'indennità pagata a debito non pagava il 10%, il disavanzo sì. `tests/ledger.test.ts` controlla per ogni nazione e ogni turno che casse finali = casse iniziali + saldo + movimenti fuori bilancio, che un trasferimento esca da una cassa ed entri nell'altra, e che nessun sorgente fuori dal registro scriva `treasury` o `debt`.
+
 ## AI
 
 - Game Master `translate`: direttive libere → JSON di ordini/politiche/arruolamenti/guerre, validato pezzo per pezzo. Nomi di provincia risolti dal codice.

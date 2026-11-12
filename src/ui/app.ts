@@ -3,6 +3,7 @@ import { Game, type Phase, type TurnOutcome } from '../game';
 import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diplomacy';
 import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
 import { nearX, TERRAIN_NAME } from '../engine/map';
+import { ENTRY_LABEL, type EntryKind } from '../engine/ledger';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
 import { callElection, crisisChance, OPTION_LABEL, politicsOf, PROGRAM_EFFECTS, REGIME_LABEL, resolveCrisis, THRESHOLD } from '../engine/politics';
 import { BUILDINGS, buildRefusal, buildings, cancelProject, canBuildIn, industryOf, inputEfficiency, logistics, projects, provinceCapacity, slots, startProject, totalLevel, touchBuildings, type BuildingId } from '../engine/construction';
@@ -671,10 +672,16 @@ export class App {
         onclick: () => { setPolicy(w, me, key, v as Policies[K]); this.refreshTop(); this.render(); },
       }, o.label))), h('p', { class: 'sub' }, policyEffect(key, n.policies[key])));
     };
+    // movimenti fuori bilancio: quelli della settimana in corso e di quella appena chiusa
+    const extraTable = () => ([['Fuori bilancio, questa settimana (milioni)', n.extra], ['Fuori bilancio, settimana scorsa (milioni)', n.lastExtra]] as [string, Record<string, number> | undefined][])
+      .filter(([, e]) => e && Object.keys(e).length)
+      .map(([title, e]) => h('table', { class: 'budget' }, h('caption', null, title),
+        ...Object.entries(e!).map(([k, v]) => h('tr', null, h('td', null, ENTRY_LABEL[k as EntryKind] ?? k), h('td', { class: `num ${v >= 0 ? 'pos' : 'neg'}` }, `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(1)}`)))));
     return h('div', null,
       h('table', { class: 'budget' }, h('caption', null, 'Bilancio settimanale previsto (milioni)'),
         row('Entrate fiscali', b.income - (b.resources ?? 0) - (b.works ?? 0), 1), row('Risorse delle province', b.resources ?? 0, 1), row('Campi, industrie e porti', b.works ?? 0, 1), row('Commercio (saldo)', b.trade ?? 0, (b.trade ?? 0) >= 0 ? 1 : -1), ...(b.tribute ? [row(b.tribute > 0 ? 'Tributi dei vassalli' : 'Tributo al signore', b.tribute, b.tribute > 0 ? 1 : -1)] : []), ...(b.reparations ? [row(b.reparations > 0 ? 'Indennità di guerra incassate' : 'Indennità di guerra da pagare', b.reparations, b.reparations > 0 ? 1 : -1)] : []), ...(b.colonies ? [row('Colonie (saldo)', b.colonies, b.colonies > 0 ? 1 : -1)] : []), row('Mantenimento esercito', b.upkeep), row('Amministrazione', b.administration), row('Spese civili', b.civil ?? 0), row('Manutenzione delle opere', b.maintenance ?? 0), row('Ricerca', b.research ?? 0), row('Interessi sul debito', b.interest), row('Opere pubbliche', b.infrastructure),
         h('tr', { class: 'total' }, h('td', null, 'Saldo'), h('td', { class: `num ${b.net >= 0 ? 'pos' : 'neg'}` }, `${b.net >= 0 ? '+' : '−'}${Math.abs(b.net).toFixed(1)}`))),
+      ...extraTable(),
       h('dl', { class: 'facts' },
         h('dt', null, 'Debito pubblico'), h('dd', null, `${Math.round(n.debt).toLocaleString('it-IT')} M`),
         h('dt', null, 'Leva settimanale'), h('dd', null, `${b.manpowerGain.toLocaleString('it-IT')} uomini`),

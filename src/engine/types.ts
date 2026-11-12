@@ -210,6 +210,10 @@ export interface NationState {
   turnLosses: number;
   /** ultimo bilancio settimanale, per l'interfaccia */
   lastBudget?: Budget;
+  /** movimenti di cassa fuori bilancio della settimana in corso (ledger.ts), per voce, in milioni */
+  extra?: Record<string, number>;
+  /** quelli della settimana appena chiusa */
+  lastExtra?: Record<string, number>;
 }
 
 export interface Budget {

@@ -1,6 +1,7 @@
 // Conferenza di pace: punteggio di guerra, richieste con un costo, regole contro il border gore,
 // scelte del motore (per le nazioni non giocanti e come suggerimento al giocatore), applicazione.
 
+import { transfer } from './ledger';
 import { claimOf, recordLoss } from './claims';
 import { buildings, touchBuildings, type BuildingId } from './construction';
 import { addTreaty, checkAlive, relocateStranded } from './diplomacy';
@@ -375,7 +376,7 @@ export function applyDemand(w: World, d: Demand, sink: GameEvent[]) {
     case 'indemnity': {
       // un quarto subito (se c'è in cassa), il resto in un anno a rate settimanali
       const now = Math.min(d.amount * 0.25, s.nations[d.from].treasury);
-      s.nations[d.from].treasury -= now; s.nations[d.to].treasury += now;
+      transfer(w, d.from, d.to, 'indennita', now);
       const rest = d.amount - now;
       (s.reparations ??= []).push({ payer: d.from, receiver: d.to, perWeek: Math.round((rest / 52) * 100) / 100, weeksLeft: 52 });
       emit(w, { type: 'indemnity', nations: [d.from, d.to], text: `${nationName(w, d.from)} pagherà ${Math.round(d.amount)} milioni di indennità a ${nationName(w, d.to)}.` }, sink);

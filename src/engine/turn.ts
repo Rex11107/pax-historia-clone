@@ -13,6 +13,7 @@ import { weeklyReparations } from './peace';
 import { weeklyColonial } from './colonial';
 import { processUnit, unitPosition } from './orders';
 import { updateSupply } from './supply';
+import { closeWeek } from './ledger';
 import type { GameEvent, TurnReport } from './types';
 import { invalidatePresence, type World } from './world';
 
@@ -90,6 +91,7 @@ export function runTurn(w: World, probe?: (phase: string) => void): TurnReport {
     if (d === 3) { invalidatePresence(w); aiPlan(w); probe?.('piani'); }
   }
   for (const [name, phase] of WEEKLY_PHASES) { phase(w, sink); sync(); probe?.(name); }
+  closeWeek(w);
   s.turn++;
   if (s.events.length > MAX_EVENTS) s.events.splice(0, s.events.length - MAX_EVENTS);
   return report;

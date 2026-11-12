@@ -1,3 +1,4 @@
+import { post } from './ledger';
 import { geoKm } from './map';
 // Interessi coloniali: le potenze (e il giocatore) seguono idee storiche invece di prendere la terra di nessuno
 // più comoda. Ogni interesse ha un peso, una finestra d'epoca, prerequisiti leggeri e più vie per ottenerlo:
@@ -357,19 +358,20 @@ export function execute(w: World, a: ColonialAction, sink: GameEvent[] = []): st
     emit(w, { type: 'colonial', nations: [tag, who], text: `${name(w, who)} respinge ${a.path === 'protettorato' ? 'il trattato di protettorato' : a.path === 'acquisto' ? 'l\'offerta di acquisto' : 'la richiesta di subentro'} ${di(w, tag)} (${seed.name}).` }, sink);
     return `rifiutato (${ev.score} su ${ev.need})`;
   }
-  s.nations[tag].treasury -= ev.cost;
+  // il prezzo esce dalle casse di chi compra; la parte che non va a nessuno sono doni, mediatori e spese
+  post(w, tag, 'colonie', -ev.cost);
   if (a.path === 'protettorato') {
     const old = subjectOf(w, a.target);
     if (old && old.overlord !== tag) { changeOpinion(s, old.overlord, tag, -20); emit(w, { type: 'colonial', nations: [old.overlord, a.target], text: `${The(w, old.overlord)} protesta: perde la sovranità nominale su ${name(w, a.target)}.` }, sink); }
     s.subjects = subjects(w).filter((x) => x.subject !== a.target);
     s.subjects.push({ subject: a.target, overlord: tag, level: 'protettorato', liberty: 45, since: s.day });
-    s.nations[a.target].treasury += Math.round(ev.cost * 0.5);
+    post(w, a.target, 'colonie', Math.round(ev.cost * 0.5));
     emit(w, { type: 'colonial', nations: [tag, a.target], text: `Trattato di protettorato: ${name(w, a.target)} si pone sotto la protezione ${di(w, tag)} (${seed.name}).` }, sink);
   } else {
     for (const p of a.provinces) { s.owner[p] = tag; s.controller[p] = tag; }
     for (const u of s.units) if (u.nation !== tag && a.provinces.includes(u.location)) relocate(w, u);
-    if (a.path === 'acquisto') { s.nations[a.from].treasury += ev.cost; changeOpinion(s, a.from, tag, 5); }
-    else { s.nations[a.decider].treasury += Math.round(ev.cost * 0.5); changeOpinion(s, a.from, tag, -15); changeOpinion(s, a.decider, tag, 5); }
+    if (a.path === 'acquisto') { post(w, a.from, 'colonie', ev.cost); changeOpinion(s, a.from, tag, 5); }
+    else { post(w, a.decider, 'colonie', Math.round(ev.cost * 0.5)); changeOpinion(s, a.from, tag, -15); changeOpinion(s, a.decider, tag, 5); }
     const liq = c.liquidating; if (liq) liq.provinces = liq.provinces.filter((p) => !a.provinces.includes(p));
     const list = a.provinces.map((p) => w.map.provinces[p].name);
     emit(w, { type: 'colonial', nations: [tag, a.from], text: a.path === 'acquisto'
