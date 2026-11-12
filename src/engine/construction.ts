@@ -328,6 +328,15 @@ export function weeklyConstruction(w: World, sink: GameEvent[], days = 7) {
   const s = w.state;
   const b = buildings(w);
   for (const pr of [...projects(w)]) {
+    // la provincia ha cambiato padrone (cessione, annessione, rivolta) o chi costruiva non esiste più: il
+    // cantiere è perduto, non si completa a spese di uno e a vantaggio di un altro
+    const owner = s.owner[pr.province];
+    const mine = owner === pr.nation || (s.subjects ?? []).some((x) => x.overlord === pr.nation && x.subject === owner && x.level !== 'tributario');
+    if (!s.nations[pr.nation]?.alive || !mine) {
+      projects(w).splice(projects(w).indexOf(pr), 1);
+      if (pr.nation === s.player) emit(w, { type: 'construction', nations: [pr.nation], province: pr.province, text: `Cantiere perduto a ${w.map.provinces[pr.province].name}: la provincia non è più nostra.` }, sink);
+      continue;
+    }
     if (s.controller[pr.province] !== s.owner[pr.province]) continue;
     pr.daysLeft -= days;
     if (pr.daysLeft > 0) continue;

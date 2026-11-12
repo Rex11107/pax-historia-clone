@@ -75,8 +75,8 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
     const noise = (k: string) => 0.85 + 0.3 * rand(s.seed, s.day, prov, k);
     const lossA = pD * LOSS_FACTOR * noise('a');
     const lossD = pA * LOSS_FACTOR * noise('d');
-    applyLosses(w, att, lossA, b.losses);
-    applyLosses(w, def, lossD, b.losses);
+    applyLosses(w, att, [...new Set(def.map((u) => u.nation))], lossA, b.losses);
+    applyLosses(w, def, [...new Set(att.map((u) => u.nation))], lossD, b.losses);
     // ritirate
     for (const u of [...att, ...def]) {
       if (u.strength <= 0 || u.morale < RETREAT_MORALE || u.strength < u.maxStrength * RETREAT_STRENGTH) retreat(w, u, sink);
@@ -91,7 +91,8 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
       if (attLeft && defLeft) continue;
     }
     const units = s.units.filter((u) => u.location === b.province);
-    const winner = units.length ? units[0].nation : null;
+    // vince chi dei due schieramenti è rimasto sul campo (non un terzo che passava di lì)
+    const winner = units.find((u) => b.sides[0].includes(u.nation) || b.sides[1].includes(u.nation))?.nation ?? null;
     const lossTxt = Object.entries(b.losses).map(([t, l]) => `${shortN(w, t)} ${fmt(l)}`).join(', ');
     emit(w, {
       type: 'battle_ended', province: b.province, nations: [...b.sides[0], ...b.sides[1]],
@@ -110,7 +111,7 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
   }
 }
 
-function applyLosses(w: World, side: Unit[], total: number, ledger: Record<Tag, number>) {
+function applyLosses(w: World, side: Unit[], enemies: Tag[], total: number, ledger: Record<Tag, number>) {
   const s = w.state;
   const str = side.reduce((x, u) => x + u.strength, 0) || 1;
   for (const u of side) {
@@ -121,7 +122,10 @@ function applyLosses(w: World, side: Unit[], total: number, ledger: Record<Tag, 
     u.entrench = clamp(u.entrench - 0.02, 0, 1);
     ledger[u.nation] = (ledger[u.nation] ?? 0) + l;
     s.nations[u.nation].turnLosses += l;
-    for (const war of s.wars) if (war.attackers.includes(u.nation) || war.defenders.includes(u.nation)) war.casualties[u.nation] = (war.casualties[u.nation] ?? 0) + l;
+    // le perdite contano nella guerra che si combatte qui: quella contro un nemico presente nella provincia
+    // (una nazione in due guerre non le vede raddoppiate nel punteggio di entrambe)
+    const here = s.wars.find((x) => enemies.some((e) => (x.attackers.includes(u.nation) && x.defenders.includes(e)) || (x.defenders.includes(u.nation) && x.attackers.includes(e))));
+    if (here) here.casualties[u.nation] = (here.casualties[u.nation] ?? 0) + l;
   }
 }
 

@@ -103,6 +103,46 @@ Stack: TypeScript, Vite, Capacitor 8 (Android), Vitest. Nessun framework UI. L'H
 - Sultanati del Corno come Stati (Obbia, Migiurtinia, Uarsangheli, Aussa, Raheita, Tagiura), con popoli solo "regionali" per non generare rivendicazioni di nucleo; Stato mahdista ed emirato di Harar nascono in partita (`spawned`).
 - Stati africani e arabi (`src/scenario/africa1881.ts`): profili con capitale, capo del 1881, esercito di pace, rivali e amici; tributari e protettorati iniziali (Stati della Tregua e Bahrein britannici, Zululand tributario britannico, Damagaram del Bornu, Regno del Congo del Portogallo); situazioni iniziali "La rivolta del Transvaal" e "La corsa all'Africa". Popoli africani e arabi (circa 45 gruppi) con regole per paese moderno e Stato d'epoca. Risorse coloniali: oro, diamanti, avorio, gomma, olio di palma, caffè, chiodi di garofano e spezie, zucchero, perle; giacimenti del 1881 (Kimberley, Costa d'Oro, Lydenburg, rame del Katanga, sale di Taudeni e Bilma, caffè di Caffa e Moka, garofano di Zanzibar) e niente petrolio dove nel 1881 non si sapeva estrarre.
 
+## Ordine del turno
+
+Fase 2, passo 1 (12 novembre 2026). L'ordine è una regola di gioco: sta in `WEEKLY_PHASES` (`src/engine/turn.ts`), lo controlla `tests/turn.test.ts`, e `npx tsx scripts/sim/turno.mts [turni]` lo misura facendo giocare le sole nazioni non giocanti (per ogni fase: parti dello stato scritte, denaro creato o speso, millisecondi).
+
+Ogni giorno, sette volte (i piani delle nazioni non giocanti si rifanno all'inizio e al quarto giorno):
+
+| fase | cosa fa | scrive |
+|---|---|---|
+| piani | le nazioni non giocanti in guerra danno ordini alle unità ferme | ordini delle unità |
+| ordini | le unità si muovono in ordine di identificativo; chi entra in una terra di nessuno la annette, chi entra in una provincia nemica vuota la occupa | unità, padroni e controllori |
+| battaglie | un giorno di combattimento in ogni provincia contesa, ritirate, province prese | unità, battaglie, perdite della guerra che si combatte lì, controllori, trattati violati |
+| rifornimenti | livello di rifornimento, attrito, morale, rinforzi dalla riserva | unità, riserva di uomini, perdite |
+
+A fine settimana, in quest'ordine:
+
+| fase | cosa fa | legge dalle fasi prima | scrive |
+|---|---|---|---|
+| commercio | chiude i contratti saltati (guerra, province perse, scadenza), fa crescere la stima fra chi commercia, le nazioni non giocanti comprano il carbone o il ferro che manca | padroni dopo la settimana di guerra | contratti, stima |
+| economia | calcola il bilancio di tutte le nazioni e solo dopo lo applica: casse, debito, leva, rete ferroviaria, stanchezza di guerra, stabilità | contratti in vigore, tributi, indennità, colonie, cantieri, ricerche | casse, debito, riserva, stabilità, stanchezza, `lastBudget` |
+| riparazioni | scala una rata delle indennità (già pagata nel bilancio) e fa scadere le smilitarizzazioni | — | indennità, smilitarizzazioni |
+| politica | consenso, elezioni, crisi di governo | stabilità e politiche della settimana | politica, stabilità |
+| ministri | ritiri, morti, effetti sulle relazioni | politica (un nuovo governo cambia i ministri) | gabinetti, stima |
+| costruzione | avanzano i cantieri (fermi sotto occupazione, perduti se la provincia cambia padrone), le nazioni non giocanti ne aprono | casse dopo il bilancio | cantieri, opere, casse |
+| soggetti | desiderio di indipendenza, tributi sospesi, indipendenze, annessioni | stabilità e stanchezza del signore, contratti | soggetti, guerre, padroni |
+| ricerca | avanzano le ricerche, le nazioni non giocanti ne avviano | casse, risorse | ricerca |
+| ia | finanze delle nazioni non giocanti (rimborso del debito, imposte), arruolamenti in guerra, paci fra nazioni non giocanti | `lastBudget` della settimana, stanchezza | casse, debito, politiche, unità, guerre, padroni |
+| colonie | crisi egiziana, interessi completati, decisioni, integrazione e resistenza delle colonie, rivolte, mosse coloniali delle potenze | elezioni e governi della settimana, guerre | stato coloniale, padroni, soggetti, guerre, unità |
+| espansione | gli stati locali mandano spedizioni nelle terre di nessuno confinanti | guerre, unità ferme | ordini delle unità |
+| trattati | scadono i trattati, spariscono quelli violati | — | trattati |
+| deserti | il deserto passa a chi controlla tutte le terre attorno | padroni definitivi della settimana | padroni dei deserti |
+
+Regole che ne seguono:
+- Il denaro si muove in tre soli modi: il saldo del bilancio nella fase dell'economia (commercio, tributi, indennità a rate e colonie sono voci del bilancio, a somma zero fra chi paga e chi incassa), le spese dirette (cantieri, arruolamenti, trattati coloniali, sussidi, la prima rata di un'indennità) e il rimborso del debito. Nessun'altra fase tocca le casse.
+- Il commercio viene prima dell'economia: un contratto saltato in settimana non si paga. Le finanze delle nazioni non giocanti vengono dopo: decidono sul bilancio appena chiuso.
+- I deserti sono l'ultima fase: seguono i padroni lasciati da tutte le altre.
+
+Corretto in questo passo: le entrate delle colonie venivano versate in cassa fuori dal bilancio (e potevano mandarla sotto zero); i tributi erano calcolati con le entrate di settimane diverse per chi paga e per chi incassa; le perdite di una battaglia contavano in tutte le guerre della nazione, non solo in quella combattuta lì; un cantiere in una provincia ceduta si completava per il nuovo padrone a spese del vecchio; le indennità mancavano dalla tabella del bilancio; quattro piccoli stati (Maldive, Selangor, Sungai Ujong, Borneo del Nord) nascevano con un'unità da zero uomini; a fine battaglia poteva risultare vincitore un terzo presente nella provincia.
+
+Misure (104 turni, sole nazioni non giocanti): partita identica se rigiocata e identica dopo salva e carica a ogni turno (dieci anni prima delle correzioni, due anni dopo); nessuna cassa negativa, nessun numero non finito, nessuna unità nel deserto o di una nazione scomparsa; i punti lenti del turno sono i rifornimenti (85 ms) e l'economia (83 ms) su circa 320 ms, da ottimizzare nel passo 7.
+
 ## AI
 
 - Game Master `translate`: direttive libere → JSON di ordini/politiche/arruolamenti/guerre, validato pezzo per pezzo. Nomi di provincia risolti dal codice.
