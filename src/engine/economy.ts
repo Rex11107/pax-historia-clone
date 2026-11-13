@@ -3,7 +3,7 @@ import { colonialWeight, ethnicStability } from './ethnic';
 import { researchCost, techEffects } from './research';
 import { ROMAN, UNIT_LABEL } from './setup';
 import type { Budget, GameEvent, Policies, Tag, UnitType } from './types';
-import { clamp, emit, hostileUnitsAt, warsOf, type World } from './world';
+import { clamp, emit, enemiesOf, hostileUnitsAt, warsOf, type World } from './world';
 import { effectiveResources } from './trade';
 import { govEffects } from './politics';
 import { buildingIncome, industryOf, maintenanceOf, manpowerBonus, recruitDiscount } from './construction';
@@ -160,6 +160,19 @@ export function recruit(w: World, tag: Tag, type: UnitType, province: number, si
 export const reserveOf = (w: World, tag: Tag) => 20 * Math.max(1, w.state.nations[tag]?.lastBudget?.income ?? 10);
 
 /** Finanze delle nazioni non giocanti: oltre la riserva rimborsano il debito; in deficit alzano le imposte. */
+/** Mobilitazione di una nazione non giocante, proporzionata al nemico: generale se il nemico è in casa o vale
+ *  almeno il 60% del proprio esercito, parziale dal 20%, nessuna per una guerra coloniale contro un piccolo
+ *  stato. Prima ogni guerra era mobilitazione generale: la Francia contro Tunisi triplicava la spesa militare. */
+export function aiMobilize(w: World, tag: Tag) {
+  const s = w.state, n = s.nations[tag];
+  const foes = enemiesOf(s, tag);
+  if (!foes.size) { n.policies.mobilization = 'peace'; return; }
+  let mine = 0, theirs = 0;
+  for (const u of s.units) { if (u.nation === tag) mine += u.strength; else if (foes.has(u.nation)) theirs += u.strength; }
+  const invaded = s.owner.some((o, p) => o === tag && foes.has(s.controller[p]) && w.map.provinces[p].modern === w.map.provinces[n.capital].modern);
+  n.policies.mobilization = invaded || theirs >= mine * 0.6 ? 'full' : theirs >= mine * 0.2 ? 'partial' : 'peace';
+}
+
 export function aiFinances(w: World, tag: Tag) {
   const n = w.state.nations[tag];
   const b = n.lastBudget;
