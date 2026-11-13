@@ -20,7 +20,7 @@ import { planPath } from './orders';
 import { politicsOf } from './politics';
 import { placeArmies } from './setup';
 import type { GameEvent, NationState, Tag } from './types';
-import { subjectOf, subjects } from './vassals';
+import { setSubject, subjectOf } from './vassals';
 import { al, atWar, changeOpinion, clamp, dateOf, di, emit, formatDate, NOBODY, rand, the, The, warsOf, type World } from './world';
 
 export type { ColonialPath, InterestSeed };
@@ -363,8 +363,7 @@ export function execute(w: World, a: ColonialAction, sink: GameEvent[] = []): st
   if (a.path === 'protettorato') {
     const old = subjectOf(w, a.target);
     if (old && old.overlord !== tag) { changeOpinion(s, old.overlord, tag, -20); emit(w, { type: 'colonial', nations: [old.overlord, a.target], text: `${The(w, old.overlord)} protesta: perde la sovranità nominale su ${name(w, a.target)}.` }, sink); }
-    s.subjects = subjects(w).filter((x) => x.subject !== a.target);
-    s.subjects.push({ subject: a.target, overlord: tag, level: 'protettorato', liberty: 45, since: s.day });
+    setSubject(w, a.target, tag, 'protettorato', 45);
     post(w, a.target, 'colonie', Math.round(ev.cost * 0.5));
     emit(w, { type: 'colonial', nations: [tag, a.target], text: `Trattato di protettorato: ${name(w, a.target)} si pone sotto la protezione ${di(w, tag)} (${seed.name}).` }, sink);
   } else {
@@ -667,8 +666,7 @@ function weeklyEgypt(w: World, sink: GameEvent[]) {
   if (e.stage === 1 && at(555, 'urabi')) {
     e.stage = 2;
     if (s.nations.GBR?.alive && player !== 'GBR' && player !== 'EGY' && !warsOf(s, 'GBR').length && !warsOf(s, 'EGY').length) {
-      s.subjects = subjects(w).filter((x) => x.subject !== 'EGY');
-      s.subjects.push({ subject: 'EGY', overlord: 'GBR', level: 'vassallo', liberty: 55, since: s.day });
+      setSubject(w, 'EGY', 'GBR', 'vassallo', 55);
       changeOpinion(s, 'TUR', 'GBR', -15); changeOpinion(s, 'FRA', 'GBR', -10);
       emit(w, { type: 'colonial', nations: ['EGY', 'GBR'], text: 'Egitto: dopo la rivolta di Urabi e il bombardamento di Alessandria, Wolseley vince a Tel el-Kebir. L\'Egitto resta del chedivè, ma lo governano gli inglesi.' }, sink);
       checkCompletions(w, sink);

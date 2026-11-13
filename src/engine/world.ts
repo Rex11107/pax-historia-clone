@@ -93,6 +93,11 @@ export function allied(s: GameState, a: Tag, b: Tag) {
   return (s.subjects ?? []).some((x) => x.level === 'protettorato' && ((x.overlord === a && x.subject === b) || (x.overlord === b && x.subject === a)));
 }
 
+/** Dalla stessa parte in una guerra in corso (cobelligeranti, anche senza alleanza fra loro). */
+export function sameSide(s: GameState, a: Tag, b: Tag): boolean {
+  return a === b || (!atWar(s, a, b) && s.wars.some((x) => (x.attackers.includes(a) && x.attackers.includes(b)) || (x.defenders.includes(a) && x.defenders.includes(b))));
+}
+
 /** Una nazione può entrare in una provincia? (propria, alleata in guerra comune, nemica, accesso militare) */
 export function canEnter(s: GameState, nation: Tag, province: number): boolean {
   const ctrl = s.controller[province];
@@ -100,6 +105,7 @@ export function canEnter(s: GameState, nation: Tag, province: number): boolean {
   if (ctrl === NOBODY) return true; // terra di nessuno: chi arriva la occupa
   if (atWar(s, nation, ctrl)) return true;
   if (allied(s, nation, ctrl)) return true;
+  if (sameSide(s, nation, ctrl)) return true; // cobelligeranti: si passa nelle terre di chi combatte dalla stessa parte
   if (treatyBetween(s, ctrl, nation, 'military_access')) return true;
   // province nemiche occupate da un alleato
   return false;

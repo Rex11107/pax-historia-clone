@@ -4,7 +4,7 @@ import { techEffects } from './research';
 import { level } from './construction';
 import { TERRAIN_SPEED, type Edge } from './map';
 import type { Condition, GameEvent, Order, Unit, UnitType } from './types';
-import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, NOBODY, The, type World } from './world';
+import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, NOBODY, sameSide, The, type World } from './world';
 
 export const UNIT_STATS: Record<UnitType, { speed: number; attack: number; defense: number }> = {
   infantry: { speed: 22, attack: 1, defense: 1 },
@@ -184,7 +184,8 @@ function capture(w: World, u: Unit, p: number, sink: GameEvent[]) {
   if (ctrl === u.nation || !atWar(s, u.nation, ctrl)) return;
   // una provincia liberata torna al proprietario di diritto se è amico
   const owner = s.owner[p];
-  const newCtrl = owner !== ctrl && allied(s, u.nation, owner) ? owner : u.nation;
+  // (amico = alleato o cobelligerante: due protettorati dello stesso signore non si occupano a vicenda)
+  const newCtrl = owner !== ctrl && (allied(s, u.nation, owner) || sameSide(s, u.nation, owner)) ? owner : u.nation;
   s.controller[p] = newCtrl;
   emit(w, { type: 'province_captured', province: p, nations: [newCtrl, ctrl], text: `${w.map.provinces[p].name} passa sotto il controllo ${di(w, newCtrl)} (tolta ${al(w, ctrl)}).` }, sink);
 }
@@ -194,6 +195,9 @@ export function processUnit(w: World, u: Unit, sink: GameEvent[]) {
   const s = w.state;
   if (u.recovering > 0) { u.recovering--; return; }
   if (u.inBattle) return;
+  // chi sta in una provincia nemica rimasta senza difensori la occupa (prima succedeva solo entrando: un'unità
+  // arrivata mentre il nemico usciva restava in terra nemica senza prenderla, e un terzo poteva soffiargliela)
+  if (!u.move?.progress && atWar(s, u.nation, s.controller[u.location]) && !s.units.some((o) => o.location === u.location && !o.move?.progress && atWar(s, u.nation, o.nation))) capture(w, u, u.location, sink);
   for (let guard = 0; guard < 6; guard++) {
     const o = u.orders[0];
     if (!o) { u.entrench = clamp(u.entrench + 0.03, 0, 1); return; }

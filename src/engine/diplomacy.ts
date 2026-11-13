@@ -1,8 +1,8 @@
 import { transfer } from './ledger';
 import { geoKm } from './map';
-import { followers, subjectOf, warBlock } from './vassals';
+import { endSubjection, followers, subjectOf, warBlock } from './vassals';
 import type { GameEvent, Tag, TreatyType } from './types';
-import { al, allied, atWar, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
+import { al, allied, atWar, canEnter, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
 
 export const TREATY_LABEL: Record<TreatyType, string> = {
   alliance: 'alleanza difensiva',
@@ -31,6 +31,7 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
   if (atWar(s, a, b)) return 'già in guerra';
   const blocked = warBlock(w, a, b);
   if (blocked) return blocked;
+  endSubjection(w, a, b); // la guerra fra un signore e il suo soggetto scioglie il legame
   if (allied(s, a, b) && treatyBetween(s, a, b, 'alliance')) {
     // dichiarare guerra a un alleato rompe l'alleanza
     treatyBetween(s, a, b, 'alliance')!.violated = true;
@@ -93,7 +94,7 @@ export function makePeace(w: World, a: Tag, b: Tag, terms: { cedeTo?: Tag; provi
     const amount = Math.min(terms.indemnity, s.nations[terms.payer].treasury + 300);
     transfer(w, terms.payer, recv, 'indennita', amount);
   }
-  relocateStranded(w);
+  settleOccupations(w);
   for (const t of [a, b]) if (t !== s.player && !warsOf(s, t).length) s.nations[t].policies.mobilization = 'peace';
   const cededTxt = ceded.size ? ` ${The(w, terms.cedeTo!)} ottiene: ${describeTerritory(w, [...ceded])}.` : '';
   const indTxt = terms.indemnity ? ` Indennità di ${terms.indemnity} milioni.` : '';
@@ -102,12 +103,25 @@ export function makePeace(w: World, a: Tag, b: Tag, terms: { cedeTo?: Tag; provi
   return null;
 }
 
+/** Dopo una pace, una scomparsa o la fine di un legame: le occupazioni rimaste senza guerra finiscono e le unità
+ *  rimaste dove non possono più stare tornano a casa. Una provincia tolta a un nemico che la occupava resta a
+ *  chi l'ha presa finché combatte; quando non è più in guerra con nessuno torna al suo padrone. */
+export function settleOccupations(w: World) {
+  const s = w.state;
+  const fighting = new Set<Tag>();
+  for (const x of s.wars) for (const t of [...x.attackers, ...x.defenders]) fighting.add(t);
+  for (let p = 0; p < s.owner.length; p++) {
+    const o = s.owner[p], c = s.controller[p];
+    if (o !== c && !atWar(s, o, c) && !fighting.has(c)) s.controller[p] = o;
+  }
+  relocateStranded(w);
+}
+
 /** Le unità rimaste in territorio dove non possono più stare tornano nella provincia propria più vicina. */
 export function relocateStranded(w: World) {
   const s = w.state;
   for (const u of s.units) {
-    const ctrl = s.controller[u.location];
-    if (ctrl === u.nation || allied(s, u.nation, ctrl) || atWar(s, u.nation, ctrl) || treatyBetween(s, u.nation, ctrl, 'military_access')) continue;
+    if (canEnter(s, u.nation, u.location)) continue;
     const home = w.map.provinces.filter((p) => s.controller[p.id] === u.nation && !p.impassable);
     if (!home.length) continue;
     const here = w.map.provinces[u.location].lonlat;
@@ -116,21 +130,42 @@ export function relocateStranded(w: World) {
   }
 }
 
+/** Una nazione scompare: esce da tutto ciò che la nomina, in un punto solo (unità, guerre, trattati, legami di
+ *  soggezione, contratti, cantieri, ricerche in comune, indennità). Prima restavano in giro fino alla pulizia
+ *  settimanale di ciascun sottosistema, o per sempre (trattati, cantieri). */
+function bury(w: World, tag: Tag) {
+  const s = w.state;
+  s.nations[tag].alive = false;
+  s.units = s.units.filter((u) => u.nation !== tag);
+  for (const x of s.wars) { x.attackers = x.attackers.filter((t) => t !== tag); x.defenders = x.defenders.filter((t) => t !== tag); }
+  const ended = s.wars.filter((x) => !x.attackers.length || !x.defenders.length);
+  s.wars = s.wars.filter((x) => !ended.includes(x));
+  s.situations = s.situations.filter((x) => !ended.some((e) => e.id === x.id));
+  if (s.pendingPeace) s.pendingPeace = s.pendingPeace.filter((x) => !ended.some((e) => e.id === x.war));
+  s.treaties = s.treaties.filter((t) => t.a !== tag && t.b !== tag);
+  if (s.subjects) s.subjects = s.subjects.filter((x) => x.subject !== tag && x.overlord !== tag);
+  if (s.trades) s.trades = s.trades.filter((c) => c.seller !== tag && c.buyer !== tag);
+  if (s.projects) s.projects = s.projects.filter((x) => x.nation !== tag);
+  if (s.reparations) s.reparations = s.reparations.filter((x) => x.payer !== tag && x.receiver !== tag);
+  if (s.research) s.research.projects = s.research.projects.filter((x) => !x.nations.includes(tag));
+  // ciò che occupava torna ai padroni
+  for (let p = 0; p < s.owner.length; p++) if (s.controller[p] === tag) s.controller[p] = s.owner[p];
+}
+
 export function checkAlive(w: World, sink?: GameEvent[]) {
   const s = w.state;
+  let died = false;
   for (const n of Object.values(s.nations)) {
     if (!n.alive) continue;
     if (!s.owner.includes(n.tag)) {
-      n.alive = false;
-      s.units = s.units.filter((u) => u.nation !== n.tag);
-      s.wars.forEach((x) => { x.attackers = x.attackers.filter((t) => t !== n.tag); x.defenders = x.defenders.filter((t) => t !== n.tag); });
-      s.wars = s.wars.filter((x) => x.attackers.length && x.defenders.length);
+      bury(w, n.tag); died = true;
       emit(w, { type: 'nation_annexed', nations: [n.tag], text: `${The(w, n.tag)} cessa di esistere.` }, sink);
     } else if (s.owner[n.capital] !== n.tag) {
       const own = s.owner.map((o, i) => (o === n.tag ? i : -1)).filter((i) => i >= 0);
       n.capital = own.sort((x, y) => w.map.provinces[y].pop - w.map.provinces[x].pop)[0];
     }
   }
+  if (died) settleOccupations(w);
 }
 
 export function addTreaty(w: World, type: TreatyType, a: Tag, b: Tag, years: number | null, sink?: GameEvent[]) {
