@@ -159,6 +159,21 @@ Fase 2, passo 4 (12 novembre 2026). `src/engine/invariants.ts` elenca ciò che d
 
 Errori trovati dal controllo e corretti: una nazione annessa restava in trattati, cantieri, ricerche, contratti e legami di soggezione (ora esce da tutto in un punto solo, `bury` in `diplomacy.ts`, e le occupazioni rimaste senza guerra finiscono); una guerra fra un signore e il suo soggetto non scioglieva il legame; un vincitore poteva diventare vassallo del proprio soggetto, in cerchio (ora i legami nascono solo da `setSubject`); due cobelligeranti non alleati, per esempio due protettorati dello stesso signore, si occupavano le province a vicenda liberandole dal nemico e non potevano attraversarle (ora la provincia liberata torna al padrone e fra cobelligeranti si passa); un'unità arrivata in una provincia nemica mentre i difensori ne uscivano non la occupava mai, e un terzo in guerra con lo stesso nemico poteva prenderla lasciandola in terra altrui (ora chi sta in una provincia nemica senza difensori la occupa); una provincia di un terzo tolta a un nemico che la occupava restava per sempre a chi l'aveva presa (ora torna al padrone quando l'occupante non è più in guerra con nessuno: `settleOccupations`, chiamata a ogni pace, scomparsa e fine di un legame di soggezione, che riporta a casa anche le truppe rimaste dove non possono più stare). Provato con 200 turni di guerre a caso e paci dure su quattro semi diversi, controllando dopo ogni fase: nessuna violazione.
 
+## Simulazione lunga
+
+Fase 2, passo 6 (13 novembre 2026). `npx tsx scripts/sim/storia.mts [anni] [seme] [file]` fa giocare il mondo alle sole nazioni non giocanti e scrive un rapporto: finanze e forze delle potenze, guerre e paci, nazioni scomparse o nate, province passate di mano, soggetti, colonie, tempo per fase; controlla le invarianti a ogni turno. Il rapporto di riferimento è `docs/rapporti/1881-1899.md` (seme `regnum`, 991 turni, 221 s, nessuna invariante violata).
+
+Corretto dopo la prima lettura (riflessi delle nazioni non giocanti in guerra, `ai.ts`):
+- per terra una potenza non raggiungeva una guerra oltremare: la Francia teneva 470.000 uomini in patria mentre 8.000 tunisini razziavano l'Algeria. Ora, finché le forze impegnate non superano di metà quelle del nemico, fino a tre unità ferme per volta partono per nave;
+- chi era in guerra arruolava fino a cinque unità a settimana e mobilitava tutto, qualunque fosse il nemico. Ora si arruola finché l'esercito non supera di metà quello nemico (del doppio col nemico in casa) e la mobilitazione è proporzionata (`aiMobilize`): nessuna sotto il 20% del proprio esercito, parziale fino al 60%, generale oltre o col nemico in patria;
+- la pace arrivava solo per stanchezza, che cresce con le perdite: una guerra senza scontri non finiva. Ora una guerra decisa sul campo (50 punti di scarto) si chiude dopo due mesi, una ferma dopo un anno e mezzo.
+Effetto sul rapporto: la Francia passa da 37.500 milioni di debito e casse vuote a 3.600 di debito e 2.200 in cassa; le guerre coloniali durano da uno a cinque mesi invece di anni; Tunisi diventa protettorato francese.
+
+Aperto (decisioni di bilanciamento, non errori):
+- le casse esplodono: nel 1899 il Regno Unito ha 57.800 milioni, gli Stati Uniti 54.200, la Germania 25.700, quasi tutti senza debito. Chi ha un esercito piccolo incassa molto più di quanto spende e nessuno spende l'avanzo;
+- in diciannove anni non c'è una guerra fra Stati: le nazioni non giocanti dichiarano solo guerre coloniali. Nella storia: serbo-bulgara 1885, sino-francese 1884, sino-giapponese 1894, greco-turca 1897, ispano-americana 1898, boera 1899;
+- una nazione non giocante in guerra resta lenta: 43.500 francesi impiegano mesi contro 8.000 tunisini.
+
 ## AI
 
 - Game Master `translate`: direttive libere → JSON di ordini/politiche/arruolamenti/guerre, validato pezzo per pezzo. Nomi di provincia risolti dal codice.
