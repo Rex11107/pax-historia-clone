@@ -13,7 +13,7 @@ Ogni motore del gioco è giudicato da una corte indipendente: un accusatore stud
 | 06 | Diplomazia, alleanze, stati soggetti | fatto | **fatto** (`06-diplomazia/verdetto.md`; accusa e giuria nella stessa sessione) |
 | 07 | Trattati di pace e punteggio di guerra | fatto | **fatto** (`07-pace/verdetto.md`; accusa e giuria nella stessa sessione) |
 | 08 | Mappa, territorio e scenario iniziale | **fatto** (`08-mappa/accusa.md`) | **fatto** (`08-mappa/verdetto.md`; accusa e giuria nella stessa sessione) |
-| 09 | Livello LLM | da fare | da fare |
+| 09 | Livello LLM | **fatto** (`09-llm/accusa.md`) | **fatto** (`09-llm/verdetto.md`; accusa e giuria nella stessa sessione) |
 | 10 | Interfaccia, salvataggi e aggiornamenti | da fare | da fare |
 
 Per completare una corte con un'altra sessione o un altro modello: `PROMPT.md`.
