@@ -1,0 +1,165 @@
+turni 286, fino a 26 giugno 1886, 78011 ms
+totali: crisi 57, governi 28, elezioni 46, nazioni coinvolte 33
+per nazione (crisi/governi/elezioni):
+DEN 20/0/2, FRA 12/12/2, SER 10/0/2, BEL 2/2/3, OFS 2/2/1, HAI 2/2/1, GBR 2/2/1, GRE 1/1/2, NED 1/2/3, ARG 1/1/1, BOL 1/1/1, TRA 1/1/1, YOR 1/1/1, PAR 1/1/1, SPA 0/0/1, POR 0/0/2, SWE 0/0/2, GER 0/0/2, SWI 0/0/2, ITA 0/0/1, ROM 0/0/1, BUL 0/0/2, URU 0/0/1, NIC 0/0/1, LIB 0/0/1, DOM 0/0/1, ELS 0/0/1, HON 0/0/1, COL 0/0/1, USA 0/0/1, MEX 0/0/1, CHL 0/0/1, AUH 0/0/1
+nazioni non europee/ripiego: 17, loro crisi 9, governi 9
+prossime elezioni dei ripieghi (data: quante nazioni): {"1 giugno 1887":17}
+--- ITA
+1 gennaio 1881 Benedetto Cairoli [parliamentary] conf 68 el 666
+4 novembre 1882 Elezioni in Regno d'Italia: Sinistra storica 66%, Destra storica 31%, Estrema sinistra 3%.
+  fine: Benedetto Cairoli gov sinistra conf 73 seats sinistra:66.3/64.4 destra:30.8/32.9 estrema:2.9/2.7
+--- FRA
+1 gennaio 1881 Jules Ferry [parliamentary] conf 49 el 232
+14 maggio 1881 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Jules Ferry (Repubblicani opportunisti, Radicali).
+27 agosto 1881 Elezioni in Repubblica francese: Repubblicani opportunisti 55%, Monarchici e bonapartisti 42%, Radicali 3%.
+29 ottobre 1881 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Jules Ferry (Repubblicani opportunisti).
+7 gennaio 1882 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Léon Gambetta (Repubblicani opportunisti).
+11 marzo 1882 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Charles de Freycinet (Repubblicani opportunisti).
+26 agosto 1882 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Jules Ferry (Repubblicani opportunisti).
+6 gennaio 1883 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Léon Gambetta (Repubblicani opportunisti).
+3 marzo 1883 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Charles de Freycinet (Repubblicani opportunisti).
+19 maggio 1883 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Jules Ferry (Repubblicani opportunisti).
+11 agosto 1883 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Léon Gambetta (Repubblicani opportunisti).
+29 dicembre 1883 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Charles de Freycinet (Repubblicani opportunisti).
+18 luglio 1885 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Jules Ferry (Repubblicani opportunisti).
+29 agosto 1885 Elezioni in Repubblica francese: Repubblicani opportunisti 56%, Monarchici e bonapartisti 38%, Radicali 5%.
+26 dicembre 1885 Repubblica francese: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Léon Gambetta (Repubblicani opportunisti).
+  fine: Léon Gambetta gov opportunisti conf 47.1 seats opportunisti:56.3/53.2 radicali:5.3/7.5 destra:38.4/39.3
+--- GBR
+1 gennaio 1881 William Gladstone [parliamentary] conf 54 el 1788
+15 settembre 1883 Regno Unito: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Lord Hartington (Liberali).
+28 novembre 1885 Elezioni in Regno Unito: Liberali 53%, Conservatori 35%, Home Rule irlandese 12%.
+27 febbraio 1886 Regno Unito: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo William Gladstone (Liberali).
+  fine: William Gladstone gov liberali conf 55.6 seats liberali:53.3/53.7 conservatori:34.9/36.6 homerule:11.8/9.7
+--- GER
+1 gennaio 1881 Otto von Bismarck [constitutional] conf 58 el 299
+29 ottobre 1881 Elezioni in Impero tedesco: Conservatori 29%, Zentrum cattolico 27%, Nazionalliberali 26%, Polacchi, alsaziani, guelfi 16%, Liberali progressisti 3%, Socialdemo
+1 novembre 1884 Elezioni in Impero tedesco: Nazionalliberali 32%, Zentrum cattolico 22%, Conservatori 21%, Polacchi, alsaziani, guelfi 21%, Liberali progressisti 3%, Socialdemo
+  fine: Otto von Bismarck gov conservatori+zentrum conf 39.7 seats conservatori:20.8/16.7 nazionalliberali:31.5/39.5 zentrum:22.1/14.5 progressisti:3.4/1.2 spd:1.7/1.8 minoranze:20.5/26.3
+--- AUH
+1 gennaio 1881 Eduard Taaffe [constitutional] conf 55 el 1612
+6 giugno 1885 Elezioni in Impero austro-ungarico: Anello di ferro (conservatori, cechi, polacchi) 46%, Liberali tedeschi 40%, Indipendentisti magiari 15%.
+  fine: Eduard Taaffe gov anello conf 46.3 seats anello:45.9/39.3 liberali:39.5/42.4 quarantottini:14.7/18.3
+--- RUS
+1 gennaio 1881 Michail Loris-Melikov [autocracy] conf 49 el null
+  fine: Michail Loris-Melikov gov riformisti conf 45.6 seats riformisti:45/38.5 reazionari:35/39.4 panslavisti:20/22.1
+--- TUR
+1 gennaio 1881 Küçük Said Pascià [autocracy] conf 54.6 el null
+  fine: Küçük Said Pascià gov palazzo conf 53.3 seats palazzo:55/52 ulema:25/24.5 costituzionalisti:20/23.5
+--- SPA
+1 gennaio 1881 Antonio Cánovas del Castillo [parliamentary] conf 80 el 232
+27 agosto 1881 Elezioni in Regno di Spagna: Conservatori 85%, Liberali fusionisti 11%, Repubblicani 4%, Carlisti 1%.
+  fine: Antonio Cánovas del Castillo gov conservatori conf 88.6 seats conservatori:85.3/82.9 fusionisti:10.5/11.2 repubblicani:3.6/4 carlisti:0.5/1.8
+--- POR
+1 gennaio 1881 Anselmo Braamcamp [parliamentary] conf 65 el 232
+27 agosto 1881 Elezioni in Regno del Portogallo: Progressisti 72%, Rigeneratori 24%, Repubblicani 4%.
+29 agosto 1885 Elezioni in Regno del Portogallo: Progressisti 73%, Rigeneratori 22%, Repubblicani 5%.
+  fine: Anselmo Braamcamp gov progressisti conf 72.4 seats progressisti:73.1/72.1 rigeneratori:22.2/23.3 repubblicani:4.7/4.6
+--- BEL
+1 gennaio 1881 Walthère Frère-Orban [parliamentary] conf 55 el 528
+17 dicembre 1881 Regno del Belgio: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Walthère Frère-Orban (Liberali).
+17 giugno 1882 Elezioni in Regno del Belgio: Liberali 54%, Cattolici 46%.
+24 marzo 1883 Regno del Belgio: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Walthère Frère-Orban (Liberali).
+21 giugno 1884 Elezioni in Regno del Belgio: Liberali 55%, Cattolici 45%.
+26 giugno 1886 Elezioni in Regno del Belgio: Liberali 51%, Cattolici 49%.
+  fine: Walthère Frère-Orban gov liberali conf 57.4 seats liberali:51.4/51.4 cattolici:48.6/48.6
+--- NED
+1 gennaio 1881 Theodoor van Lynden van Sandenburg [parliamentary] conf 55 el 164
+18 giugno 1881 Elezioni in Regno dei Paesi Bassi: Liberali 55%, Cattolici 19%, Antirivoluzionari 15%, Conservatori 11%.
+28 gennaio 1882 Regno dei Paesi Bassi: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Jan Kappeyne van de Coppello (Liberali).
+23 giugno 1883 Elezioni in Regno dei Paesi Bassi: Liberali 50%, Cattolici 22%, Antirivoluzionari 18%, Conservatori 10%.
+23 giugno 1883 Regno dei Paesi Bassi: il voto cambia la maggioranza. Nuovo governo Theodoor van Lynden van Sandenburg (Liberali, Cattolici).
+27 giugno 1885 Elezioni in Regno dei Paesi Bassi: Liberali 46%, Cattolici 21%, Antirivoluzionari 19%, Conservatori 14%.
+  fine: Theodoor van Lynden van Sandenburg gov liberali+cattolici conf 62.4 seats liberali:46.2/44.8 cattolici:20.9/15.6 antirivoluzionari:18.9/23.4 conservatori:13.9/16.2
+--- DEN
+1 gennaio 1881 Jacob Estrup [constitutional] conf 35 el 143
+28 maggio 1881 Elezioni in Regno di Danimarca: Venstre (liberali agrari) 65%, Højre (conservatori) 31%, Indipendenti 3%.
+31 maggio 1884 Elezioni in Regno di Danimarca: Venstre (liberali agrari) 77%, Højre (conservatori) 18%, Indipendenti 5%.
+  fine: Jacob Estrup gov hojre conf 5.8 seats hojre:18.1/4.8 venstre:77.1/87.5 altri:4.9/7.7
+--- SWE
+1 gennaio 1881 Arvid Posse [constitutional] conf 55 el 243
+3 settembre 1881 Elezioni in Regni Uniti di Svezia e Norvegia: Partito agrario (Lantmanna) 55%, Ministeriali 34%, Venstre norvegese 11%.
+6 settembre 1884 Elezioni in Regni Uniti di Svezia e Norvegia: Partito agrario (Lantmanna) 45%, Ministeriali 41%, Venstre norvegese 15%.
+  fine: Arvid Posse gov lantmanna conf 39.8 seats lantmanna:44.5/37.8 ministeriali:40.9/45.9 venstre:14.6/16.3
+--- SWI
+1 gennaio 1881 Numa Droz [parliamentary] conf 75 el 302
+5 novembre 1881 Elezioni in Confederazione svizzera: Radicali liberali 62%, Cattolico-conservatori 25%, Centro liberale 14%.
+8 novembre 1884 Elezioni in Confederazione svizzera: Radicali liberali 61%, Cattolico-conservatori 32%, Centro liberale 7%.
+  fine: Numa Droz gov radicali+centro conf 62.4 seats radicali:61.4/59.1 centro:6.5/0.9 cattolici:32.1/40
+--- GRE
+1 gennaio 1881 Alexandros Koumoundouros [parliamentary] conf 50 el 353
+9 aprile 1881 Regno di Grecia: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Alexandros Koumoundouros (Partito di Koumoundouros, Nuovo partito (moder
+24 dicembre 1881 Elezioni in Regno di Grecia: Partito di Koumoundouros 53%, Nuovo partito (modernizzatori) 40%, Partito di Deligiorgis 7%.
+26 dicembre 1885 Elezioni in Regno di Grecia: Partito di Koumoundouros 55%, Nuovo partito (modernizzatori) 37%, Partito di Deligiorgis 8%.
+  fine: Alexandros Koumoundouros gov koumoundouros+trikoupis conf 89.3 seats koumoundouros:55.1/60.6 trikoupis:37.3/31.6 deligiorgis:7.7/7.8
+--- ROM
+1 gennaio 1881 Ion C. Brătianu [parliamentary] conf 70 el 850
+5 maggio 1883 Elezioni in Principato di Romania: Liberali 72%, Conservatori 28%.
+  fine: Ion C. Brătianu gov liberali conf 69.6 seats liberali:72.3/68.5 conservatori:27.7/31.5
+--- SER
+1 gennaio 1881 Milan Piroćanac [constitutional] conf 45 el 991
+22 settembre 1883 Elezioni in Principato di Serbia: Radicali 41%, Progressisti 37%, Liberali 22%.
+15 novembre 1884 Elezioni in Principato di Serbia: Radicali 43%, Progressisti 31%, Liberali 26%.
+  fine: Milan Piroćanac gov progressisti conf 18.4 seats progressisti:30.6/17.4 radicali:43.2/49.3 liberali:26.2/33.3
+--- BUL
+1 gennaio 1881 Petko Karavelov [constitutional] conf 75 el 881
+2 giugno 1883 Elezioni in Principato di Bulgaria: Liberali 73%, Conservatori 28%.
+5 giugno 1886 Elezioni in Principato di Bulgaria: Liberali 72%, Conservatori 28%.
+  fine: Petko Karavelov gov liberali conf 72.4 seats liberali:72.3/72.4 conservatori:27.7/27.6
+--- EGY
+1 gennaio 1881 Riyad Pascià [autocracy] conf 50.8 el null
+  fine: Riyad Pascià gov corte conf 48.2 seats corte:50/44.5 nazionalisti:30/35.9 notabili:20/19.6
+--- TUN
+1 gennaio 1881 Mustafa ibn Ismail [autocracy] conf 60.2 el null
+  fine: Mustafa ibn Ismail gov corte conf 59.4 seats corte:60/57.6 riformisti:20/23.3 notabili:20/19.1
+--- USA
+1 gennaio 1881 Presidente Rutherford B. Hayes (James A. Garfield, eletto, si insedia il 4 marzo) [parliamentary] conf 60 el 881
+2 giugno 1883 Elezioni in Stati Uniti d'America: Partito di governo 59%, Opposizione liberale 41%.
+  fine: Presidente Rutherford B. Hayes (James A. Garfield, eletto, si insedia il 4 marzo) gov governo conf 57.1 seats governo:58.7/56.4 opposizione:41.3/43.6
+--- MEX
+1 gennaio 1881 Presidente Manuel González (Porfirio Díaz dietro le quinte) [parliamentary] conf 60 el 881
+2 giugno 1883 Elezioni in Stati Uniti Messicani: Partito di governo 57%, Opposizione liberale 44%.
+  fine: Presidente Manuel González (Porfirio Díaz dietro le quinte) gov governo conf 53.6 seats governo:56.5/52.3 opposizione:43.5/47.7
+--- BRA
+1 gennaio 1881 Imperatore Pedro II (presidente del consiglio José Antônio Saraiva) [autocracy] conf 67.6 el null
+  fine: Imperatore Pedro II (presidente del consiglio José Antônio Saraiva) gov corte conf 64.9 seats corte:65/59.7 notabili:35/40.3
+--- JAP
+1 gennaio 1881 Imperatore Meiji (gran consigliere Sanjō Sanetomi [autocracy] conf 69.4 el null
+  fine: Imperatore Meiji (gran consigliere Sanjō Sanetomi gov corte conf 67.5 seats corte:65/60.8 notabili:35/39.2
+--- CHI
+1 gennaio 1881 Imperatore Guangxu (reggenza delle imperatrici vedove Cixi e Ci'an [autocracy] conf 66.4 el null
+  fine: Imperatore Guangxu (reggenza delle imperatrici vedove Cixi e Ci'an gov corte conf 64.4 seats corte:65/60.7 notabili:35/39.3
+--- PER
+1 gennaio 1881 Scià Naser al-Din [autocracy] conf 65.8 el null
+  fine: Scià Naser al-Din gov corte conf 64.8 seats corte:65/62.1 notabili:35/37.9
+--- ARG
+1 gennaio 1881 Presidente Julio Argentino Roca [parliamentary] conf 60 el 881
+2 giugno 1883 Elezioni in Repubblica Argentina: Partito di governo 53%, Opposizione liberale 47%.
+20 settembre 1884 Repubblica Argentina: crisi di governo, nuova maggioranza dalla stessa Camera. Nuovo governo Presidente Julio Argentino Roca (Partito di governo).
+  fine: Presidente Julio Argentino Roca gov governo conf 51.2 seats governo:53.4/50.3 opposizione:46.6/49.7
+--- stabilità/fiducia ogni anno
+31 dicembre 1881: ITA st68/conf68 FRA st53/conf44 GBR st76/conf53 GER st83/conf60 AUH st59/conf52 RUS st63/conf49 TUR st52/conf53 SPA st68/conf88 POR st66/conf73 BEL st64/conf59 NED st63/conf53 DEN st56/conf26
+30 dicembre 1882: ITA st69/conf74 FRA st53/conf44 GBR st76/conf51 GER st83/conf58 AUH st60/conf53 RUS st63/conf49 TUR st52/conf54 SPA st68/conf88 POR st65/conf72 BEL st50/conf51 NED st63/conf53 DEN st55/conf21
+29 dicembre 1883: ITA st69/conf70 FRA st45/conf49 GBR st78/conf54 GER st84/conf58 AUH st62/conf53 RUS st63/conf44 TUR st52/conf52 SPA st68/conf88 POR st65/conf68 BEL st59/conf52 NED st67/conf73 DEN st53/conf22
+27 dicembre 1884: ITA st70/conf70 FRA st61/conf50 GBR st78/conf54 GER st82/conf42 AUH st62/conf51 RUS st64/conf47 TUR st52/conf53 SPA st68/conf89 POR st66/conf73 BEL st61/conf52 NED st66/conf69 DEN st54/conf8
+26 dicembre 1885: ITA st71/conf73 FRA st61/conf56 GBR st78/conf56 GER st81/conf40 AUH st61/conf44 RUS st66/conf47 TUR st52/conf51 SPA st69/conf88 POR st65/conf71 BEL st61/conf54 NED st65/conf61 DEN st55/conf7
+--- etnie: quota estranea e effetto
+GBR foreign 0.884 base 0.883 effetto -0.02 target 77.9
+FRA foreign 0.209 base 0.209 effetto 0.00 target 61.5
+GER foreign 0.154 base 0.128 effetto -1.04 target 81.2
+ITA foreign 0.010 base 0.004 effetto -0.26 target 70.5
+RUS foreign 0.488 base 0.488 effetto 0.00 target 65.9
+AUH foreign 0.560 base 0.560 effetto 0.00 target 61.4
+TUR foreign 0.515 base 0.515 effetto 0.00 target 51.8
+POR foreign 0.443 base 0.438 effetto -0.19 target 65.5
+BEL foreign 0.155 base 0.020 effetto -5.41 target 61.5
+SPA foreign 0.355 base 0.354 effetto -0.02 target 69.0
+--- gabinetti
+ITA: capo Benedetto Cairoli; Esteri Benedetto Cairoli, Guerra Emilio Ferrero, Finanze Agostino Magliani, Interno Agostino Depretis
+FRA: capo Léon Gambetta; Esteri Jules Ferry, Guerra Jean-Joseph Farre, Finanze Joseph Magnin, Interno Ernest Constans
+GBR: capo William Gladstone; Esteri Lord Granville, Guerra Lord Hartington, Finanze Hugh Childers, Interno Sir William Harcourt
+GER: capo Otto von Bismarck; Esteri Paul von Hatzfeldt, Guerra Paul Bronsart von Schellendorff, Finanze Adolf von Scholz, Interno Karl Heinrich von Boetticher
+AUH: capo Eduard Taaffe; Esteri Gustav Kálnoky, Guerra Arthur von Bylandt-Rheidt, Finanze Benjámin Kállay, Interno Kálmán Tisza
+RUS: capo Michail Loris-Melikov; Esteri Nikolaj Giers, Guerra Dmitrij Miljutin, Finanze Aleksandr Abaza, Interno Michail Loris-Melikov
+TUR: capo Küçük Said Pascià; Esteri funzionario, Guerra Gazi Osman Pascià, Finanze funzionario, Interno funzionario
+SPA: capo Antonio Cánovas del Castillo; Esteri funzionario, Guerra Arsenio Martínez Campos, Finanze Fernando Cos-Gayón, Interno Francisco Romero Robledo

@@ -1,0 +1,29 @@
+a) FRA 1885, capo Gambetta (morto 1882): headMinister=Léon Gambetta, relazioni {"ITA":-0.25,"GER":-0.3}, conf -4
+a2) GER 1899: capo Otto von Bismarck, headMinister=Otto von Bismarck, effetti {"income":1,"upkeep":1,"exhaustion":1,"manpower":1,"interest":1,"quality":1,"stability":1,"rail":0,"confidence":5,"relations":{"GBR":0.15,"AUH":0.2,"RUS":0.15,"ITA":0.1,"FRA":-0.05}}
+b) ITA: stabilità 80 → entrate 31.83, leva 1992, saldo 1.58; stabilità 15 → entrate 31.83, leva 1992, saldo 1.58
+b) FRA: stabilità 80 → entrate 62.96, leva 2892, saldo 0.86; stabilità 15 → entrate 62.96, leva 2892, saldo 0.86
+b) RUS: stabilità 80 → entrate 108.29, leva 7116, saldo 14.21; stabilità 15 → entrate 108.29, leva 7116, saldo 14.21
+c) ITA [parliamentary] conf 68 soglia-rischio 0.000 | income×1.000 stab+5.16 exh×1.00 upkeep×1.000 quality×1.000 rail+0.020 opzioni reshuffle/dissolve/resist default reshuffle
+c) FRA [parliamentary] conf 49 soglia-rischio 0.029 | income×1.030 stab+2.88 exh×0.90 upkeep×1.000 quality×1.000 rail+0.020 opzioni reshuffle/dissolve/resist default reshuffle
+c) GBR [parliamentary] conf 54 soglia-rischio 0.002 | income×1.060 stab+1.48 exh×1.10 upkeep×0.950 quality×1.040 rail+0.020 opzioni reshuffle/dissolve/resist default reshuffle
+c) GER [constitutional] conf 58 soglia-rischio 0.000 | income×0.991 stab+6.21 exh×1.00 upkeep×0.984 quality×1.000 rail+0.000 opzioni dissolve/decree/resist default dissolve
+c) AUH [constitutional] conf 55 soglia-rischio 0.000 | income×1.000 stab+8.40 exh×1.00 upkeep×0.970 quality×1.020 rail+0.000 opzioni dissolve/concede/decree/resist default dissolve
+c) RUS [autocracy] conf 53 soglia-rischio 0.000 | income×1.010 stab+3.76 exh×1.00 upkeep×1.000 quality×1.050 rail+0.060 opzioni concede/purge/resist default purge
+c) TUR [autocracy] conf 54.6 soglia-rischio 0.000 | income×1.020 stab+3.95 exh×0.90 upkeep×1.000 quality×1.040 rail+0.000 opzioni concede/purge/resist default purge
+c) SPA [parliamentary] conf 80 soglia-rischio 0.000 | income×1.010 stab+7.60 exh×1.00 upkeep×0.970 quality×1.030 rail+0.000 opzioni reshuffle/dissolve/resist default reshuffle
+c) DEN [constitutional] conf 35 soglia-rischio 0.022 | income×1.000 stab+2.00 exh×1.00 upkeep×0.970 quality×1.000 rail+0.000 opzioni dissolve/concede/decree/resist default dissolve
+c) SER [constitutional] conf 45 soglia-rischio 0.000 | income×1.030 stab+1.20 exh×1.00 upkeep×1.000 quality×1.000 rail+0.020 opzioni dissolve/concede/decree/resist default decree
+c) USA [parliamentary] conf 60 soglia-rischio 0.000 | income×1.000 stab+3.20 exh×1.00 upkeep×0.970 quality×1.000 rail+0.000 opzioni reshuffle/dissolve/resist default reshuffle
+d) SPA, consenso conservatori 40 / fusionisti 50, al voto: conservatori 51.7, fusionisti 40.2, repubblicani 4.5, carlisti 3.5; governo conservatori capo Antonio Cánovas del Castillo
+e) RUS stabilità 60: fiducia 49, rischio settimanale 0.000
+e) RUS stabilità 40: fiducia 45, rischio settimanale 0.000
+e) RUS stabilità 20: fiducia 41, rischio settimanale 0.000
+e) RUS stabilità 0: fiducia 37, rischio settimanale 0.000
+f) SWI: regime parliamentary, capo «Numa Droz», partiti Radicali liberali / Centro liberale / Cattolico-conservatori, elezioni giorno 302, rischio a fiducia 45: 0.063
+f) USA: regime parliamentary, capo «Presidente Rutherford B. Hayes (James A. Garfield, eletto, si insedia il 4 marzo)», partiti Partito di governo / Opposizione liberale, elezioni giorno 881, rischio a fiducia 45: 0.063
+f) MEX: regime parliamentary, capo «Presidente Manuel González (Porfirio Díaz dietro le quinte)», partiti Partito di governo / Opposizione liberale, elezioni giorno 881, rischio a fiducia 45: 0.063
+g) TUR: {"guerra":"osman"}
+g) SPA: {"guerra":"martinezcampos","finanze":"cosgayon","interno":"romerorobledo"}
+g) RUS: {"esteri":"gorcakov","guerra":"miljutin","finanze":"abaza","interno":"lorismelikov"}
+h) ITA: obiettivo stabilità 68.2; con fiducia 0 → 60.0, con fiducia 100 → 70.0
+h) DEN: obiettivo stabilità 65.0; con fiducia 0 → 60.8, con fiducia 100 → 69.0

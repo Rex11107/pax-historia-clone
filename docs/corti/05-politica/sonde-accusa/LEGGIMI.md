@@ -1,0 +1,1 @@
+Sonde dell'accusa, copiate così come sono state eseguite. I percorsi assoluti al loro interno (/home/claude/pax-historia-clone, cartelle temporanee) vanno sostituiti con quelli del proprio clone per rieseguirle.
