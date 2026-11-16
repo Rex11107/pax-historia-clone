@@ -20,7 +20,7 @@ const STRAIT_DAYS = 2;
 // alleato, nemico in guerra. Così le potenze arrivano in Africa senza un porto vicino (Assab, il Camerun).
 const SEA_KMDAY = 450; // piroscafi da trasporto, carico e scarico compresi
 const SEA_BASE = 3;
-const MIN_NAVAL = 10;
+export const MIN_NAVAL = 10;
 
 /** Si può imbarcare qui? */
 export function canEmbark(w: World, tag: string, p: number): boolean {

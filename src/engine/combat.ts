@@ -65,7 +65,8 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
       for (const a of attTags) for (const d of defTags) checkViolation(w, a, d, sink);
     }
     const b = s.battles[key];
-    [...att, ...def].forEach((u) => (u.inBattle = true));
+    b.start ??= {};
+    for (const u of [...att, ...def]) { u.inBattle = true; b.start[u.id] ??= u.strength; }
     const infA = att.some((u) => u.type === 'infantry'), infD = def.some((u) => u.type === 'infantry');
     const pA = att.reduce((x, u) => x + power(w, u, false, infA), 0);
     const artA = att.some((u) => u.type === 'artillery');
@@ -77,9 +78,11 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
     const lossD = pA * LOSS_FACTOR * noise('d');
     applyLosses(w, att, [...new Set(def.map((u) => u.nation))], lossA, b.losses);
     applyLosses(w, def, [...new Set(att.map((u) => u.nation))], lossD, b.losses);
-    // ritirate
+    // ritirate: sotto il 30% dell'organico, ma un'unità entrata in battaglia già sotto quella soglia (una leva
+    // arruolata a un quarto) regge finché non ha perso metà di ciò che aveva. Prima ogni leva ripiegava al primo colpo
     for (const u of [...att, ...def]) {
-      if (u.strength <= 0 || u.morale < RETREAT_MORALE || u.strength < u.maxStrength * RETREAT_STRENGTH) retreat(w, u, sink);
+      const floor = Math.min(u.maxStrength * RETREAT_STRENGTH, (b.start[u.id] ?? u.strength) * 0.5);
+      if (u.strength <= 0 || u.morale < RETREAT_MORALE || u.strength < floor) retreat(w, u, sink);
     }
   }
   // battaglie concluse
@@ -132,7 +135,10 @@ function applyLosses(w: World, side: Unit[], enemies: Tag[], total: number, ledg
 function retreat(w: World, u: Unit, sink: GameEvent[]) {
   const s = w.state;
   const here = w.map.provinces[u.location];
+  // si ripiega per terra: non attraverso uno stretto né lungo una pista del deserto (una ritirata da Dover non
+  // finisce a Calais, una da un'oasi non attraversa il Sahara in un giorno)
   const options = w.map.adj[u.location]
+    .filter((e) => !e.strait && !e.route)
     .map((e) => e.to)
     .filter((p) => w.map.passable(p) && allied(s, u.nation, s.controller[p]) && !s.units.some((o) => o.location === p && atWar(s, u.nation, o.nation)));
   if (u.strength < 500 || !options.length) {
@@ -142,7 +148,7 @@ function retreat(w: World, u: Unit, sink: GameEvent[]) {
   }
   // verso la capitale (la provincia più vicina ad essa)
   const cap = w.map.provinces[s.nations[u.nation].capital].lonlat;
-  const dest = options.sort((a, b) => geoKm(w.map.provinces[a].lonlat, cap) - geoKm(w.map.provinces[b].lonlat, cap))[0];
+  const dest = options.sort((a, b) => geoKm(w.map.provinces[a].lonlat, cap) - geoKm(w.map.provinces[b].lonlat, cap) || a - b)[0];
   u.location = dest;
   u.move = null;
   u.orders = [];

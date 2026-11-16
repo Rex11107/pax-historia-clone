@@ -143,12 +143,18 @@ export const ASIA_NATIONS: Record<string, P> = {
     militaryQuality: 30, cohesion: 40, finance: 4, armyPeace: 3000, temperament: 'sultanato marinaro dei tausug, protettorato spagnolo dal 1878 con una guarnigione a Jolo, ma ancora padrone dei suoi mari', goals: ['autonomia', 'tributo del Borneo del Nord'], rivals: ['SPA'], friends: [] }),
   // ===== Asia orientale (fase 7) =====
   CHI: base({ name: 'Impero Qing', short: ["l'", 'Impero Qing'], adjective: 'cinese', color: '#d8c25a', capital: [116.4, 39.9], government: 'impero', leader: 'Imperatore Guangxu (reggenza delle imperatrici vedove Cixi e Ci\'an; Li Hongzhang a Tianjin)',
-    militaryQuality: 30, cohesion: 45, finance: 15, armyPeace: 500000, fiscal: 0.15, temperament: 'immenso impero manciù che si riprende dalle rivolte dei Taiping e dei musulmani; il movimento di autorafforzamento compra navi e fucili, ma la corte è divisa e diffida dell\'Occidente',
+    militaryQuality: 30, cohesion: 45, finance: 15, armyPeace: 500000, fiscal: 0.15,
+    // marina: flotte del Fujian e del Beiyang, cannoniere Rendel e i due incrociatori Chaoyong e Yangwei in consegna
+    // nel 1881; le corazzate Dingyuan e Zhenyuan arrivano solo nel 1885 (Wright, The Chinese Steam Navy, 2000)
+    naval: 15, temperament: 'immenso impero manciù che si riprende dalle rivolte dei Taiping e dei musulmani; il movimento di autorafforzamento compra navi e fucili, ma la corte è divisa e diffida dell\'Occidente',
     goals: ['riavere l\'Ili dalla Russia', 'tenere la Corea e l\'Annam come tributari', 'non cedere le Ryukyu al Giappone'], rivals: ['RUS', 'JAP', 'FRA'], friends: ['GBR'] }),
   TIB: base({ name: 'Tibet', short: ['il ', 'Tibet'], adjective: 'tibetano', color: '#b88ab8', capital: [91.13, 29.65], government: 'teocrazia', leader: 'Dalai Lama Thubten Gyatso (minorenne; reggenza)',
     militaryQuality: 15, cohesion: 50, finance: 6, armyPeace: 5000, temperament: 'governo dei lama di Lhasa sotto la tutela nominale degli amban Qing, chiuso agli stranieri', goals: ['tenere fuori gli europei'], rivals: ['GBR'], friends: ['CHI'] }),
   JAP: base({ name: 'Impero del Giappone', short: ['il ', 'Giappone'], adjective: 'giapponese', color: '#c8506a', capital: [139.7, 35.68], government: 'monarchia', leader: 'Imperatore Meiji (gran consigliere Sanjō Sanetomi; Itō Hirobumi e Ōkuma Shigenobu)',
-    militaryQuality: 55, cohesion: 70, finance: 35, armyPeace: 45000, temperament: 'stato che si modernizza a tappe forzate dopo la restaurazione Meiji; ha appena annesso le Ryukyu, guarda alla Corea e vuole rivedere i trattati ineguali',
+    militaryQuality: 55, cohesion: 70, finance: 35, armyPeace: 45000,
+    // marina: le corazzate Fusō, Kongō e Hiei consegnate dall'Inghilterra nel 1878, più la Ryūjō e una ventina di
+    // unità minori; più o meno quanto il Cile (Evans e Peattie, Kaigun, 1997, cap. 1)
+    naval: 20, temperament: 'stato che si modernizza a tappe forzate dopo la restaurazione Meiji; ha appena annesso le Ryukyu, guarda alla Corea e vuole rivedere i trattati ineguali',
     goals: ['rivedere i trattati ineguali', 'influenza in Corea', 'tenere le Ryukyu'], rivals: ['CHI', 'RUS'], friends: ['GBR'] }),
   COR: base({ name: 'Regno di Joseon', short: ['la ', 'Corea'], adjective: 'coreano', color: '#5aa898', capital: [126.98, 37.57], government: 'regno', leader: 'Re Gojong (la regina Min e i suoi parenti; il Daewongun in disparte)',
     militaryQuality: 20, cohesion: 50, finance: 12, armyPeace: 20000, temperament: 'regno eremita tributario dei Qing, aperto a forza dal Giappone nel 1876; la corte è divisa fra riformatori e tradizionalisti', goals: ['restare fuori dalle contese', 'proteggersi dal Giappone'], rivals: ['JAP'], friends: ['CHI'] }),
