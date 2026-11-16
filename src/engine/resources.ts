@@ -221,20 +221,28 @@ export function resourceValue(r: ResourceId, industry: number): number {
   return info.value * (info.industrial ? 0.5 + industry / 100 : 1);
 }
 
-/** Riepilogo per nazione: quante province per risorsa e valore settimanale. */
-export function nationResources(map: GameMap, res: ResourceId[][], controller: Tag[], owner: Tag[], tag: Tag, industry: number, extra?: (i: number) => ResourceId[]) {
+/**
+ * Riepilogo per nazione: quante province per risorsa e valore settimanale. `weight` pesa la rendita di una
+ * provincia (il peso coloniale: l'oro della Costa d'Oro o il tè di Ceylon finivano nei bilanci delle colonie,
+ * non in quello di Londra). Il conteggio resta pieno: la risorsa c'è, e conta per sapere se manca.
+ */
+export function nationResources(map: GameMap, res: ResourceId[][], controller: Tag[], owner: Tag[], tag: Tag, industry: number, extra?: (i: number) => ResourceId[], weight?: (i: number) => number) {
   const count: Partial<Record<ResourceId, number>> = {};
+  /** lotti pesati col peso coloniale: quanto vale davvero per le casse ciò che si possiede */
+  const weighted: Partial<Record<ResourceId, number>> = {};
   let income = 0;
   for (let i = 0; i < res.length; i++) {
     if (controller[i] !== tag) continue;
     const occupied = owner[i] !== tag;
+    const wt = weight ? weight(i) : 1;
     for (const r of extra ? [...res[i], ...extra(i)] : res[i]) {
       count[r] = (count[r] ?? 0) + 1;
-      income += resourceValue(r, industry) * resourceShare(res[i], r) * (occupied ? 0.5 : 1);
+      weighted[r] = (weighted[r] ?? 0) + wt;
+      income += resourceValue(r, industry) * resourceShare(res[i], r) * (occupied ? 0.5 : 1) * wt;
     }
   }
   const missing = (['carbone', 'ferro'] as ResourceId[]).filter((r) => !count[r]);
-  return { count, income: Math.round(income * 100) / 100, missing };
+  return { count, weighted, income: Math.round(income * 100) / 100, missing };
 }
 
 export const resourceLabel = (r: ResourceId) => `${RESOURCES[r].icon} ${RESOURCES[r].label}`;

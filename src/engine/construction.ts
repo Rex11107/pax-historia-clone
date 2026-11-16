@@ -47,7 +47,8 @@ export const BUILDINGS: Record<BuildingId, BuildingInfo> = {
   miniera: { label: 'miniera', icon: '⛏️', max: 3, cost: (l) => 6 * l, weeks: (l) => 8 + 3 * l, desc: 'un lotto in più a livello delle risorse minerarie della provincia' },
 };
 
-const MINERAL = new Set<ResourceId>(['carbone', 'ferro', 'metalli', 'zolfo', 'petrolio', 'sale', 'argento', 'stagno', 'nitrati']);
+// oro e diamanti si scavano: senza di loro Kimberley, il Witwatersrand, Ballarat e la Lena avevano miniere inerti (corte 04, capo 8)
+const MINERAL = new Set<ResourceId>(['carbone', 'ferro', 'metalli', 'zolfo', 'petrolio', 'sale', 'argento', 'stagno', 'nitrati', 'oro', 'diamanti']);
 const INPUTS: Partial<Record<BuildingId, ResourceId[][]>> = {
   tessile: [['cotone', 'seta', 'lana', 'iuta', 'bestiame']],
   chimica: [['zolfo', 'sale', 'nitrati', 'carbone']],
@@ -103,7 +104,7 @@ let version = 0;
 export const touchBuildings = () => { version++; };
 /** Versione corrente delle cache (cambia a ogni opera finita e a ogni cambio di padrone visto dal turno). */
 export const cacheVersion = () => version;
-const memo = new WeakMap<object, { key: string; per: Map<Tag, { res?: Set<ResourceId>; points?: number; logistics?: ReturnType<typeof computeLogistics> }>; ctrl?: Map<Tag, number[]> }>();
+const memo = new WeakMap<object, { key: string; per: Map<Tag, { res?: Set<ResourceId>; points?: number; logistics?: ReturnType<typeof computeLogistics>; ind?: number; indTe?: object }>; ctrl?: Map<Tag, number[]> }>();
 function memoOf(w: World) {
   const s = w.state;
   const key = `${s.day}:${s.nextId}:${version}:${(s.trades ?? []).length}`;
@@ -134,7 +135,7 @@ function hasInput(w: World, tag: Tag, r: ResourceId): boolean {
   if (!c.res) {
     const s = w.state;
     c.res = new Set();
-    for (let i = 0; i < w.map.size; i++) if (s.controller[i] === tag) for (const x of w.map.resources[i]) c.res.add(x);
+    for (const i of controlled(w, tag)) for (const x of w.map.resources[i]) c.res.add(x);
     for (const t of s.trades ?? []) if (t.buyer === tag) c.res.add(t.res);
   }
   return c.res.has(r);
@@ -154,7 +155,9 @@ export function industryPoints(w: World, tag: Tag): number {
   if (c.points !== undefined && w.state.industryBase) return c.points;
   const b = buildings(w);
   let pts = 0;
-  for (let p = 0; p < b.length; p++) {
+  // solo le province controllate (l'indice per nazione): la ricerca ora legge l'industria di oggi per ogni nazione,
+  // e scorrere tutte le 4.500 province per ciascuna costava 10 ms a turno (corte 04, capo 15)
+  for (const p of controlled(w, tag)) {
     if (!works(w, tag, p)) continue;
     for (const k of ['tessile', 'chimica', 'siderurgia', 'bellica'] as BuildingId[]) {
       const l = b[p][k];
@@ -169,10 +172,15 @@ export function industryPoints(w: World, tag: Tag): number {
 export function industryOf(w: World, tag: Tag): number {
   const base = w.profiles[tag]?.industry ?? 30;
   buildings(w);
+  // la ricerca la chiede a ogni tecnica e a ogni nazione: si ricalcola solo se cambiano le opere o le conoscenze
+  const c = cache(w, tag);
+  const te = techEffects(w, tag);
+  if (c.ind !== undefined && c.indTe === te) return c.ind;
   const start = w.state.industryBase?.[tag] ?? 0;
   // l'industrializzazione è lenta: ogni livello di industria vale mezzo punto, ogni innovazione la metà del suo valore
-  const bonus = Math.max(-30, Math.min(30, (industryPoints(w, tag) - start) * 0.5 + techEffects(w, tag).industry * 0.5));
-  return Math.max(0, Math.min(100, Math.round(base + bonus)));
+  const bonus = Math.max(-30, Math.min(30, (industryPoints(w, tag) - start) * 0.5 + te.industry * 0.5));
+  c.indTe = te;
+  return (c.ind = Math.max(0, Math.min(100, Math.round(base + bonus))));
 }
 
 /** Entrate settimanali delle opere civili (campi, industrie, porti). */
@@ -182,7 +190,8 @@ export function buildingIncome(w: World, tag: Tag): number {
   let inc = 0;
   for (const p of controlled(w, tag)) {
     if (!works(w, tag, p)) continue;
-    const popM = w.map.provinces[p].pop / 1e6;
+    // la popolazione di una colonia lavora per il bilancio della colonia (corte 04, capo 2): come nelle entrate
+    const popM = (w.map.provinces[p].pop / 1e6) * colonialWeight(w, tag, p);
     const l = b[p];
     if (l.agricoltura) inc += l.agricoltura * (0.04 + popM * 0.05) * te.agri;
     if (l.tessile) inc += l.tessile * (0.1 + popM * 0.1) * inputEfficiency(w, tag, 'tessile') * te.industrialYield;
@@ -243,7 +252,7 @@ function computeLogistics(w: World, tag: Tag) {
   for (const c of s.trades ?? []) if (c.buyer === tag && ['carbone', 'ferro', 'petrolio', 'metalli'].includes(c.res)) lots += c.qty;
   for (const c of s.trades ?? []) if (c.seller === tag && ['carbone', 'ferro', 'petrolio', 'metalli'].includes(c.res)) lots -= c.qty;
   let popM = 0;
-  for (const i of mine) if (s.owner[i] === tag) popM += w.map.provinces[i].pop / 1e6;
+  for (const i of mine) if (s.owner[i] === tag) popM += (w.map.provinces[i].pop / 1e6) * colonialWeight(w, tag, i);
   const bell = totalLevel(w, tag, 'bellica') * inputEfficiency(w, tag, 'bellica');
   const rail = totalLevel(w, tag, 'ferrovia'), port = totalLevel(w, tag, 'porto');
   const capacity = Math.round(techEffects(w, tag).logistics * (industryOf(w, tag) + 15 * bell + 4 * Math.max(0, lots) + 4 * popM + 0.5 * rail + 1 * port));
@@ -315,13 +324,21 @@ export function startProject(w: World, tag: Tag, p: number, b: BuildingId, sink?
   return null;
 }
 
-/** Annullare un cantiere restituisce metà della spesa. */
-export function cancelProject(w: World, id: string): string | null {
+/**
+ * Annullare un cantiere restituisce metà della spesa. Solo chi l'ha aperto può chiuderlo (corte 04, capo 13: prima
+ * si chiudeva anche il cantiere altrui) e, se era in un vassallo, l'investimento torna indietro: altrimenti aprire e
+ * chiudere comprava la fedeltà del vassallo a metà prezzo.
+ */
+export function cancelProject(w: World, id: string, by: Tag): string | null {
   const list = projects(w);
   const i = list.findIndex((x) => x.id === id);
   if (i < 0) return 'cantiere inesistente';
   const pr = list[i];
+  if (pr.nation !== by) return 'non è un nostro cantiere';
   list.splice(i, 1);
+  const s = w.state;
+  const sub = (s.subjects ?? []).find((x) => x.overlord === by && x.subject === s.owner[pr.province]);
+  if (sub && sub.invested) sub.invested = Math.max(0, sub.invested - pr.cost);
   post(w, pr.nation, 'cantieri', pr.cost / 2);
   return null;
 }
@@ -362,12 +379,14 @@ function aiConstruction(w: World, sink: GameEvent[]) {
     const rich = n.treasury > reserveOf(w, tag);
     if (n.treasury < 50 || projects(w).filter((x) => x.nation === tag).length >= Math.min(rich ? 4 : 2, slots(w, tag))) continue;
     if (rand(s.seed, 'cantiere', tag, s.day) > (rich ? 0.8 : 0.35)) continue;
-    const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag && !p.impassable).sort((a, c) => c.pop - a.pop);
+    // ordinate per popolazione pesata: le metropoli indiane non passano davanti a Londra e Manchester (corte 04, capo 2)
+    const wpop = (p: { id: number; pop: number }) => p.pop * colonialWeight(w, tag, p.id);
+    const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag && !p.impassable).sort((a, c) => wpop(c) - wpop(a) || a.id - c.id);
     if (!own.length) continue;
     const rivals = new Set(w.profiles[tag].rivals);
     const tries: [number, BuildingId][] = [];
     const border = own.filter((p) => w.map.adj[p.id].some((e) => rivals.has(s.owner[e.to])));
-    if (border.length) tries.push([border.sort((a, c) => c.pop - a.pop)[0].id, 'fortezza']);
+    if (border.length) tries.push([border.sort((a, c) => wpop(c) - wpop(a) || a.id - c.id)[0].id, 'fortezza']);
     if (logistics(w, tag).ratio < 1) tries.push([own[0].id, 'bellica']);
     const ind = (['siderurgia', 'tessile', 'chimica'] as BuildingId[]).filter((k) => inputEfficiency(w, tag, k) === 1);
     if (ind.length && rand(s.seed, 'scelta-ind', tag, s.day) < 0.3) tries.push([own[Math.floor(rand(s.seed, 'ind', tag, s.day) * Math.min(4, own.length))].id, ind[Math.floor(rand(s.seed, 'tipo', tag, s.day) * ind.length)]]);
