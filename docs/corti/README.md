@@ -16,4 +16,4 @@ Ogni motore del gioco è giudicato da una corte indipendente: un accusatore stud
 | 09 | Livello LLM | **fatto** (`09-llm/accusa.md`) | **fatto** (`09-llm/verdetto.md`; accusa e giuria nella stessa sessione) |
 | 10 | Interfaccia, salvataggi e aggiornamenti | **fatto** (`10-interfaccia/accusa.md`) | **fatto** (`10-interfaccia/verdetto.md`; accusa e giuria nella stessa sessione) |
 
-Per completare una corte con un'altra sessione o un altro modello: `PROMPT.md`.
+Piano di implementazione che unisce tutti i verdetti: `PIANO.md`.
