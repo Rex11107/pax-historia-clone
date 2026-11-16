@@ -10,7 +10,7 @@ Ogni motore del gioco è giudicato da una corte indipendente: un accusatore stud
 | 03 | Economia, finanze, commercio e risorse | fatto | **fatto** |
 | 04 | Costruzione e ricerca | fatto | da fare |
 | 05 | Politica interna | fatto | da fare |
-| 06 | Diplomazia, alleanze, stati soggetti | da fare | da fare |
+| 06 | Diplomazia, alleanze, stati soggetti | fatto | **fatto** (`06-diplomazia/verdetto.md`; accusa e giuria nella stessa sessione) |
 | 07 | Trattati di pace e punteggio di guerra | fatto | **fatto** (`07-pace/verdetto.md`; accusa e giuria nella stessa sessione) |
 | 08 | Mappa, territorio e scenario iniziale | da fare | da fare |
 | 09 | Livello LLM | da fare | da fare |
