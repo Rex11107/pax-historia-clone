@@ -319,6 +319,8 @@ export interface GameState {
   options?: { peaceMode?: import('./peace').PeaceMode; antiGore?: boolean; colonialMode?: import('./colonial').ColonialMode };
   /** interessi coloniali, decisioni, colonie e crisi egiziana (assente nei salvataggi vecchi) */
   colonial?: import('./colonial').ColonialState;
+  /** sussidi dell'ultimo anno, con la stima che hanno comprato (corte 06, giurato 3.1) */
+  subsidies?: { giver: Tag; receiver: Tag; day: number; opinion: number }[];
   /** guerre fra nazioni non giocanti in attesa che il giocatore detti la pace (modalità "tutte") */
   pendingPeace?: { war: string; since: number }[];
   situations: Situation[];

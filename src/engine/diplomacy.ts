@@ -4,7 +4,7 @@ import { geoKm } from './map';
 import { endSubjection, followers, subjectOf, warBlock } from './vassals';
 import { peaceAnswer, type Demand } from './peace';
 import type { GameEvent, Tag, TreatyType, War } from './types';
-import { al, allied, atWar, canEnter, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
+import { al, allied, atWar, canEnter, changeOpinion, dal, di, emit, newId, opinion, shortName, the, The, treatyBetween, warsOf, type World } from './world';
 
 export const TREATY_LABEL: Record<TreatyType, string> = {
   alliance: 'alleanza difensiva',
@@ -40,8 +40,22 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
   }
   const pact = treatyBetween(s, a, b, 'non_aggression');
   if (pact) pact.violated = true;
+  // chi attacca lo Stato che ha garantito viola la garanzia subito, alla dichiarazione (corte 06, capo 8): prima la
+  // garanzia restava in vigore fino al primo combattimento
+  const guarantee = s.treaties.find((t) => !t.violated && t.type === 'guarantee' && t.a === a && t.b === b);
+  if (guarantee) guarantee.violated = true;
+  const broken = pact || guarantee;
   const defenders = [b];
   const callers: Tag[] = [];
+  // il signore difende il suo soggetto (corte 06, giurato 2.1): il protettorato è prima di tutto protezione, il
+  // vassallo è coperto dal signore. Il tributario solo se il signore è più forte di chi attacca: la Porta non
+  // muoveva guerra per Tunisi contro la Francia. Prima si attaccavano gli Stati indiani senza combattere Londra
+  const lord = subjectOf(w, b);
+  // non quando chi attacca è a sua volta un soggetto dello stesso signore: il signore non combatte i suoi soggetti
+  if (lord && lord.overlord !== a && subjectOf(w, a)?.overlord !== lord.overlord && s.nations[lord.overlord]?.alive && !atWar(s, lord.overlord, a) && !allied(s, lord.overlord, a)) {
+    const men = (t: Tag) => s.units.reduce((x, u) => x + (u.nation === t ? u.strength : 0), 0);
+    if (lord.level !== 'tributario' || men(lord.overlord) > men(a)) { defenders.push(lord.overlord); callers.push(lord.overlord); }
+  }
   for (const t of s.treaties) {
     if (t.violated) continue;
     const other = t.a === b ? t.b : t.b === b ? t.a : null;
@@ -64,8 +78,8 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
   const war: War = { id: newId(s, 'w'), name: `Guerra fra ${shortName(w, a)} e ${shortName(w, b)}`, attackers, defenders, startDay: s.day, casualties: {}, ...(pre.length ? { pre } : {}) };
   s.wars.push(war);
   changeOpinion(s, b, a, -50);
-  for (const n of Object.keys(s.nations)) if (n !== a && n !== b) changeOpinion(s, n, a, pact ? -15 : -4);
-  emit(w, { type: 'war_declared', nations: [a, ...defenders], text: `${The(w, a)} dichiara guerra ${al(w, b)}${reason ? ` (${reason})` : ''}.${callers.length ? ` In virtù dei trattati entrano in guerra: ${callers.map((c) => the(w, c)).join(', ')}.` : ''}${pact ? ' Il patto di non aggressione è stato violato.' : ''}` }, sink);
+  for (const n of Object.keys(s.nations)) if (n !== a && n !== b) changeOpinion(s, n, a, broken ? -15 : -4);
+  emit(w, { type: 'war_declared', nations: [a, ...defenders], text: `${The(w, a)} dichiara guerra ${al(w, b)}${reason ? ` (${reason})` : ''}.${callers.length ? ` In virtù dei trattati entrano in guerra: ${callers.map((c) => the(w, c)).join(', ')}.` : ''}${pact ? ' Il patto di non aggressione è stato violato.' : ''}${guarantee ? ` ${The(w, a)} viola la garanzia che aveva dato.` : ''}` }, sink);
   if (a === s.player || b === s.player || callers.includes(s.player)) {
     s.situations.push({ id: war.id, title: war.name, startDay: s.day, nations: [a, ...defenders], summary: `Guerra in corso: ${the(w, a)} contro ${defenders.map((d) => the(w, d)).join(', ')}.` });
   }
@@ -201,6 +215,7 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
       if (atWar(s, from, to)) return 'le due nazioni sono in guerra: prima serve la pace';
       for (const t of [from, to]) { const x = subjectOf(w, t); if (x?.level === 'protettorato' && x.overlord !== (t === from ? to : from)) return `${The(w, t)} è un protettorato: i trattati li firma ${the(w, x.overlord)}`; }
       if (treatyBetween(s, from, to, p.type)) return `esiste già un ${TREATY_LABEL[p.type]}`;
+      if (p.type === 'alliance') return allianceConflict(w, from, to);
       return null;
     case 'peace': {
       if (!atWar(s, from, to)) return 'le due nazioni non sono in guerra';
@@ -215,6 +230,10 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
       if (!p.amount || p.amount <= 0) return 'importo non valido';
       if (p.amount > 400) return 'sussidio troppo alto (massimo 400 milioni in un accordo)';
       if (s.nations[giver].treasury < p.amount) return `${The(w, giver)} non ha ${p.amount} milioni in cassa`;
+      // la stima non si compra (corte 06, giurato 3.1): un sussidio per coppia ogni sei mesi
+      const receiver = giver === from ? to : from;
+      const last = (s.subsidies ?? []).filter((x) => x.giver === giver && x.receiver === receiver).reduce((m, x) => Math.max(m, x.day), -Infinity);
+      if (s.day - last < SUBSIDY_GAP) return `${The(w, giver)} ha già versato un sussidio ${al(w, receiver)} da meno di sei mesi`;
       return null;
     }
     case 'join_war': {
@@ -223,11 +242,41 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
       if (atWar(s, who, p.against)) return 'è già in guerra con quella nazione';
       if (!atWar(s, from, p.against)) return 'chi chiede aiuto non è in guerra con quella nazione';
       if (p.against === who) return 'proposta incoerente';
+      // gli stessi divieti di una dichiarazione (corte 06, capo 2): prima un vassallo entrava in guerra contro il
+      // signore e un alleato contro l'alleato, le due situazioni che le invarianti vietano
+      if (s.nations[who]?.alive === false) return 'nazione non più esistente';
+      const blocked = warBlock(w, who, p.against);
+      if (blocked) return blocked;
+      if (allied(s, who, p.against)) return `${The(w, who)} è legato ${al(w, p.against)} da un'alleanza o da un legame di soggezione`;
+      const sw = subjectOf(w, who), sa = subjectOf(w, p.against);
+      if (sw?.overlord === p.against || sa?.overlord === who) return `${The(w, who)} e ${the(w, p.against)} sono signore e soggetto`;
       return null;
     }
     default:
       return `tipo di proposta sconosciuto: ${(p as Proposal).type}${prov(0) ? '' : ''}`;
   }
+}
+
+/** Giorni fra due sussidi della stessa nazione alla stessa nazione. */
+export const SUBSIDY_GAP = 182;
+/** Stima che i sussidi possono comprare in un anno, per coppia. */
+export const SUBSIDY_OPINION_YEAR = 20;
+
+/**
+ * Alleanze incompatibili (corte 06, capo 7): non ci si allea con chi è alleato di un proprio rivale o è in guerra con
+ * un proprio alleato. Si guarda in tutti e due i versi. Prima l'Italia firmava quattro alleanze con potenze rivali.
+ */
+export function allianceConflict(w: World, a: Tag, b: Tag): string | null {
+  const s = w.state;
+  const alliesOf = (t: Tag) => s.treaties.filter((x) => !x.violated && x.type === 'alliance' && (x.a === t || x.b === t)).map((x) => (x.a === t ? x.b : x.a));
+  for (const [x, y] of [[a, b], [b, a]]) {
+    const rivals = new Set(w.profiles[x]?.rivals ?? []);
+    const enemyAlly = alliesOf(y).find((t) => rivals.has(t));
+    if (enemyAlly) return `${The(w, y)} è alleato ${di(w, enemyAlly)}, rivale ${di(w, x)}`;
+    const atWarWith = alliesOf(x).find((t) => atWar(s, y, t));
+    if (atWarWith) return `${The(w, y)} è in guerra con ${the(w, atWarWith)}, alleato ${di(w, x)}`;
+  }
+  return null;
 }
 
 /**
@@ -277,7 +326,8 @@ function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null 
 export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: GameEvent[]) {
   const s = w.state;
   switch (p.type) {
-    case 'alliance': addTreaty(w, 'alliance', from, to, null, sink); break;
+    // le alleanze hanno una durata (corte 06, giurato 1.1): la Duplice e la Triplice erano di cinque anni
+    case 'alliance': addTreaty(w, 'alliance', from, to, p.years ?? ALLIANCE_YEARS, sink); break;
     case 'non_aggression': addTreaty(w, 'non_aggression', from, to, p.years ?? 10, sink); break;
     case 'trade': addTreaty(w, 'trade', from, to, p.years ?? 5, sink); break;
     case 'military_access': addTreaty(w, 'military_access', from, to, p.years ?? 2, sink); break;
@@ -300,7 +350,12 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
       const giver = p.giver ?? from;
       const receiver = giver === from ? to : from;
       transfer(w, giver, receiver, 'sussidi', p.amount!);
-      changeOpinion(s, receiver, giver, Math.min(20, p.amount! / 10));
+      // al più 20 punti di stima l'anno da sussidi per coppia: oltre, il denaro resta denaro
+      s.subsidies = (s.subsidies ?? []).filter((x) => s.day - x.day < 365);
+      const bought = s.subsidies.filter((x) => x.giver === giver && x.receiver === receiver).reduce((a, x) => a + x.opinion, 0);
+      const gain = Math.max(0, Math.min(20, p.amount! / 10, SUBSIDY_OPINION_YEAR - bought));
+      changeOpinion(s, receiver, giver, gain);
+      s.subsidies.push({ giver, receiver, day: s.day, opinion: gain });
       emit(w, { type: 'subsidy', nations: [giver, receiver], text: `${The(w, giver)} versa ${p.amount} milioni ${al(w, receiver)}.` }, sink);
       break;
     }
@@ -317,12 +372,23 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
   }
 }
 
+/** Durata in anni di un'alleanza nuova, se la proposta non la indica. */
+export const ALLIANCE_YEARS = 5;
+
 /** Scadenza dei trattati. */
 export function expireTreaties(w: World, sink: GameEvent[]) {
   const s = w.state;
   s.treaties = s.treaties.filter((t) => {
     if (t.violated) return false;
     if (t.endDay !== null && t.endDay <= s.day) {
+      // fra nazioni non giocanti un'alleanza si rinnova se nessuna delle due ha cambiato idea (stima non negativa):
+      // con le scadenze nasce la politica dei rinnovi, e senza questa regola la Duplice finirebbe nel 1884. Le
+      // alleanze firmate dopo non la rimettono in discussione (il controllo delle incompatibilità vale per le nuove)
+      if (t.type === 'alliance' && t.a !== s.player && t.b !== s.player && opinion(s, t.a, t.b) >= 0 && opinion(s, t.b, t.a) >= 0 && !atWar(s, t.a, t.b)) {
+        t.endDay = s.day + ALLIANCE_YEARS * 365;
+        emit(w, { type: 'treaty_signed', nations: [t.a, t.b], text: `Rinnovata per ${ALLIANCE_YEARS} anni l'alleanza fra ${the(w, t.a)} e ${the(w, t.b)}.` }, sink);
+        return true;
+      }
       emit(w, { type: 'treaty_expired', nations: [t.a, t.b], text: `Scade ${t.type === 'alliance' || t.type === 'guarantee' ? 'la' : 'il'} ${TREATY_LABEL[t.type]} fra ${the(w, t.a)} e ${the(w, t.b)}.` }, sink);
       return false;
     }

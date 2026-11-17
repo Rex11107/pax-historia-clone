@@ -1,7 +1,7 @@
 // Game Master: traduce le direttive in ordini e racconta il turno.
 // Tutto ciò che restituisce passa dalla validazione del codice prima di toccare lo stato.
 
-import { addTreaty, declareWar, makePeace } from '../engine/diplomacy';
+import { addTreaty, ALLIANCE_YEARS, allianceConflict, declareWar, makePeace } from '../engine/diplomacy';
 import { recruit, setPolicy } from '../engine/economy';
 import { whitePeaceOk } from '../engine/peace';
 import { assignOrders } from '../engine/orders';
@@ -147,7 +147,10 @@ export function applyWorldActions(w: World, json: Record<string, unknown>, sink:
       if (A === me || B === me) { rejected.push('i trattati col giocatore si negoziano in diplomazia'); continue; }
       if (atWar(s, A, B) || treatyBetween(s, A, B, t)) { rejected.push(`trattato ${t} ${A}-${B} incoerente`); continue; }
       if (opinion(s, A, B) < 15 || opinion(s, B, A) < 15) { rejected.push(`${A} e ${B} non si fidano abbastanza per un trattato`); continue; }
-      addTreaty(w, t, A, B, t === 'alliance' || t === 'guarantee' ? null : 10, sink); applied.push(`trattato ${t} ${A}-${B}`);
+      // anche il Game Master rispetta le alleanze incompatibili e la durata delle alleanze (corte 06, capi 7 e giurato 1.1)
+      const conflict = t === 'alliance' ? allianceConflict(w, A, B) : null;
+      if (conflict) { rejected.push(`alleanza ${A}-${B}: ${conflict}`); continue; }
+      addTreaty(w, t, A, B, t === 'alliance' ? ALLIANCE_YEARS : t === 'guarantee' ? null : 10, sink); applied.push(`trattato ${t} ${A}-${B}`);
     } else if (a.type === 'opinion') {
       const d = Math.max(-15, Math.min(15, Math.round(Number(a.delta) || 0)));
       if (!d) continue;
