@@ -12,7 +12,7 @@ Aggiornato al 17 novembre 2026, dopo il blocco B2. Si aggiorna alla fine di ogni
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| (B2) | `fix/b2-diplomazia` → `main` | blocco B2 | unire |
+| #35 | `fix/b2-diplomazia` → `main` | blocco B2 | unire |
 
 Le PR #28-#34 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1 dalla #34).
 
@@ -28,7 +28,7 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | A2 — economia, costruzione, ricerca | 03, 04 | `fix/a2-economia` | fatto (#30, in `main` con #31) |
 | A3 — salvataggi, aggiornamenti, sicurezza | 08, 09, 10 | `fix/a3-salvataggi` | fatto (#33) — [scheda ed esito](blocchi/A3-salvataggi.md) |
 | B1 — una sola pace | 07, 02, 00 | `fix/b1-pace` | fatto (#34) — [scheda ed esito](blocchi/B1-pace.md) |
-| B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto — [scheda ed esito](blocchi/B2-diplomazia.md) |
+| B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto (#35) — [scheda ed esito](blocchi/B2-diplomazia.md) |
 | **B3 — politica che conta** | 05 | `fix/b3-politica` | **prossimo** — [scheda](blocchi/B3-politica.md) |
 | B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | da fare — [scheda](blocchi/B4-coloniale.md) |
 | C — bilanciamento | 00-05 | un ramo per area | da fare — [scheda](blocchi/C-bilanciamento.md) |
