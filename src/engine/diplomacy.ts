@@ -2,7 +2,8 @@ import { aiMobilize } from './economy';
 import { transfer } from './ledger';
 import { geoKm } from './map';
 import { endSubjection, followers, subjectOf, warBlock } from './vassals';
-import type { GameEvent, Tag, TreatyType } from './types';
+import { peaceAnswer, type Demand } from './peace';
+import type { GameEvent, Tag, TreatyType, War } from './types';
 import { al, allied, atWar, canEnter, changeOpinion, dal, di, emit, newId, shortName, the, The, treatyBetween, warsOf, type World } from './world';
 
 export const TREATY_LABEL: Record<TreatyType, string> = {
@@ -54,7 +55,13 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
   for (const d of [...defenders]) for (const f of followers(w, d)) if (f !== a && !defenders.includes(f) && !atWar(s, f, a)) { defenders.push(f); callers.push(f); }
   const attackers = [a];
   for (const f of followers(w, a)) if (f !== b && !defenders.includes(f) && !atWar(s, f, b)) attackers.push(f);
-  const war = { id: newId(s, 'w'), name: `Guerra fra ${shortName(w, a)} e ${shortName(w, b)}`, attackers, defenders, startDay: s.day, casualties: {} };
+  // province già occupate fra le due parti (da un'altra guerra in corso): non le ha prese questa guerra
+  const pre: number[] = [];
+  for (let p = 0; p < s.owner.length; p++) {
+    const o = s.owner[p], c = s.controller[p];
+    if (o !== c && ((attackers.includes(o) && defenders.includes(c)) || (defenders.includes(o) && attackers.includes(c)))) pre.push(p);
+  }
+  const war: War = { id: newId(s, 'w'), name: `Guerra fra ${shortName(w, a)} e ${shortName(w, b)}`, attackers, defenders, startDay: s.day, casualties: {}, ...(pre.length ? { pre } : {}) };
   s.wars.push(war);
   changeOpinion(s, b, a, -50);
   for (const n of Object.keys(s.nations)) if (n !== a && n !== b) changeOpinion(s, n, a, pact ? -15 : -4);
@@ -197,7 +204,9 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
       return null;
     case 'peace': {
       if (!atWar(s, from, to)) return 'le due nazioni non sono in guerra';
-      return checkCession(w, from, to, p);
+      const occ = checkCession(w, from, to, p);
+      if (occ) return occ;
+      return peaceRefusal(w, from, to, p);
     }
     case 'cede_provinces':
       return checkCession(w, from, to, p);
@@ -219,6 +228,25 @@ export function checkProposal(w: World, from: Tag, to: Tag, p: Proposal): string
     default:
       return `tipo di proposta sconosciuto: ${(p as Proposal).type}${prov(0) ? '' : ''}`;
   }
+}
+
+/**
+ * La pace trattata a parole passa dagli stessi controlli della conferenza (corte 07, capo 1): cessioni e indennità
+ * diventano richieste con un costo, e chi le riceve deve stare vincendo con punti a sufficienza; la pace bianca
+ * la rifiuta chi vince nettamente. Prima bastava una stanchezza di 50 e il punteggio non contava.
+ */
+function peaceRefusal(w: World, from: Tag, to: Tag, p: Proposal): string | null {
+  const s = w.state;
+  const war = s.wars.find((x) => (x.attackers.includes(from) && x.defenders.includes(to)) || (x.attackers.includes(to) && x.defenders.includes(from)));
+  if (!war) return 'le due nazioni non sono in guerra';
+  const giver = p.giver ?? to;
+  const receiver = giver === from ? to : from;
+  const demands: Demand[] = [];
+  if (p.provinces?.length) demands.push({ type: 'cede', from: giver, to: receiver, provinces: p.provinces });
+  if (p.amount) demands.push({ type: 'indemnity', from: giver, to: receiver, amount: p.amount });
+  const antiGore = s.options?.antiGore ?? true;
+  const a = demands.length ? peaceAnswer(w, war, receiver, demands, 'engine', antiGore) : peaceAnswer(w, war, from, [], 'engine', antiGore);
+  return a.ok ? null : a.reason;
 }
 
 function checkCession(w: World, from: Tag, to: Tag, p: Proposal): string | null {

@@ -24,6 +24,10 @@
   decide il signore (una regola deterministica: entra se la sua forza supera quella dell'attaccante, altrimenti no).
 - **Caso già visto** (blocco A2): la Bulgaria, signora della Serbia, restava fuori dalla guerra turco-serba con
   truppe a Kraljevo.
+- **Dopo B1**: `declareWar` calcola anche `war.pre` (province già occupate fra le parti): chi entra fra i difensori
+  va aggiunto *prima* di quel calcolo, così le sue occupazioni preesistenti sono escluse dal punteggio. E se il
+  signore entra in una guerra del giocatore che perde, la pace separata (`separatePeace`) fa uscire il giocatore con i
+  suoi vassalli, non con il signore.
 - **Test**: la Francia che attacca Hyderabad trova contro il Regno Unito.
 
 ### 2. `join_war` con gli stessi divieti di `declareWar` — 🟢

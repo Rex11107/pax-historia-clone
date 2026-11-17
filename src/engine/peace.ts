@@ -9,7 +9,7 @@ import { composition, ETHNICITIES, STATE_PEOPLES } from './ethnic';
 import { RESOURCES, type ResourceId } from './resources';
 import { subjectOf, setSubject, type SubjectLevel } from './vassals';
 import type { GameEvent, NationState, Tag, War } from './types';
-import { changeOpinion, clamp, emit, nationName, type World } from './world';
+import { atWar, changeOpinion, clamp, di, emit, nationName, type World } from './world';
 import { contracts } from './trade';
 
 // --- valore delle province e punteggio di guerra ---
@@ -41,6 +41,13 @@ export interface WarScore {
 
 export function warScore(w: World, war: War): WarScore {
   const s = w.state;
+  // uomini in armi per nazione, contati una volta
+  const menBy = new Map<Tag, number>();
+  for (const u of s.units) menBy.set(u.nation, (menBy.get(u.nation) ?? 0) + u.strength);
+  const menOf = (l: Tag[]) => l.reduce((a, t) => a + (menBy.get(t) ?? 0), 0);
+  const mobilized = menOf(war.attackers) + menOf(war.defenders);
+  // province già occupate quando la guerra è cominciata: le ha prese un'altra guerra (corte 07, giurato 3.3)
+  const pre = new Set(war.pre ?? []);
   const side = (tags: Tag[], enemy: Tag[]) => {
     let occ = 0, tot = 0;
     const byNation: Record<Tag, number> = {};
@@ -48,11 +55,13 @@ export function warScore(w: World, war: War): WarScore {
       if (!enemy.includes(s.owner[p])) continue;
       const v = provinceValue(w, p);
       tot += v;
-      if (tags.includes(s.controller[p])) { occ += v; byNation[s.controller[p]] = (byNation[s.controller[p]] ?? 0) + v; }
+      if (tags.includes(s.controller[p]) && !pre.has(p)) { occ += v; byNation[s.controller[p]] = (byNation[s.controller[p]] ?? 0) + v; }
     }
     const lossesOwn = tags.reduce((a, t) => a + (war.casualties[t] ?? 0), 0);
     const lossesEnemy = enemy.reduce((a, t) => a + (war.casualties[t] ?? 0), 0);
-    const battle = 25 * (lossesEnemy - lossesOwn) / (lossesEnemy + lossesOwn + 1);
+    // le perdite si pesano sulla forza in campo (corte 07, capo 4): prima 1.000 morti contro 0 valevano 25 punti
+    // come 300.000 contro 0. Una battaglia è decisiva quando le perdite arrivano a metà degli eserciti dei due lati
+    const battle = 25 * (lossesEnemy - lossesOwn) / Math.max(lossesEnemy + lossesOwn + 1, 0.5 * mobilized);
     const ex = (l: Tag[]) => l.reduce((a, t) => a + (s.nations[t]?.warExhaustion ?? 0), 0) / Math.max(1, l.length);
     const capital = enemy[0] && s.controller[s.nations[enemy[0]].capital] && tags.includes(s.controller[s.nations[enemy[0]].capital]) ? 15 : 0;
     const score = clamp(80 * (occ / Math.max(1, tot)) + battle + 0.4 * (ex(enemy) - ex(tags)) + capital, 0, 100);
@@ -64,7 +73,7 @@ export function warScore(w: World, war: War): WarScore {
   const points = Math.abs(att - def);
   const share: Record<Tag, number> = {};
   for (const [tags, sc] of [[war.attackers, A], [war.defenders, D]] as const) {
-    const men = (t: Tag) => s.units.filter((u) => u.nation === t).reduce((a, u) => a + u.strength, 0) / 1000;
+    const men = (t: Tag) => (menBy.get(t) ?? 0) / 1000;
     const raw = tags.map((t) => (sc.byNation[t] ?? 0) + 0.3 * men(t) + 0.5 * (war.casualties[t] ?? 0) / 1000);
     const tot = raw.reduce((a, b) => a + b, 0) || 1;
     tags.forEach((t, i) => (share[t] = raw[i] / tot));
@@ -76,7 +85,9 @@ export function warScore(w: World, war: War): WarScore {
 
 export type Demand =
   | { type: 'cede'; from: Tag; to: Tag; provinces: number[] }
-  | { type: 'liberate'; from: Tag; eth: string; provinces: number[]; to?: Tag }
+  // `by`: chi impone la liberazione (il vincitore); `to`: chi riceve le terre, fissato quando si chiede (corte 07,
+  // capo 6: prima `to` era il vincitore e il destinatario si ricalcolava all'applicazione, senza le province)
+  | { type: 'liberate'; from: Tag; eth: string; provinces: number[]; by: Tag; to: Tag }
   | { type: 'vassal'; from: Tag; to: Tag; level: SubjectLevel }
   | { type: 'annex'; from: Tag; to: Tag }
   | { type: 'indemnity'; from: Tag; to: Tag; amount: number }
@@ -101,13 +112,16 @@ export function liberationTarget(w: World, eth: string, from: Tag, provinces?: n
 
 const CLAIM_MULT = { nucleo: 0.6, storica: 0.85, pretesa: 1.2 } as const;
 
-/** La provincia è occupata dal vincitore (o da un suo alleato in guerra)? */
+/**
+ * La provincia è occupata dal vincitore, o da un suo alleato in una guerra contro il padrone della provincia?
+ * Prima bastava un alleato in una guerra qualsiasi, anche contro un altro nemico (corte 07, giurato 3.3).
+ */
 function occupiedBy(w: World, winner: Tag, p: number): boolean {
   const s = w.state;
-  const c = s.controller[p];
+  const c = s.controller[p], o = s.owner[p];
   if (!winner) return false;
   if (c === winner) return true;
-  return s.wars.some((x) => (x.attackers.includes(winner) && x.attackers.includes(c)) || (x.defenders.includes(winner) && x.defenders.includes(c)));
+  return s.wars.some((x) => (x.attackers.includes(winner) && x.attackers.includes(c) && x.defenders.includes(o)) || (x.defenders.includes(winner) && x.defenders.includes(c) && x.attackers.includes(o)));
 }
 /** Il perdente è crollato: capitale occupata dal lato vincitore. */
 const collapsed = (w: World, winner: Tag, loser: Tag) => occupiedBy(w, winner, w.state.nations[loser]?.capital ?? -1);
@@ -188,6 +202,59 @@ export function checkCession(w: World, from: Tag, to: Tag, provinces: number[], 
   return { cost: Math.round(cost * 10) / 10, refusal: null, warnings, added };
 }
 
+export interface LiberationCheck { provinces: number[]; refusal: string | null; warnings: string[] }
+
+/**
+ * Le terre di una liberazione dentro le regole sui confini (corte 07, giurato 3.1): si tiene il pezzo che tocca lo
+ * Stato che le riceve (o, per una nazione che nasce, il pezzo più grande) e il perdente non resta spezzato.
+ * Prima i greci ottomani nascevano in nove pezzi e la Polonia staccava la Prussia orientale da Berlino.
+ */
+export function liberationCheck(w: World, from: Tag, to: Tag, provinces: number[], antiGore = true): LiberationCheck {
+  const s = w.state;
+  const warnings: string[] = [];
+  const cap = s.nations[from]?.capital;
+  const set = new Set(provinces.filter((p) => s.owner[p] === from && !w.map.provinces[p].impassable && p !== cap));
+  if (!set.size) return { provinces: [], refusal: 'nessuna provincia con quella maggioranza', warnings };
+  // pezzi connessi, in ordine di indice (deterministico)
+  const comps: number[][] = [];
+  const seen = new Set<number>();
+  for (const start of [...set].sort((a, b) => a - b)) {
+    if (seen.has(start)) continue;
+    const c = [start]; seen.add(start);
+    for (let i = 0; i < c.length; i++) for (const e of w.map.adj[c[i]]) if (set.has(e.to) && !seen.has(e.to)) { seen.add(e.to); c.push(e.to); }
+    comps.push(c);
+  }
+  const value = (c: number[]) => c.reduce((a, p) => a + provinceValue(w, p), 0);
+  let keep: number[][];
+  if (s.nations[to]?.alive) {
+    keep = comps.filter((c) => c.some((p) => w.map.adj[p].some((e) => s.owner[e.to] === to)));
+    if (!keep.length) return { provinces: [], refusal: `${nationName(w, to)} non confina con queste terre`, warnings };
+  } else keep = [comps.reduce((a, b) => (value(b) > value(a) ? b : a))];
+  const kept = new Set(keep.flat());
+  const dropped = set.size - kept.size;
+  if (dropped) warnings.push(`escluse ${dropped === 1 ? 'una provincia staccata' : `${dropped} province staccate`} dal resto`);
+  if (antiGore) {
+    const before = connectedToCapital(w, from, new Set());
+    const after = connectedToCapital(w, from, kept);
+    const orphans = [...before].filter((p) => !after.has(p) && !kept.has(p));
+    if (orphans.length) {
+      const ov = orphans.reduce((a, p) => a + provinceValue(w, p), 0);
+      if (ov <= 0.06 * nationValue(w, from) || orphans.length <= 3) { for (const p of orphans) kept.add(p); warnings.push(`incluse anche ${orphans.map((p) => w.map.provinces[p].name).join(', ')}, che resterebbero isolate`); }
+      else return { provinces: [], refusal: `lascerebbe ${nationName(w, from)} spezzato in due: ${orphans.slice(0, 4).map((p) => w.map.provinces[p].name).join(', ')}${orphans.length > 4 ? '…' : ''} resterebbero staccate dalla capitale`, warnings };
+    }
+  }
+  return { provinces: [...kept].sort((a, b) => a - b), refusal: null, warnings };
+}
+
+/** Richiesta di liberazione già dentro le regole sui confini, o null se non si può chiedere. */
+export function liberationDemand(w: World, from: Tag, eth: string, by: Tag, antiGore = true): Extract<Demand, { type: 'liberate' }> | null {
+  const ids = provincesOfPeople(w, from, eth);
+  const to = liberationTarget(w, eth, from, ids);
+  if (!to || to === from || to === by || STATE_PEOPLES[from]?.own.includes(eth)) return null;
+  const chk = liberationCheck(w, from, to, ids, antiGore);
+  return chk.refusal ? null : { type: 'liberate', from, eth, provinces: chk.provinces, by, to };
+}
+
 const income = (w: World, t: Tag) => Math.max(1, w.state.nations[t]?.lastBudget?.income ?? 10);
 
 /** Costo in punti e controlli di una richiesta. */
@@ -197,18 +264,35 @@ export function demandCost(w: World, d: Demand, antiGore = true): { cost: number
   switch (d.type) {
     case 'cede': { const c = checkCession(w, d.from, d.to, d.provinces, antiGore); return { cost: c.cost, refusal: c.refusal, warnings: c.warnings }; }
     case 'liberate': {
-      if (!liberationTarget(w, d.eth, d.from, d.provinces)) return { cost: 0, refusal: 'nessuno Stato confinante e nessuna nazione può nascere per questo popolo', warnings: [] };
-      const cost = d.provinces.reduce((a, p) => a + provinceValue(w, p) * (occupiedBy(w, d.to ?? '', p) ? 1 : 2), 0) / fromSize * 100 * 0.5;
+      // un popolo dello Stato stesso non si «libera» (corte 07, giurato 2.1: i tedeschi della Germania all'Austria)
+      if (STATE_PEOPLES[d.from]?.own.includes(d.eth)) return { cost: 0, refusal: `i ${ETHNICITIES[d.eth]?.label ?? d.eth} sono un popolo ${di(w, d.from)}: le loro terre si chiedono solo con una cessione`, warnings: [] };
       if (d.provinces.includes(s.nations[d.from].capital)) return { cost: 0, refusal: 'la capitale non si libera', warnings: [] };
-      return { cost: Math.round(cost * 10) / 10, refusal: d.provinces.length ? null : 'nessuna provincia con quella maggioranza', warnings: [] };
+      const target = liberationTarget(w, d.eth, d.from, d.provinces);
+      if (!target) return { cost: 0, refusal: 'nessuno Stato confinante e nessuna nazione può nascere per questo popolo', warnings: [] };
+      if (d.to !== target) return { cost: 0, refusal: `queste terre andrebbero a ${nationName(w, target)}, non a ${nationName(w, d.to)}`, warnings: [] };
+      // terre date a sé stessi sono una cessione, e a metà prezzo sarebbero la mossa sempre migliore
+      if (d.to === d.by) return { cost: 0, refusal: 'terre per noi stessi: serve una cessione, non una liberazione', warnings: [] };
+      const chk = liberationCheck(w, d.from, d.to, d.provinces, antiGore);
+      if (chk.refusal) return { cost: 0, refusal: chk.refusal, warnings: chk.warnings };
+      if (chk.provinces.length !== d.provinces.length || chk.provinces.some((p) => !d.provinces.includes(p))) return { cost: 0, refusal: 'le province non rispettano le regole sui confini: va richiesta di nuovo', warnings: chk.warnings };
+      const cost = d.provinces.reduce((a, p) => a + provinceValue(w, p) * (occupiedBy(w, d.by, p) ? 1 : 2), 0) / fromSize * 100 * 0.5;
+      return { cost: Math.round(cost * 10) / 10, refusal: null, warnings: chk.warnings };
     }
     case 'vassal': {
       if (w.profiles[d.from]?.major) return { cost: 0, refusal: 'una grande potenza non diventa vassalla', warnings: [] };
       const border = w.map.provinces.some((p) => s.owner[p.id] === d.from && w.map.adj[p.id].some((e) => s.owner[e.to] === d.to));
       const colonial = seaPower(w, d.to) && (w.profiles[d.to]?.naval ?? 0) >= 40 && w.map.provinces.some((p) => s.owner[p.id] === d.from && p.coast);
       if (!border && !colonial) return { cost: 0, refusal: 'troppo lontano: serve un confine comune o una marina coloniale e una costa', warnings: [] };
+      // solo fra disuguali (corte 07, capo 5): prima la Spagna poteva fare del Portogallo un vassallo e la Serbia
+      // della Bulgaria, allo stesso prezzo di Tunisi. Il perdente deve avere meno di un quarto degli abitanti e meno
+      // soldati del vincitore; più gli si avvicina negli abitanti più costa (fino a una volta e mezza)
+      const popOf = (t: Tag) => s.owner.reduce((a, o, p) => a + (o === t ? w.map.provinces[p].pop : 0), 0);
+      const menOf = (t: Tag) => s.units.reduce((a, u) => a + (u.nation === t ? u.strength : 0), 0);
+      const ratio = popOf(d.from) / Math.max(1, popOf(d.to));
+      if (ratio >= 0.25) return { cost: 0, refusal: `${nationName(w, d.from)} è troppo grande per diventare un soggetto: ha ${Math.round(ratio * 100)}% dei nostri abitanti`, warnings: [] };
+      if (menOf(d.from) >= Math.max(1, menOf(d.to))) return { cost: 0, refusal: `${nationName(w, d.from)} ha ancora un esercito troppo forte per diventare un soggetto`, warnings: [] };
       const base = { tributario: 30, vassallo: 45, protettorato: 60 }[d.level];
-      return { cost: base, refusal: null, warnings: [] };
+      return { cost: Math.round(base * (1 + 2 * ratio) * 10) / 10, refusal: null, warnings: [] };
     }
     case 'annex': {
       const n = w.map.provinces.filter((p) => s.owner[p.id] === d.from).length;
@@ -302,14 +386,14 @@ export function suggestDemands(w: World, war: War, winner: Tag, budget: number):
         if (top.share >= 50 && !STATE_PEOPLES[from]?.own.includes(top.eth)) peoples.set(top.eth, [...(peoples.get(top.eth) ?? []), p.id]);
       }
       // solo popoli le cui terre sono per metà in mano nostra, verso uno Stato amico o una nazione nuova
-      const ok = [...peoples.entries()].map(([eth]) => [eth, provincesOfPeople(w, from, eth)] as const).filter(([eth, ids]) => {
-        const target = liberationTarget(w, eth, from, ids);
-        if (!target || target === winner || target === from) return false;
+      const ok = [...peoples.keys()].sort().map((eth) => liberationDemand(w, from, eth, winner)).filter((d): d is Extract<Demand, { type: 'liberate' }> => {
+        if (!d) return false;
+        const ids = d.provinces;
         const occ = ids.reduce((a, p) => a + (occupiedBy(w, winner, p) ? provinceValue(w, p) : 0), 0) / Math.max(1, ids.reduce((a, p) => a + provinceValue(w, p), 0));
-        const friendly = !s.nations[target]?.alive || (s.nations[target].opinion[winner] ?? 0) >= 0;
+        const friendly = !s.nations[d.to]?.alive || (s.nations[d.to].opinion[winner] ?? 0) >= 0;
         return friendly && (occ >= 0.5 || down);
-      }).sort((a, b) => b[1].length - a[1].length);
-      if (ok[0]) take({ type: 'liberate', from, eth: ok[0][0], provinces: ok[0][1], to: winner });
+      }).sort((a, b) => b.provinces.length - a.provinces.length || (a.eth < b.eth ? -1 : 1));
+      if (ok[0]) take(ok[0]);
     }
     // 4. riparazioni: commercio se il perdente ha ciò che ci manca, poi industria, poi denaro
     for (const r of ['carbone', 'ferro'] as ResourceId[]) {
@@ -325,6 +409,7 @@ export function suggestDemands(w: World, war: War, winner: Tag, budget: number):
 
 // --- applicazione ---
 
+/** Nascita di uno Stato liberato: amico di chi l'ha liberato (stima 60), con le casse e la leva dei suoi abitanti. */
 function birth(w: World, tag: Tag, provinces: number[], liberator: Tag) {
   const s = w.state;
   const pr = w.profiles[tag];
@@ -339,6 +424,22 @@ function birth(w: World, tag: Tag, provinces: number[], liberator: Tag) {
   for (const t of Object.keys(s.nations)) if (t !== tag) s.nations[t].opinion[tag] ??= 0;
 }
 
+/**
+ * Guarnigione dello Stato appena nato (corte 07, capo 7): un corpo nella capitale, due uomini ogni mille abitanti
+ * (fra 2.000 e un corpo d'armata pieno). Prima nasceva senza un soldato, preda del primo vicino.
+ */
+function garrison(w: World, tag: Tag) {
+  const s = w.state;
+  const n = s.nations[tag];
+  const pop = s.owner.reduce((a, o, p) => a + (o === tag ? w.map.provinces[p].pop : 0), 0);
+  const men = Math.round(clamp(pop * 0.002, 2000, 20000));
+  s.units.push({
+    id: `${tag}-g${++s.nextId}`, nation: tag, type: 'infantry', name: `Guardia nazionale ${w.profiles[tag]?.adjective ?? ''}`.trim(),
+    strength: men, maxStrength: 20000, morale: 0.6, supply: 1, experience: 0, entrench: 0,
+    location: n.capital, move: null, orders: [], inBattle: false, recovering: 0,
+  });
+}
+
 export function applyDemand(w: World, d: Demand, sink: GameEvent[]) {
   const s = w.state;
   switch (d.type) {
@@ -351,13 +452,17 @@ export function applyDemand(w: World, d: Demand, sink: GameEvent[]) {
       break;
     }
     case 'liberate': {
-      const to = liberationTarget(w, d.eth, d.from)!;
+      // il destinatario è quello fissato nella richiesta, controllato da demandCost con le stesse province
+      const to = d.to;
       const ids = d.provinces.filter((p) => s.owner[p] === d.from);
-      if (!s.nations[to]?.alive) birth(w, to, ids, s.player === d.from ? to : (Object.keys(s.nations).find((t) => s.nations[t].alive && t !== d.from) ?? to));
+      if (!ids.length) break;
+      const born = !s.nations[to]?.alive;
+      if (born) birth(w, to, ids, d.by);
       for (const p of ids) { s.owner[p] = to; s.controller[p] = to; }
+      if (born) garrison(w, to);
       recordLoss(w, d.from, ids);
       changeOpinion(s, to, d.from, -40);
-      emit(w, { type: 'liberation', nations: [d.from, to], text: `${nationName(w, to)} ${s.nations[to].opinion ? 'ottiene' : 'nasce con'} le terre dei ${ETHNICITIES[d.eth]?.label ?? d.eth} di ${nationName(w, d.from)} (${ids.length} province).` }, sink);
+      emit(w, { type: 'liberation', nations: [d.from, to, d.by], text: `${nationName(w, to)} ${born ? 'nasce con' : 'ottiene'} le terre dei ${ETHNICITIES[d.eth]?.label ?? d.eth} di ${nationName(w, d.from)} (${ids.length} province).` }, sink);
       break;
     }
     case 'vassal': {
@@ -431,23 +536,74 @@ export function concludePeace(w: World, war: War, demands: Demand[], sink: GameE
   emit(w, { type: 'peace', nations: parts, text: `Pace: finisce la ${war.name.charAt(0).toLowerCase()}${war.name.slice(1)}${demands.length ? '' : ', senza condizioni'}.` }, sink);
 }
 
+/**
+ * Pace separata: alcune nazioni escono dalla guerra con le condizioni chieste a loro, gli altri continuano a
+ * combattere. Le occupazioni fra chi esce e il nemico finiscono, salvo un'altra guerra fra loro.
+ */
+export function separatePeace(w: World, war: War, leaving: Tag[], demands: Demand[], sink: GameEvent[] = []) {
+  const s = w.state;
+  for (const d of demands) applyDemand(w, d, sink);
+  const enemies = war.attackers.some((t) => leaving.includes(t)) ? war.defenders : war.attackers;
+  war.attackers = war.attackers.filter((t) => !leaving.includes(t));
+  war.defenders = war.defenders.filter((t) => !leaving.includes(t));
+  for (let p = 0; p < s.owner.length; p++) {
+    const o = s.owner[p], c = s.controller[p];
+    if (o !== c && ((leaving.includes(o) && enemies.includes(c)) || (enemies.includes(o) && leaving.includes(c))) && !atWar(s, o, c)) s.controller[p] = o;
+  }
+  settleOccupations(w);
+  checkAlive(w, sink);
+  for (const t of leaving) if (t !== s.player && s.nations[t]?.alive && !s.wars.some((x) => x.attackers.includes(t) || x.defenders.includes(t))) s.nations[t].policies.mobilization = 'peace';
+  emit(w, { type: 'peace', nations: [...leaving, ...enemies], text: `Pace separata: ${leaving.map((t) => nationName(w, t)).join(', ')} esce dalla ${war.name.charAt(0).toLowerCase()}${war.name.slice(1)}${demands.length ? '' : ', senza condizioni'}.` }, sink);
+}
+
+/**
+ * Il giocatore che perde accetta (o subisce) le condizioni del vincitore. Se guida il suo lato finisce la guerra
+ * intera; se è un alleato minore esce con una pace separata e la guerra fra gli altri prosegue (corte 07, capo 2).
+ * I suoi vassalli che l'hanno seguito escono con lui.
+ */
+export function playerPeace(w: World, war: War, sink: GameEvent[] = []) {
+  const s = w.state, me = s.player;
+  const mySide = war.attackers.includes(me) ? war.attackers : war.defenders;
+  const terms = engineTerms(w, war);
+  if (mySide[0] === me) { concludePeace(w, war, terms, sink); return; }
+  const leaving = [me, ...mySide.filter((t) => t !== me && subjectOf(w, t)?.overlord === me)];
+  separatePeace(w, war, leaving, terms.filter((d) => leaving.includes(d.from)), sink);
+}
+
 /** Chi decide la pace: il motore, il giocatore nelle sue guerre, o il giocatore in tutte. */
 export type PeaceMode = 'engine' | 'own' | 'all';
 
-/** La proposta di pace del giocatore è accettata? (in modalità "own"/"all" il giocatore può imporla) */
+/**
+ * Una pace bianca sta bene a chi sta vincendo? Sì se non vince nettamente (meno di 15 punti) o se è esausto.
+ * Vale per ogni canale: conferenza, dialogo con le nazioni, Game Master (corte 07, capo 1).
+ */
+export function whitePeaceOk(w: World, war: War): { ok: boolean; reason: string } {
+  const sc = warScore(w, war);
+  if (!sc.winner || sc.points < 15) return { ok: true, reason: 'pace bianca accettata' };
+  const leader = sc.winner === 'att' ? war.attackers[0] : war.defenders[0];
+  if ((w.state.nations[leader]?.warExhaustion ?? 0) > 50) return { ok: true, reason: 'pace bianca accettata: il vincitore è esausto' };
+  return { ok: false, reason: `${nationName(w, leader)} sta vincendo (${sc.points} punti) e rifiuta la pace bianca` };
+}
+
+/**
+ * La proposta di pace è accettata? La modalità toglie solo il tetto dei punti (in "own"/"all" il giocatore impone
+ * condizioni oltre la sua quota), mai il controllo di chi vince (corte 07, capo 10: prima in "own" anche un
+ * perdente poteva dettare la pace, lo impediva solo l'interfaccia).
+ */
 export function peaceAnswer(w: World, war: War, proposer: Tag, demands: Demand[], mode: PeaceMode = 'engine', antiGore = true): { ok: boolean; reason: string } {
   const sc = warScore(w, war);
-  const mySide = war.attackers.includes(proposer) ? 'att' : 'def';
+  const mySide = war.attackers.includes(proposer) ? 'att' : war.defenders.includes(proposer) ? 'def' : null;
+  if (!mySide) return { ok: false, reason: `${nationName(w, proposer)} non combatte in questa guerra` };
   const t = totalCost(w, demands, antiGore);
   if (t.problems.length) return { ok: false, reason: t.problems[0] };
-  if (mode !== 'engine') return { ok: true, reason: 'imposta dal giocatore' };
   if (!demands.length) {
-    // pace bianca: il nemico accetta se non sta vincendo nettamente o è esausto
-    const enemy = mySide === 'att' ? war.defenders[0] : war.attackers[0];
-    if (sc.winner !== (mySide === 'att' ? 'def' : 'att') || sc.points < 15 || (w.state.nations[enemy]?.warExhaustion ?? 0) > 50) return { ok: true, reason: 'pace bianca accettata' };
-    return { ok: false, reason: `il nemico sta vincendo (${sc.points} punti) e rifiuta la pace bianca` };
+    // pace bianca: chi la chiede sta vincendo, oppure il nemico non vince nettamente o è esausto
+    if (sc.winner === mySide) return { ok: true, reason: 'pace bianca accettata' };
+    return whitePeaceOk(w, war);
   }
   if (sc.winner !== mySide) return { ok: false, reason: 'non state vincendo: non potete dettare condizioni' };
+  if (demands.some((d) => !(mySide === 'att' ? war.defenders : war.attackers).includes(d.from))) return { ok: false, reason: 'si chiede solo a chi è dall\'altra parte' };
+  if (mode !== 'engine') return { ok: true, reason: 'imposta dal giocatore' };
   const budget = budgetOf(w, war, proposer);
   if (t.cost > budget) return { ok: false, reason: `le richieste valgono ${t.cost} punti, ve ne spettano ${budget}` };
   return { ok: true, reason: 'condizioni accettate' };

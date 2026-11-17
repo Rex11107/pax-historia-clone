@@ -74,6 +74,10 @@ describe('motore', () => {
     const tr = find(w, 'Trento');
     expect(checkProposal(w, 'ITA', 'AUH', { type: 'peace', giver: 'AUH', provinces: [tr] })).toMatch(/non cede/);
     w.state.controller[tr] = 'ITA';
+    // l'occupazione non basta: la pace a parole passa anche dal punteggio di guerra (corte 07, capo 1)
+    expect(checkProposal(w, 'ITA', 'AUH', { type: 'peace', giver: 'AUH', provinces: [tr] })).toMatch(/non state vincendo/);
+    const war = w.state.wars.at(-1)!;
+    war.casualties.ITA = 10000; war.casualties.AUH = 200000; w.state.nations.AUH.warExhaustion = 60;
     expect(checkProposal(w, 'ITA', 'AUH', { type: 'peace', giver: 'AUH', provinces: [tr] })).toBeNull();
     applyProposal(w, 'ITA', 'AUH', { type: 'peace', giver: 'AUH', provinces: [tr] });
     expect(w.state.owner[tr]).toBe('ITA');

@@ -27,6 +27,9 @@ describe('microstati e cessioni', () => {
     expect(checkProposal(w, 'RUS', 'AUH', { type: 'cede_provinces', giver: 'AUH', provinces: ids })).toMatch(/tre province/);
     declareWar(w, 'RUS', 'AUH', 'prova');
     ids.slice(0, 6).forEach((id) => { s.controller[id] = 'RUS'; });
+    // e la Russia deve stare vincendo (corte 07, capo 1)
+    const war = s.wars.at(-1)!;
+    war.casualties.RUS = 20000; war.casualties.AUH = 250000; s.nations.AUH.warExhaustion = 70;
     expect(checkProposal(w, 'RUS', 'AUH', { type: 'peace', giver: 'AUH', provinces: ids })).toBeNull();
   });
 });

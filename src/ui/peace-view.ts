@@ -2,7 +2,8 @@
 
 import { buildings } from '../engine/construction';
 import { composition, ETHNICITIES } from '../engine/ethnic';
-import { budgetOf, concludePeace, DEMAND_LABEL, demandCost, engineTerms, liberationTarget, peaceAnswer, provincesOfPeople, suggestDemands, totalCost, warScore, type Demand, type PeaceMode } from '../engine/peace';
+import { PEACE_OFFER_WEEKS, PEACE_PRESSURE_WEEKS } from '../engine/ai';
+import { budgetOf, concludePeace, DEMAND_LABEL, demandCost, engineTerms, liberationDemand, peaceAnswer, playerPeace, suggestDemands, totalCost, warScore, type Demand, type PeaceMode } from '../engine/peace';
 import { RESOURCES, type ResourceId } from '../engine/resources';
 import type { Tag, War } from '../engine/types';
 import type { SubjectLevel } from '../engine/vassals';
@@ -75,7 +76,7 @@ export class PeaceView {
     const n = (t: Tag) => nationName(w, t);
     switch (d.type) {
       case 'cede': return `${n(d.from)} cede ${d.provinces.length === 1 ? w.map.provinces[d.provinces[0]].name : `${d.provinces.length} province: ${d.provinces.slice(0, 4).map((p) => w.map.provinces[p].name).join(', ')}${d.provinces.length > 4 ? '…' : ''}`}`;
-      case 'liberate': return `liberare i ${ETHNICITIES[d.eth]?.label ?? d.eth} di ${n(d.from)} (${d.provinces.length} province) → ${n(liberationTarget(w, d.eth, d.from, d.provinces) ?? d.from)}`;
+      case 'liberate': return `liberare i ${ETHNICITIES[d.eth]?.label ?? d.eth} di ${n(d.from)} (${d.provinces.length} province) → ${n(d.to)}`;
       case 'vassal': return `${n(d.from)} diventa ${d.level}`;
       case 'annex': return `annessione di ${n(d.from)}`;
       case 'indemnity': return `indennità di ${Math.round(d.amount)} M da ${n(d.from)} (un quarto subito, il resto in un anno)`;
@@ -108,9 +109,15 @@ export class PeaceView {
       const onMe = theirs.filter((d) => d.from === me);
       return h('div', null, head,
         h('h3', null, 'Le condizioni del nemico'),
+        war.offer ? h('p', { class: 'neg' }, (() => {
+          const weeks = Math.floor((s.day - war.offer.since) / 7);
+          const left = PEACE_OFFER_WEEKS + PEACE_PRESSURE_WEEKS - weeks;
+          return weeks >= PEACE_OFFER_WEEKS ? `Il rifiuto pesa già su stanchezza e stabilità: la pace sarà imposta fra ${left} settimane.` : `Offerta fatta da ${weeks} settimane: fra ${PEACE_OFFER_WEEKS - weeks} il rifiuto comincerà a pesare, fra ${left} la pace sarà imposta.`;
+        })()) : null,
         onMe.length ? h('ul', { class: 'list plain' }, ...onMe.map((d) => h('li', null, this.describe(d), h('span', { class: 'sub' }, ` · ${fmt(demandCost(w, d).cost)} punti`)))) : h('p', null, 'Il nemico non chiede nulla a noi.'),
         h('div', { class: 'buttons' },
-          h('button', { class: 'primary', onclick: () => { concludePeace(w, war, theirs); this.host.toast('Pace firmata.'); this.host.highlight(null); this.host.changed(); this.host.close(); } }, 'Accetta'),
+          // da alleato minore si esce con una pace separata: la guerra degli altri continua (corte 07, capo 2)
+          h('button', { class: 'primary', onclick: () => { playerPeace(w, war); this.host.toast('Pace firmata.'); this.host.highlight(null); this.host.changed(); this.host.close(); } }, 'Accetta'),
           h('button', { onclick: () => { const a = peaceAnswer(w, war, me, [], 'engine'); if (a.ok) { concludePeace(w, war, []); this.host.toast('Pace bianca firmata.'); this.host.changed(); this.host.close(); } else this.host.toast(a.reason); } }, 'Chiedi la pace bianca'),
           h('button', { class: 'quiet', onclick: () => this.host.close() }, 'Continua la guerra')));
     }
@@ -178,8 +185,10 @@ export class PeaceView {
     if (this.addType === 'liberate') {
       const peoples = new Set<string>();
       for (const p of w.map.provinces) if (s.owner[p.id] === from) for (const c of composition(w, p.id)) if (c.share >= 40) peoples.add(c.eth);
-      const ok = [...peoples].map((eth) => ({ eth, ids: provincesOfPeople(w, from, eth) })).filter((x) => x.ids.length && liberationTarget(w, x.eth, from, x.ids) && liberationTarget(w, x.eth, from, x.ids) !== from);
-      param = ok.length ? h('select', null, ...ok.map((x) => h('option', { value: x.eth }, `${ETHNICITIES[x.eth]?.label ?? x.eth} (${x.ids.length} province) → ${nationName(w, liberationTarget(w, x.eth, from, x.ids)!)}`))) as HTMLSelectElement : null;
+      // le stesse richieste che sceglie il motore: popoli altrui, destinatario fissato, pezzi dentro le regole sui confini
+      const gore = this.host.antiGore();
+      const ok = [...peoples].sort().map((eth) => liberationDemand(w, from, eth, to, gore)).filter((d): d is Extract<Demand, { type: 'liberate' }> => !!d);
+      param = ok.length ? h('select', null, ...ok.map((x) => h('option', { value: x.eth }, `${ETHNICITIES[x.eth]?.label ?? x.eth} (${x.provinces.length} province) → ${nationName(w, x.to)}`))) as HTMLSelectElement : null;
     }
     const add = () => {
       let d: Demand | null = null;
@@ -189,7 +198,7 @@ export class PeaceView {
         case 'trade': { const [r, l] = v.split(':'); if (r) d = { type: 'trade', from, to, res: r as ResourceId, lots: Number(l) }; break; }
         case 'dismantle': d = { type: 'dismantle', from, to, levels: Number(v) }; break;
         case 'vassal': d = { type: 'vassal', from, to, level: v as SubjectLevel }; break;
-        case 'liberate': if (v) d = { type: 'liberate', from, eth: v, provinces: provincesOfPeople(w, from, v), to }; break;
+        case 'liberate': if (v) d = liberationDemand(w, from, v, to, this.host.antiGore()); break;
         case 'annex': d = { type: 'annex', from, to }; break;
         case 'demilitarize': d = { type: 'demilitarize', from, to }; break;
         case 'alliances': d = { type: 'alliances', from, to }; break;
@@ -217,6 +226,11 @@ export class PeaceView {
       const side = sc.winner === 'att' ? war.attackers : war.defenders;
       for (const t of side) if (t !== me) all.push(...suggestDemands(w, war, t, budgetOf(w, war, t)).filter((d) => d.type !== 'cede' || !d.provinces.some((p) => all.some((o) => o.type === 'cede' && o.provinces.includes(p)))));
     } else {
+      // modalità "tutte": le condizioni scritte per ogni vincitore passano dagli stessi controlli (corte 07, capo 10)
+      for (const [t, l] of this.terms) {
+        const a = peaceAnswer(w, war, t, l, mode, gore);
+        if (!a.ok) { this.host.toast(`${nationName(w, t)}: ${a.reason}`); return; }
+      }
       for (const [, l] of this.terms) all.push(...l);
       const sc = warScore(w, war);
       for (const t of sc.winner === 'att' ? war.attackers : war.defenders) if (!this.terms.has(t)) all.push(...suggestDemands(w, war, t, budgetOf(w, war, t)));
