@@ -190,6 +190,9 @@ export interface War {
   pre?: number[];
   /** condizioni di pace offerte al giocatore che sta perdendo: giorno dell'offerta (corte 07, capo 2) */
   offer?: { since: number };
+  /** ancora storica (corte 00, principio 3): fino a questo giorno chi perde resiste e rifiuta di cedere; la pace
+   *  arriva prima solo se una delle due parti è sfinita (la Guerra del Pacifico fino ad Ancón, ottobre 1883) */
+  resistance?: number;
 }
 
 export interface Policies {

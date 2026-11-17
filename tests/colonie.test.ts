@@ -4,6 +4,9 @@ import { runTurn } from '../src/engine/turn';
 import { subjectOf } from '../src/engine/vassals';
 import * as C from '../src/engine/colonial';
 import { MAP, EU, find } from './helpers';
+import { INTERESTS_1881, LOCAL_STANCE } from '../src/scenario/colonial1881';
+import { declareWar } from '../src/engine/diplomacy';
+import { imposeProtectorate } from '../src/engine/vassals';
 
 describe('interessi coloniali', () => {
   const st = (w: ReturnType<typeof newGame>, id: string) => C.interestStatus(w, C.BY_ID.get(id)!);
@@ -123,4 +126,120 @@ describe('interessi coloniali', () => {
     }
     expect(Object.keys(c.done).length).toBeGreaterThan(4);
   }, 120000);
+});
+
+// Blocco B4 (corte 00, passi 1-3): niente ritardi senza una causa di partita, dati verificati, posizione dei regni locali.
+describe('corte 00: ritardi, dati e posizioni', () => {
+  it('ogni nome di provincia, sigla di paese e nazione citati negli interessi coloniali esistono sulla mappa', () => {
+    const w = newGame(MAP, 'SMR', 'b4-nomi');
+    const ids = new Set(INTERESTS_1881.map((x) => x.id));
+    const missing: string[] = [];
+    for (const x of INTERESTS_1881) {
+      if (!w.profiles[x.nation]) missing.push(`${x.id}: nazione ${x.nation}`);
+      for (const n of x.names ?? []) if (!w.map.provinces.some((p) => p.name === n || p.name.startsWith(`${n} (`))) missing.push(`${x.id}: provincia ${n}`);
+      for (const m of x.modern ?? []) if (!w.map.provinces.some((p) => p.modern === m)) missing.push(`${x.id}: paese ${m}`);
+      for (const r of [...(x.requires ?? []), ...(x.requiresAny ?? []), ...(x.excludes ?? []), ...(x.early ? [x.early.after] : [])]) if (!ids.has(r)) missing.push(`${x.id}: interesse ${r}`);
+    }
+    for (const [t, st] of Object.entries(LOCAL_STANCE)) {
+      if (!w.profiles[t]) missing.push(`posizione: nazione ${t}`);
+      for (const o of [...(Array.isArray(st.hostile) ? st.hostile : []), ...(st.toward ? [st.toward] : [])]) if (!w.profiles[o]) missing.push(`posizione di ${t}: ${o}`);
+    }
+    expect(missing).toEqual([]);
+  });
+
+  it('una guerra coloniale non ferma la diplomazia coloniale; una guerra in Europa sì', () => {
+    const w = newGame(MAP, 'SMR', 'b4-guerra');
+    const act = C.actionsFor(w, C.BY_ID.get('fra-tunisia')!).find((a) => a.path === 'protettorato')!;
+    declareWar(w, 'FRA', 'WAS', 'prova');
+    expect(C.europeanWar(w, 'FRA')).toBe(false);
+    expect(C.evaluate(w, act).refusal ?? '').not.toMatch(/guerra/);
+    declareWar(w, 'FRA', 'SWI', 'prova');
+    expect(C.europeanWar(w, 'FRA')).toBe(true);
+    expect(C.evaluate(w, act).refusal).toMatch(/Europa/);
+  });
+
+  it('il bey non teme l\'esercito del suo signore ottomano; le truppe francesi al confine pesano', () => {
+    const w = newGame(MAP, 'SMR', 'b4-paura');
+    const act = C.actionsFor(w, C.BY_ID.get('fra-tunisia')!).find((a) => a.path === 'protettorato')!;
+    const part = (k: RegExp) => C.evaluate(w, act).parts.find(([n]) => k.test(n))?.[1] ?? 0;
+    expect(subjectOf(w, 'TUN')?.overlord).toBe('TUR');
+    expect(part(/paura dei vicini/)).toBe(0);
+    // una forte colonna francese entra dall'Algeria a un passo da Tunisi
+    const tun = w.map.provinces.find((p) => w.state.owner[p.id] === 'TUN')!.id;
+    const u = w.state.units.find((x) => x.nation === 'FRA')!;
+    u.location = tun; u.strength = 40000;
+    expect(part(/truppe al confine/)).toBeGreaterThan(15);
+  });
+
+  it('l\'urgenza cresce nella finestra fino al tetto e poi decade', () => {
+    const w = newGame(MAP, 'SMR', 'b4-urgenza');
+    const seed = C.BY_ID.get('fra-madagascar')!; // finestra 1883-1896
+    const at = (y: number) => { w.state.day = (y - 1881) * 365 + 10; return C.urgency(w, seed); };
+    expect(at(1882)).toBe(1);
+    expect(at(1883)).toBeGreaterThan(1);
+    expect(at(1884)).toBeGreaterThan(at(1883));
+    expect(at(1895)).toBe(C.URGENCY_CAP);
+    expect(at(1898)).toBeLessThan(C.URGENCY_CAP);
+    expect(at(1900)).toBe(1);
+  });
+
+  it('Tel el-Kebir aspetta che Londra sia libera dalla guerra europea, invece di saltare per sempre', () => {
+    const w = newGame(MAP, 'SMR', 'b4-egitto');
+    const step = (day: number) => { w.state.day = day; C.weeklyColonial(w, []); };
+    step(260);
+    declareWar(w, 'GBR', 'NED', 'prova');
+    step(650);
+    expect(subjectOf(w, 'EGY')?.overlord).toBe('TUR');
+    w.state.wars = w.state.wars.filter((x) => !x.attackers.includes('GBR'));
+    step(700);
+    expect(subjectOf(w, 'EGY')?.overlord).toBe('GBR');
+  });
+
+  it('il Bogos passa all\'Etiopia col trattato Hewett e non è in liquidazione', () => {
+    const w = newGame(MAP, 'ITA', 'b4-bogos');
+    const step = (day: number) => { w.state.day = day; C.weeklyColonial(w, []); };
+    for (const d of [260, 650, 850, 1200, 1600]) step(d);
+    expect(w.state.owner[find(w, 'Bogos')]).toBe('ETH');
+    expect(C.colonial(w).liquidating?.provinces).not.toContain(find(w, 'Bogos'));
+  });
+
+  it('i regni locali hanno una posizione: Rabih non firma con la Francia, gli Aro con nessuno, i Lozi solo con Londra', () => {
+    const w = newGame(MAP, 'SMR', 'b4-posizioni');
+    const refusal = (tag: string, target: string, year: number) => {
+      w.state.day = (year - 1881) * 365 + 100;
+      const seed = INTERESTS_1881.find((x) => x.nation === tag && C.actionsFor(w, x).some((a) => a.path === 'protettorato' && a.target === target));
+      if (!seed) return null;
+      const act = C.actionsFor(w, seed).find((a) => a.path === 'protettorato' && a.target === target)!;
+      const r = C.evaluate(w, act).refusal ?? 'ok';
+      return r === 'interesse non disponibile' ? null : r;
+    };
+    const rab = refusal('FRA', 'RAB', 1897);
+    if (rab) expect(rab).toMatch(/protettori/);
+    const aro = refusal('GBR', 'ARO', 1890);
+    if (aro) expect(aro).toMatch(/protettori/);
+    const loz = refusal('POR', 'LOZ', 1887);
+    if (loz) expect(loz).toMatch(/protezione/);
+    expect([rab, aro, loz].some((x) => x)).toBe(true);
+    // nemmeno dopo una guerra vinta: le province si prendono, il protettorato no
+    declareWar(w, 'FRA', 'RAB', 'prova');
+    w.state.controller[w.state.nations.RAB.capital] = 'FRA';
+    expect(imposeProtectorate(w, 'FRA', 'RAB')).toMatch(/protettore/);
+  });
+
+  it('la Guerra del Pacifico resta aperta fino ad Ancón: la stanchezza del vincitore non basta a chiuderla', () => {
+    const w = newGame(MAP, 'SMR', 'b4-pacifico');
+    const war = () => w.state.wars.find((x) => x.id === 'w_pacifico');
+    expect(war()!.resistance).toBeGreaterThan(365 * 2 + 200);
+    expect(war()!.resistance).toBeLessThan(365 * 3 + 30);
+    // luglio 1881, Cile stanco (prima bastava: guerra lunga e stanchezza oltre 35), Perù e Bolivia no
+    w.state.day = 200;
+    w.state.nations.CHL.warExhaustion = 50;
+    runTurn(w);
+    expect(war()).toBeDefined();
+    // passata la data di Ancón valgono le regole di sempre
+    w.state.day = war()!.resistance! + 7;
+    w.state.nations.CHL.warExhaustion = 50;
+    runTurn(w);
+    expect(war()).toBeUndefined();
+  }, 60000);
 });

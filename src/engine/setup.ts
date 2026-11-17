@@ -1,6 +1,6 @@
 import { GameMap } from './map';
 import type { GameState, MapData, NationProfile, NationState, Tag, Unit, UnitType } from './types';
-import { NOBODY, type World } from './world';
+import { NOBODY, rand, type World } from './world';
 import { updateDeserts } from './desert';
 import { colonialWeight } from './ethnic';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
@@ -60,7 +60,10 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   // guerra del Pacifico (dal 5 aprile 1879): il Cile occupa il Litorale boliviano e il sud del Perù
   if (nations.CHL && nations.PRU && nations.BOL) {
     for (const o of AMERICAS_OCCUPATIONS) for (const p of map.provinces) if (o.owners.includes(owner[p.id]) && o.names.includes(p.name)) state.controller[p.id] = o.by;
-    state.wars.push({ id: 'w_pacifico', name: 'Guerra del Pacifico', attackers: ['CHL'], defenders: ['PRU', 'BOL'], startDay: -637, casualties: { CHL: 9000, PRU: 18000, BOL: 6000 } });
+    state.wars.push({ id: 'w_pacifico', name: 'Guerra del Pacifico', attackers: ['CHL'], defenders: ['PRU', 'BOL'], startDay: -637, casualties: { CHL: 9000, PRU: 18000, BOL: 6000 },
+      // Lima cade nel gennaio 1881 ma il Perù non cede Tarapacá: la resistenza della Breña dura fino al trattato di Ancón
+      // (20 ottobre 1883); la tregua con la Bolivia è dell'aprile 1884. Ancora con tre mesi di scarto per seme.
+      resistance: dayOf(1883, 10, 20) + Math.round(rand(seed, 'ancon') * 180) - 90 });
   }
   state.situations.push({
     id: 'tunisia', title: 'La questione tunisina', startDay: 0, nations: ['FRA', 'ITA', 'TUN', 'TUR'],

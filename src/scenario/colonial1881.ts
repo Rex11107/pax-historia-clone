@@ -42,6 +42,9 @@ export interface InterestSeed {
   excludes?: string[];
   /** stadio 2 aperto fin dall'inizio: una questione già aperta nel 1881 */
   open?: boolean;
+  /** ancora storica (corte 00, principio 3: solo fatti quasi certi): nella finestra l'urgenza spinge anche la
+   *  spedizione armata, e una via aperta non si raffredda. Decide l'azione, mai l'esito */
+  anchor?: boolean;
 }
 
 export const INTERESTS_1881: InterestSeed[] = [
@@ -49,7 +52,7 @@ export const INTERESTS_1881: InterestSeed[] = [
   { id: 'ita-assab', nation: 'ITA', stage: 1, name: 'La baia di Assab', desc: 'Comprata dalla Rubattino nel 1869 ai sultani dancali: il primo possedimento italiano.', names: ['Assab'], paths: ['acquisto'], weight: 1 },
   { id: 'ita-dancalia', nation: 'ITA', stage: 1, name: 'La costa dancala', desc: 'Da Assab lungo il Mar Rosso: Beilul (1885), il sultanato di Raheita e la Dancalia settentrionale.', names: ['Beilul', 'Raheita', 'Dancalia settentrionale'], paths: ['occupazione', 'protettorato'], weight: 0.8, window: [1882, 1888] },
   { id: 'ita-massaua', nation: 'ITA', stage: 1, name: 'Massaua e il Samhar', desc: 'Porto egiziano; nel 1885, con l\'Egitto in ritirata davanti al Mahdi, Londra lascia entrare l\'Italia.', names: ['Massaua', 'Zula'], paths: ['assenso', 'guerra'], weight: 0.9, window: [1884, 1886], earliest: 1882 },
-  { id: 'ita-eritrea', nation: 'ITA', stage: 1, name: 'La colonia Eritrea', desc: 'Dalla costa all\'altopiano: Cheren e il Bogos (1888), poi Hamasien, Seraè e Acchelè Guzai, ceduti da Menelik a Uccialli (1889).', names: ['Bogos', 'Sahel', 'Barca', 'Hamasien', 'Seraè', 'Acchelè Guzai'], paths: ['assenso', 'acquisto', 'occupazione', 'guerra'], weight: 0.85, window: [1887, 1890], requires: ['ita-massaua'] },
+  { id: 'ita-eritrea', nation: 'ITA', stage: 1, name: 'La colonia Eritrea', desc: 'Dalla costa all\'altopiano: Cheren e il Bogos (giugno 1889, etiopici dal trattato Hewett del 1884), poi Hamasien, Seraè e Acchelè Guzai, ceduti da Menelik a Uccialli (1889).', names: ['Bogos', 'Sahel', 'Barca', 'Hamasien', 'Seraè', 'Acchelè Guzai'], paths: ['assenso', 'acquisto', 'occupazione', 'guerra'], weight: 0.85, window: [1887, 1890], requires: ['ita-massaua'] },
   { id: 'ita-somalia-nord', nation: 'ITA', stage: 1, name: 'I sultanati somali', desc: 'Protettorati su Obbia (1888) e sulla Migiurtinia (1889): i sultani cercano un appoggio contro i rivali e contro Zanzibar.', names: ['Obbia', 'Migiurtinia', 'Nogal', 'Mudugh'], paths: ['protettorato', 'occupazione'], weight: 0.8, window: [1888, 1890], earliest: 1884 },
   { id: 'ita-benadir', nation: 'ITA', stage: 1, name: 'Il Benadir', desc: 'I porti di Mogadiscio, Merca e Brava, affittati dal sultano di Zanzibar (1892) e comprati nel 1905.', names: ['Benadir', 'Brava', 'Basso Scebeli'], paths: ['acquisto', 'assenso', 'guerra'], weight: 0.7, window: [1889, 1905], earliest: 1885 },
   { id: 'ita-tunisia', nation: 'ITA', stage: 2, name: 'Tunisi', desc: 'Colonia di fatto degli italiani, ma la Francia prepara il protettorato. Una questione aperta nel 1881.', modern: ['TUN'], paths: ['protettorato', 'guerra'], weight: 0.35, window: [1881, 1882], open: true, excludes: ['fra-tunisia'] },
@@ -61,12 +64,12 @@ export const INTERESTS_1881: InterestSeed[] = [
   { id: 'ita-ogaden', nation: 'ITA', stage: 3, name: 'L\'Ogaden', desc: 'Le terre somale fra l\'Harar e la Somalia italiana.', names: ['Ogaden', 'Haud', 'Giggiga', 'Uebi Scebeli'], paths: ['occupazione', 'guerra'], weight: 0.35, window: [1900, 1936], requiresAny: ['ita-somalia-int', 'ita-etiopia'] },
 
   // --- Francia ---
-  { id: 'fra-tunisia', nation: 'FRA', stage: 1, name: 'Il protettorato di Tunisi', desc: 'Il trattato del Bardo (maggio 1881), con il pretesto dei Krumiri.', modern: ['TUN'], paths: ['protettorato', 'guerra'], weight: 1, window: [1881, 1882], excludes: ['ita-tunisia'] },
-  { id: 'fra-sudan', nation: 'FRA', stage: 1, name: 'Il Sudan francese', desc: 'Dal Senegal al Niger: Toucouleur, Samori, Timbuctù.', modern: ['SEN', 'MLI', 'GIN', 'BFA', 'MRT'], paths: ['occupazione', 'guerra', 'protettorato'], weight: 0.9, window: [1881, 1900] },
+  { id: 'fra-tunisia', nation: 'FRA', stage: 1, name: 'Il protettorato di Tunisi', desc: 'Il trattato del Bardo (maggio 1881), con il pretesto dei Krumiri.', modern: ['TUN'], paths: ['protettorato', 'guerra'], weight: 1, window: [1881, 1882], excludes: ['ita-tunisia'], anchor: true },
+  { id: 'fra-sudan', nation: 'FRA', stage: 1, name: 'Il Sudan francese', desc: 'Dal Senegal al Niger: Toucouleur, Timbuctù (1894), Samori (trattato di Bissandugu, marzo 1887; catturato nel settembre 1898).', modern: ['SEN', 'MLI', 'GIN', 'BFA', 'MRT'], paths: ['occupazione', 'guerra', 'protettorato'], weight: 0.9, window: [1881, 1900] },
   { id: 'fra-congo', nation: 'FRA', stage: 1, name: 'Il Congo francese', desc: 'I trattati di Brazza con il Makoko dei Teke (1880) e l\'Ogooué.', modern: ['GAB', 'COG', 'CAF'], paths: ['protettorato', 'occupazione'], weight: 0.8, window: [1882, 1891] },
   { id: 'fra-obock', nation: 'FRA', stage: 1, name: 'Obock e Gibuti', desc: 'Comprata ai sultani dancali nel 1862, occupata dal 1884: lo scalo per l\'Indocina.', modern: ['DJI'], paths: ['protettorato', 'acquisto'], weight: 0.7, window: [1884, 1896] },
   { id: 'fra-madagascar', nation: 'FRA', stage: 1, name: 'Il Madagascar', desc: 'Protettorato dopo la guerra del 1883-85, annessione nel 1896.', modern: ['MDG'], paths: ['protettorato', 'guerra'], weight: 0.8, window: [1883, 1896] },
-  { id: 'fra-guinea', nation: 'FRA', stage: 1, name: 'Costa d\'Avorio e Dahomey', desc: 'I banchi della costa e il regno di Behanzin (1892-94).', modern: ['CIV', 'BEN'], paths: ['protettorato', 'guerra', 'occupazione'], weight: 0.75, window: [1889, 1894] },
+  { id: 'fra-guinea', nation: 'FRA', stage: 1, name: 'Costa d\'Avorio e Dahomey', desc: 'I banchi della costa, il trattato di Binger con Kong (1889) e il regno di Behanzin (1892-94).', modern: ['CIV', 'BEN'], paths: ['protettorato', 'guerra', 'occupazione'], weight: 0.75, window: [1889, 1894] },
   { id: 'fra-niger', nation: 'FRA', stage: 2, name: 'Niger e Ciad', desc: 'La missione Voulet-Chanoine e la caduta di Rabih (1900): unire l\'Africa occidentale e quella equatoriale.', modern: ['NER', 'TCD'], paths: ['occupazione', 'guerra'], weight: 0.6, window: [1897, 1914], requires: ['fra-sudan'] },
   { id: 'fra-marocco', nation: 'FRA', stage: 2, name: 'Il Marocco', desc: 'L\'intesa con Londra (1904), le crisi del 1905 e del 1911, il protettorato (1912).', modern: ['MAR'], paths: ['protettorato', 'guerra'], weight: 0.6, window: [1904, 1912], earliest: 1900, excludes: ['spa-marocco', 'ger-marocco'] },
   { id: 'fra-fascioda', nation: 'FRA', stage: 3, name: 'L\'Alto Nilo', desc: 'La missione Marchand a Fascioda (1898): una fascia francese da Dakar a Gibuti.', names: ['Fascioda', 'Sobat', 'Bahr el-Ghazal'], paths: ['occupazione', 'assenso'], weight: 0.3, window: [1896, 1899], excludes: ['gbr-sudan'] },
@@ -80,7 +83,7 @@ export const INTERESTS_1881: InterestSeed[] = [
   { id: 'gbr-zanzibar', nation: 'GBR', stage: 1, name: 'Zanzibar', desc: 'Il protettorato del 1890, scambiato con Helgoland.', names: ['Zanzibar', 'Mombasa', 'Lindi'], paths: ['protettorato', 'guerra'], weight: 0.7, window: [1890, 1896] },
   { id: 'gbr-rodesia', nation: 'GBR', stage: 1, name: 'Bechuanaland e Rhodesia', desc: 'Rhodes e la British South Africa Company: la via del Capo verso nord.', modern: ['BWA', 'ZWE', 'ZMB', 'MWI'], paths: ['protettorato', 'guerra', 'occupazione'], weight: 0.85, window: [1885, 1900], excludes: ['por-mappa-rosa'] },
   { id: 'gbr-aden', nation: 'GBR', stage: 1, name: 'Il protettorato di Aden', desc: 'I trattati con i sultani dell\'Hadramaut e di Lahej.', names: ['Lahej', 'Shabwa', 'Mukalla', 'Mahra', 'Socotra'], paths: ['protettorato', 'occupazione'], weight: 0.6, window: [1886, 1914] },
-  { id: 'gbr-sudan', nation: 'GBR', stage: 2, name: 'La riconquista del Sudan', desc: 'Kitchener a Omdurman (1898): il condominio anglo-egiziano.', modern: ['SDN', 'SDS'], paths: ['guerra', 'occupazione'], weight: 0.6, window: [1896, 1899], requires: ['gbr-egitto'] },
+  { id: 'gbr-sudan', nation: 'GBR', stage: 2, name: 'La riconquista del Sudan', desc: 'Kitchener a Omdurman (1898): il condominio anglo-egiziano.', modern: ['SDN', 'SDS'], paths: ['guerra', 'occupazione'], weight: 0.6, window: [1896, 1899], requires: ['gbr-egitto'], anchor: true },
   { id: 'gbr-boeri', nation: 'GBR', stage: 2, name: 'Le repubbliche boere', desc: 'La guerra del 1899-1902.', names: ['Pretoria', 'Potchefstroom', 'Waterberg', 'Zoutpansberg', 'Lydenburg', 'Wakkerstroom', 'Bloemfontein', 'Kroonstad', 'Harrismith'], paths: ['guerra'], weight: 0.5, window: [1899, 1902] },
   { id: 'gbr-somalia-int', nation: 'GBR', stage: 2, name: 'L\'interno somalo', desc: 'L\'Haud, i Dulbahante e i Uarsangheli.', names: ['Haud', 'Dulbahante', 'Uarsangheli'], paths: ['protettorato', 'occupazione'], weight: 0.4, window: [1886, 1920], requires: ['gbr-somaliland'] },
   { id: 'gbr-tanganica', nation: 'GBR', stage: 3, name: 'Dal Capo al Cairo', desc: 'L\'anello mancante: le terre fra i Grandi Laghi e il Nyasa.', modern: ['TZA', 'RWA', 'BDI'], paths: ['occupazione', 'guerra', 'protettorato'], weight: 0.3, window: [1890, 1919], excludes: ['ger-africa-orientale'] },
@@ -98,10 +101,23 @@ export const INTERESTS_1881: InterestSeed[] = [
   { id: 'por-mappa-rosa', nation: 'POR', stage: 2, name: 'La mappa rosa', desc: 'Unire Angola e Mozambico; l\'ultimatum britannico del 1890 la chiude.', modern: ['ZMB', 'ZWE', 'MWI'], paths: ['occupazione', 'protettorato'], weight: 0.4, window: [1886, 1890], excludes: ['gbr-rodesia'] },
 
   // --- Belgio (Leopoldo II) ---
-  { id: 'bel-congo', nation: 'BEL', stage: 1, name: 'Lo Stato libero del Congo', desc: 'L\'Associazione internazionale di Leopoldo, riconosciuta a Berlino (1885).', modern: ['COD'], paths: ['occupazione', 'protettorato', 'guerra'], weight: 0.9, window: [1882, 1908], earliest: 1882 },
+  { id: 'bel-congo', nation: 'BEL', stage: 1, name: 'Lo Stato libero del Congo', desc: 'L\'Associazione internazionale di Leopoldo, riconosciuta una potenza alla volta (Stati Uniti aprile 1884, Germania novembre 1884) mentre a Berlino si discuteva di commercio e navigazione; lo Stato libero nasce nel luglio 1885.', modern: ['COD'], paths: ['occupazione', 'protettorato', 'guerra'], weight: 0.9, window: [1882, 1908], earliest: 1882 },
   { id: 'bel-lado', nation: 'BEL', stage: 2, name: 'L\'enclave di Lado', desc: 'L\'affitto britannico sull\'Alto Nilo (1894-1910).', names: ['Lado', 'Equatoria'], paths: ['assenso', 'occupazione'], weight: 0.3, window: [1894, 1910], requires: ['bel-congo'] },
 
   // --- Spagna ---
   { id: 'spa-rio-de-oro', nation: 'SPA', stage: 1, name: 'Il Rio de Oro', desc: 'Villa Cisneros (1884) di fronte alle Canarie.', modern: ['SAH'], names: ['Saguia el-Hamra'], paths: ['occupazione'], weight: 0.6, window: [1884, 1886], earliest: 1884 },
   { id: 'spa-marocco', nation: 'SPA', stage: 2, name: 'Il Marocco settentrionale', desc: 'Il Rif e Tetuan: la zona spagnola del 1912.', names: ['Tangeri', 'Uezzan', 'Taza', 'Mehdia'], paths: ['protettorato', 'guerra', 'assenso'], weight: 0.35, window: [1904, 1912], earliest: 1900, excludes: ['ger-marocco'] },
 ];
+
+/** Posizione degli attori locali verso le potenze (corte 00, principio 8): chi è ostile non firma un protettorato
+ *  (si arriva solo con la guerra), chi cerca un protettore lo accetta più volentieri da quello e da nessun altro.
+ *  - Rabih az-Zubayr combatte i francesi fino a Kousséri (1900): con Parigi solo la guerra.
+ *  - Lewanika chiede la protezione britannica (concessione Lochner, 1890) per tenersi lontani i portoghesi e i Ndebele.
+ *  - Gli Aro e il loro oracolo rifiutano ogni ingerenza: la spedizione britannica del 1901-02 li sottomette con le armi. */
+export const LOCAL_STANCE: Record<Tag, { hostile?: Tag[] | '*'; toward?: Tag }> = {
+  RAB: { hostile: ['FRA'] },
+  LOZ: { toward: 'GBR' },
+  // Kong è uno Stato a sé: il trattato di Binger (gennaio 1889) lo mette sotto la protezione francese contro Samori
+  KNG: { toward: 'FRA' },
+  ARO: { hostile: '*' },
+};
