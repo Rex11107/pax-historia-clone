@@ -44,16 +44,36 @@ export const RECRUIT: Record<UnitType, { men: number; cost: number; label: strin
 /** costo settimanale (milioni) di mille uomini in armi in tempo di pace */
 export const UPKEEP_PER_THOUSAND = 0.035;
 
-export function budget(w: World, tag: Tag): Budget {
+/**
+ * Province per nazione, in ordine di indice: `owned` quelle di cui è padrone, `touched` quelle di cui è padrone o che
+ * controlla. Un solo passaggio sulla mappa per tutta la fase economica, invece di uno per nazione (168 × 4.500
+ * province: era un terzo del turno). Si costruisce al momento e non si conserva: padroni e controllori cambiano
+ * durante il turno. L'ordine di indice rende le somme identiche a quelle del ciclo su tutta la mappa.
+ */
+export interface ProvinceIndex { owned: Map<Tag, number[]>; touched: Map<Tag, number[]> }
+export function provinceIndex(w: World): ProvinceIndex {
+  const s = w.state;
+  const owned = new Map<Tag, number[]>(), touched = new Map<Tag, number[]>();
+  const push = (m: Map<Tag, number[]>, t: Tag, i: number) => { let a = m.get(t); if (!a) m.set(t, (a = [])); a.push(i); };
+  for (let i = 0; i < s.owner.length; i++) {
+    push(owned, s.owner[i], i);
+    push(touched, s.owner[i], i);
+    if (s.controller[i] !== s.owner[i]) push(touched, s.controller[i], i);
+  }
+  return { owned, touched };
+}
+
+export function budget(w: World, tag: Tag, idx?: ProvinceIndex): Budget {
   const s = w.state;
   const n = s.nations[tag];
   const pol = n.policies;
   let popEff = 0, popOwn = 0, provinces = 0, occupied = 0;
   const fiscal = w.profiles[tag]?.fiscal ?? 1;
-  for (let i = 0; i < s.owner.length; i++) {
+  // senza indice (interfaccia, IA) se ne fa uno: costa un passaggio sulla mappa, come il ciclo di prima
+  for (const i of (idx ?? provinceIndex(w)).touched.get(tag) ?? []) {
     // il peso coloniale vale anche per le province occupate (corte 03, capo 11): prima un'occupata in Cina rendeva
     // al Giappone il 25% della popolazione, un'annessa l'8%, e occupare conveniva più che annettere
-    const p = w.map.provinces[i].pop * fiscal * (s.owner[i] === tag || s.controller[i] === tag ? colonialWeight(w, tag, i) : 1);
+    const p = w.map.provinces[i].pop * fiscal * colonialWeight(w, tag, i);
     if (s.owner[i] === tag) { popOwn += p; if (!w.map.provinces[i].impassable) provinces++; }
     if (s.owner[i] === tag && s.controller[i] === tag) popEff += p;
     else if (s.controller[i] === tag) { popEff += p * 0.25; occupied++; } // requisizioni nelle province occupate
@@ -89,10 +109,11 @@ export function budget(w: World, tag: Tag): Budget {
   return { income: r(income), resources: r(res.income), trade: r(tradeNet), tribute: r(tribute), reparations: r(repar), colonies: r(colonies), works: r(works), upkeep: r(upkeep), administration: r(administration), civil: r(civil), maintenance: r(maintenance), research: r(researchSpend), interest: r(interest), infrastructure: r(infrastructure), net: r(income + tradeNet + tribute + repar + colonies - upkeep - administration - civil - maintenance - researchSpend - interest - infrastructure), manpowerGain };
 }
 
-export function stabilityTarget(w: World, tag: Tag): number {
+/** `own`: le province della nazione, se chi chiama ha già l'indice (fase economica); altrimenti si cercano. */
+export function stabilityTarget(w: World, tag: Tag, own?: number[]): number {
   const n = w.state.nations[tag];
   const pol = n.policies;
-  return clamp(w.profiles[tag].cohesion * 0.6 + 30 + POLICY_EFFECTS.tax[pol.tax].stability + POLICY_EFFECTS.mobilization[pol.mobilization].stability + POLICY_EFFECTS.press[pol.press].stability + govEffects(w, tag).stability + ethnicStability(w, tag) - n.warExhaustion * 0.4, 0, 100);
+  return clamp(w.profiles[tag].cohesion * 0.6 + 30 + POLICY_EFFECTS.tax[pol.tax].stability + POLICY_EFFECTS.mobilization[pol.mobilization].stability + POLICY_EFFECTS.press[pol.press].stability + govEffects(w, tag).stability + ethnicStability(w, tag, own) - n.warExhaustion * 0.4, 0, 100);
 }
 
 /** Aggiornamento economico settimanale (fine turno). */
@@ -101,7 +122,9 @@ export function weeklyEconomy(w: World, sink: GameEvent[]) {
   // i bilanci si calcolano tutti prima di applicarne uno: tributi e spese di ricerca in comune leggono le entrate
   // dell'altra parte, e così tutte e due usano la stessa settimana (quello che uno paga, l'altro lo incassa)
   const budgets = new Map<Tag, Budget>();
-  for (const tag of Object.keys(s.nations)) if (s.nations[tag].alive) budgets.set(tag, budget(w, tag));
+  // la fase non cambia padroni né controllori: un indice solo per tutti i bilanci e le stabilità
+  const idx = provinceIndex(w);
+  for (const tag of Object.keys(s.nations)) if (s.nations[tag].alive) budgets.set(tag, budget(w, tag, idx));
   for (const [tag, b] of budgets) {
     const n = s.nations[tag];
     const pr = w.profiles[tag];
@@ -112,11 +135,13 @@ export function weeklyEconomy(w: World, sink: GameEvent[]) {
     }
     n.manpower += b.manpowerGain;
     n.rail = clamp(n.rail + POLICY_EFFECTS.infrastructure[n.policies.infrastructure].rail + govEffects(w, tag).rail, 0, 100);
-    const pop = w.map.provinces.reduce((x, p, i) => x + (s.owner[i] === tag ? p.pop * colonialWeight(w, tag, i) : 0), 0) || 1;
+    let pop = 0;
+    for (const i of idx.owned.get(tag) ?? []) pop += w.map.provinces[i].pop * colonialWeight(w, tag, i);
+    pop ||= 1;
     if (warsOf(s, tag).length) n.warExhaustion = clamp(n.warExhaustion + (n.turnLosses / (pop / 1e6)) * 0.01 * POLICY_EFFECTS.press[n.policies.press].exhaustion * govEffects(w, tag).exhaustion * (1.3 - pr.cohesion / 100) + 0.3, 0, 100);
     else n.warExhaustion = clamp(n.warExhaustion - 1.5, 0, 100);
     n.turnLosses = 0;
-    const target = stabilityTarget(w, tag);
+    const target = stabilityTarget(w, tag, idx.owned.get(tag) ?? []);
     n.stability = clamp(n.stability + clamp(target - n.stability, -1.5, 1), 0, 100);
     if (n.stability < 25 && tag === s.player) emit(w, { type: 'unrest', nations: [tag], text: 'Disordini e scioperi nelle città: la stabilità interna è pericolosamente bassa.' }, sink);
   }

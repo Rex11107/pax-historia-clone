@@ -53,6 +53,8 @@ toccano file diversi.
 - Le casse (`treasury`) e il debito (`debt`) si scrivono **solo** in `src/engine/ledger.ts`: un test lo controlla.
 - Le regole di gioco stanno nel motore, non nell'interfaccia.
 - Ordinamenti con spareggio esplicito (`|| a.id - b.id`), mai affidati al caso.
+- Chi aggiunge un campo obbligatorio allo stato (`GameState` in `types.ts`) aggiunge anche un passo in
+  `src/engine/migrate.ts` e alza `SAVE_VERSION`: altrimenti i salvataggi dei giocatori non si riaprono.
 
 **Dati e mappa**
 - Nomi d'epoca (1881): «Impero ottomano», non «Turchia». Ogni dato nuovo cita la fonte in un commento.

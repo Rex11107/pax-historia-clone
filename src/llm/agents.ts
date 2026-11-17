@@ -112,7 +112,9 @@ export async function talk(cfg: LLMConfig, w: World, tag: Tag, text: string, off
     if (err) result.veto = err;
     else { applyProposal(w, me, tag, proposal, sink); result.applied = describeProposal(w, me, tag, proposal); }
   } else if ((intent === 'counter' || intent === 'propose') && proposal) {
-    const err = checkProposal(w, me, tag, proposal);
+    // anche una proposta della nazione passa dalla plausibilità (corte 09, capo 7): prima il modello poteva offrire
+    // ciò che il governo non firmerebbe mai, e il giocatore lo accettava con un clic
+    const err = checkProposal(w, me, tag, proposal) ?? plausibility(w, tag, proposal);
     if (err) { result.veto = err; result.proposal = null; }
   } else result.proposal = intent === 'reject' || intent === 'none' ? null : proposal;
   const msg: ChatMessage = { role: 'nation', text: reply, day: s.day, intent };

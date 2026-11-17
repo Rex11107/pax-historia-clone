@@ -31,6 +31,17 @@ let transport: Transport = (url, init) => fetch(url, init);
 /** Per i test: sostituisce la rete. */
 export function setTransport(t: Transport) { transport = t; }
 
+/**
+ * La chiave API viaggia nell'intestazione: verso un indirizzo `http://` passerebbe in chiaro (corte 09, capo 4).
+ * Eccezione: `localhost` e `127.0.0.1`, cioè un modello che gira sullo stesso dispositivo, dove la rete non esce.
+ */
+export function baseUrlError(baseUrl: string): string | null {
+  const b = baseUrl.trim();
+  if (/^https:\/\//i.test(b)) return null;
+  if (/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?(\/|$)/i.test(b)) return null;
+  return 'L\'indirizzo del modello deve iniziare con https:// (la chiave non si manda in chiaro).';
+}
+
 function endpoint(baseUrl: string) {
   const b = baseUrl.trim().replace(/\/+$/, '');
   return /\/chat\/completions$/.test(b) ? b : `${b}/chat/completions`;
@@ -76,6 +87,8 @@ type UsageRaw = { prompt_tokens?: number; completion_tokens?: number; prompt_cac
 
 export async function chatJSON(cfg: LLMConfig, messages: ChatMsg[], opts: { model?: string; maxTokens?: number; temperature?: number; signal?: AbortSignal } = {}): Promise<Record<string, unknown>> {
   if (!cfg.apiKey) throw new LLMError('Chiave API mancante: inseriscila nelle Impostazioni.');
+  const urlErr = baseUrlError(cfg.baseUrl);
+  if (urlErr) throw new LLMError(urlErr);
   const provider = providerOf(cfg.baseUrl);
   const body: Record<string, unknown> = {
     model: (opts.model || cfg.model).trim(),

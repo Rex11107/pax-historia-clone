@@ -5,6 +5,7 @@ import { updateDeserts } from './desert';
 import { colonialWeight } from './ethnic';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
 import { AMERICAS_OCCUPATIONS } from '../scenario/americas1881';
+import { mapKey, SAVE_VERSION } from './migrate';
 
 export const ROMAN = (n: number) => {
   const t: [number, string][] = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
@@ -50,7 +51,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   for (const [a, b, v] of INITIAL_OPINIONS) if (nations[a] && nations[b]) nations[a].opinion[b] = v;
 
   const state: GameState = {
-    version: 1, seed, scenario: mapData.scenario, player,
+    version: SAVE_VERSION, mapKey: mapKey(mapData), seed, scenario: mapData.scenario, player,
     day: 0, turn: 1, owner, controller: [...owner], nations,
     units: [], battles: {}, wars: [], treaties: [], situations: [], events: [], memory: [], chronicle: '', dispatches: [], chats: {}, nextId: 0,
   };
