@@ -3,7 +3,8 @@
 
 import type { Tag } from '../engine/types';
 
-export type Regime = 'parliamentary' | 'constitutional' | 'autocracy';
+// presidential: repubblica presidenziale, mandato fisso e niente crisi di fiducia (corte 05, capo 5)
+export type Regime = 'parliamentary' | 'constitutional' | 'autocracy' | 'presidential';
 export type Program = 'liberale' | 'conservatore' | 'clericale' | 'radicale' | 'socialista' | 'nazionalista' | 'minoranze'
   | 'agrario' | 'corte' | 'riformista' | 'reazionario' | 'panslavista' | 'tradizionalista';
 
@@ -41,7 +42,36 @@ export const dayOf = (y: number, m: number, d: number) => Math.round((Date.UTC(y
 
 const p = (id: string, name: string, program: Program, axis: number, leaders: string[], share: number): PartySeed => ({ id, name, program, axis, leaders, share });
 
+/**
+ * Anni in cui un capo di partito senza scheda di ministro può guidare un governo (fino alla morte, al ritiro o alla
+ * fine della carriera nazionale). Chiave «sigla:nome». I capi con scheda usano gli anni di `ministers1881.ts`; i
+ * nomi che non stanno in nessuna delle due tabelle si considerano attivi per dieci anni, fino al 1890.
+ */
+export const LEADER_YEARS: Record<string, [number, number]> = {
+  // Stati Uniti: anni della candidatura o della presidenza (Biographical Directory of the U.S. Congress; presidenze)
+  'USA:James A. Garfield': [1881, 1881], // presidente dal 4 marzo, ucciso il 19 settembre 1881
+  'USA:Chester A. Arthur': [1881, 1884], // presidente fino al 4 marzo 1885, non ricandidato
+  'USA:James G. Blaine': [1884, 1892], // candidato nel 1884, segretario di Stato, morto nel 1893
+  'USA:Benjamin Harrison': [1888, 1893], // presidente 1889-1893
+  'USA:William McKinley': [1896, 1901], // presidente dal 1897, ucciso nel 1901
+  'USA:Grover Cleveland': [1884, 1897], // presidente 1885-1889 e 1893-1897
+  'USA:William J. Bryan': [1896, 1912], // candidato nel 1896, 1900, 1908
+  'USA:James B. Weaver': [1880, 1892], // candidato greenback 1880 e populista 1892
+};
+
 export const POLITICS: Record<Tag, PoliticsSeed> = {
+  // Stati Uniti: repubblica presidenziale, elezioni ogni quattro anni il primo martedì dopo il primo lunedì di
+  // novembre (4 novembre 1884, 6 novembre 1888, 8 novembre 1892, 3 novembre 1896). Quote: Camera eletta nel 1880
+  // (147 repubblicani, 135 democratici, 10 greenback su 293)
+  USA: {
+    regime: 'presidential', majoritarian: true, election: [1884, 11, 4], term: 4,
+    parties: [
+      p('repubblicani', 'Partito repubblicano', 'conservatore', 0.8, ['James A. Garfield', 'Chester A. Arthur', 'James G. Blaine', 'Benjamin Harrison', 'William McKinley'], 50),
+      p('democratici', 'Partito democratico', 'liberale', -0.5, ['Grover Cleveland', 'William J. Bryan'], 46),
+      p('greenback', 'Greenback', 'agrario', -1.5, ['James B. Weaver'], 4),
+    ],
+    gov: ['repubblicani'], head: 'James A. Garfield',
+  },
   ITA: {
     regime: 'parliamentary', crown: true, majoritarian: true, managed: 3, election: [1882, 10, 29], term: 5,
     parties: [
@@ -228,11 +258,20 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
 
 /** Ripiego per le nazioni senza dati: corte e opposizione. */
 export function genericPolitics(government: string, leader: string): PoliticsSeed {
-  const parl = /costituzional|parlament|repubblic/.test(government);
+  // le repubbliche senza dati propri sono presidenziali (corte 05, capo 5): le americane sul modello statunitense,
+  // la Liberia per costituzione (1847), le repubbliche boere con un presidente di Stato. Prima erano parlamentari, con
+  // crisi di fiducia: la Bolivia cambiava 23 governi in 19 anni. Una «repubblica militare» (Ibadan) resta un'autocrazia
+  const notable = (party: string) => `un notabile ${party}`;
+  if (/repubblic/.test(government) && !/parlament|militar/.test(government)) return {
+    regime: 'presidential', election: [1883, 6, 1], term: 4,
+    parties: [p('governo', 'Partito di governo', 'conservatore', 0.8, [leader || notable('del partito di governo')], 60), p('opposizione', 'Opposizione liberale', 'liberale', -0.8, [notable('dell\'opposizione')], 40)],
+    gov: ['governo'], head: leader || notable('del partito di governo'),
+  };
+  const parl = /costituzional|parlament/.test(government);
   if (parl) return {
-    regime: /parlament|repubblic/.test(government) ? 'parliamentary' : 'constitutional', crown: !/repubblic/.test(government), election: [1883, 6, 1], term: 4,
-    parties: [p('governo', 'Partito di governo', 'conservatore', 0.8, [leader || 'il capo del governo'], 60), p('opposizione', 'Opposizione liberale', 'liberale', -0.8, ['il capo dell\'opposizione'], 40)],
-    gov: ['governo'], head: leader || 'il capo del governo',
+    regime: /parlament/.test(government) ? 'parliamentary' : 'constitutional', crown: !/repubblic/.test(government), election: [1883, 6, 1], term: 4,
+    parties: [p('governo', 'Partito di governo', 'conservatore', 0.8, [leader || notable('del partito di governo')], 60), p('opposizione', 'Opposizione liberale', 'liberale', -0.8, [notable('dell\'opposizione')], 40)],
+    gov: ['governo'], head: leader || notable('del partito di governo'),
   };
   return {
     regime: 'autocracy', crown: true,

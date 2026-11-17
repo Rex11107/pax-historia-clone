@@ -71,8 +71,11 @@ export function foreignShare(w: World, tag: Tag, own?: number[]): number {
   // `own` (province della nazione in ordine di indice) evita di scorrere tutta la mappa per ogni nazione
   for (const p of own ? own.map((i) => w.map.provinces[i]) : w.map.provinces) {
     if (s.owner[p.id] !== tag) continue;
-    tot += p.pop;
-    for (const c of composition(w, p.id)) foreign += p.pop * (c.share / 100) * foreignness(tag, c.eth);
+    // le colonie pesano sulla stabilità come sul bilancio (corte 05, capo 7): l'8% fuori dall'Europa. Prima il Belgio
+    // che prendeva il Congo perdeva 8 punti di stabilità per otto milioni di sudditi che non votavano né pagavano a Bruxelles
+    const pop = p.pop * colonialWeight(w, tag, p.id);
+    tot += pop;
+    for (const c of composition(w, p.id)) foreign += pop * (c.share / 100) * foreignness(tag, c.eth);
   }
   return tot ? foreign / tot : 0;
 }

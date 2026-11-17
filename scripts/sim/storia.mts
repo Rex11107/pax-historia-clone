@@ -29,7 +29,7 @@ const owner0 = [...s.owner];
 const alive0 = new Set(Object.keys(s.nations).filter((t) => s.nations[t].alive));
 const subjects0 = new Map<Tag, Tag>();
 const events: GameEvent[] = [];
-const KEEP = new Set(['war_declared', 'peace', 'nation_annexed', 'liberation', 'subject', 'colonial', 'cession', 'indemnity', 'crisis', 'government']);
+const KEEP = new Set(['war_declared', 'peace', 'nation_annexed', 'liberation', 'subject', 'colonial', 'cession', 'indemnity', 'crisis_open', 'government']);
 const violations = new Map<string, number>();
 const wealth: [number, number][] = [];
 const phaseMs = new Map<string, number>();
@@ -102,7 +102,7 @@ const lost = [...subjects0].filter(([sub, lord]) => subNow.get(sub)?.overlord !=
 const gained = [...subNow.values()].filter((x) => subjects0.get(x.subject) !== x.overlord);
 L.push(`- All'inizio ${subjects0.size}, alla fine ${subNow.size}.`, `- Legami finiti (${lost.length}): ${lost.map(([sub, lord]) => `${name(sub)} (di ${name(lord)})${s.nations[sub]?.alive ? '' : ' †'}`).join(', ') || 'nessuno'}.`, `- Legami nuovi (${gained.length}): ${gained.map((x) => `${name(x.subject)} (${x.level} di ${name(x.overlord)})`).join(', ') || 'nessuno'}.`);
 
-L.push('', `## Colonie e crisi (${by('colonial').length} eventi coloniali, ${by('crisis').length} crisi, ${by('government').length} cambi di governo)`, '');
+L.push('', `## Colonie e crisi (${by('colonial').length} eventi coloniali, ${by('crisis_open').length} crisi aperte, ${by('government').length} cambi di governo)`, '');
 for (const e of by('colonial').slice(0, 60)) L.push(`- ${formatDate(e.day)}: ${e.text}`);
 
 L.push('', '## Tempo per fase (ms a turno)', '', [...phaseMs].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${f0(v / turns)}`).join(', ') + '.', '');

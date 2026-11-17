@@ -5,7 +5,7 @@
 import type { GameState, MapData } from './types';
 
 /** Versione della forma dello stato. Si alza di uno a ogni cambiamento che un salvataggio vecchio non ha. */
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;
 
 /**
  * Impronta della mappa: numero di province e centri arrotondati al decimo di grado. Cambia se le province si
@@ -45,6 +45,10 @@ const STEPS: Record<number, (s: Raw, map: MapData) => void> = {
     // `dispatches` mancava anche in salvataggi con versione 1 (prima lo riempiva Game.fromState)
     s.dispatches ??= [];
   },
+  // 2 → 3 (blocco B3): la quota di popoli estranei pesa le colonie col peso coloniale. Il riferimento salvato era
+  // calcolato col peso pieno e, confrontato col nuovo, darebbe a tutti gli imperi un salto di stabilità: si toglie,
+  // e alla prima settimana si ricalcola dallo stato del salvataggio
+  2: (s) => { delete s.ethnicBase; },
 };
 
 export interface Migrated { state: GameState; warnings: string[] }

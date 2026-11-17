@@ -5,11 +5,13 @@
 // Nella crisi il giocatore sceglie la via d'uscita (elezioni anticipate, nuovo governo, decreto,
 // epurazione…); le nazioni non giocanti e il giocatore che non sceglie seguono il motore.
 
-import { dayOf, genericPolitics, POLITICS, type Program, type Regime } from '../scenario/politics1881';
+import { dayOf, genericPolitics, LEADER_YEARS, POLITICS, type Program, type Regime } from '../scenario/politics1881';
+import { MINISTERS } from '../scenario/ministers1881';
 import { ministerEffects, reshuffleCabinet } from './ministers';
 import { techEffects } from './research';
+import { UNREST } from './economy';
 import type { GameEvent, Tag } from './types';
-import { clamp, emit, formatDate, rand, warsOf, type World } from './world';
+import { clamp, dateOf, emit, formatDate, rand, warsOf, type World } from './world';
 
 export interface Party {
   id: string;
@@ -44,13 +46,49 @@ export interface PoliticsState {
   calmUntil: number;
   /** governo per decreto fino a questo giorno */
   decreeUntil?: number;
+  /** ultima via d'uscita scelta in una crisi: dopo un decreto la Corona cede (corte 05, capo 3) */
+  lastOption?: CrisisOption;
   crisis?: { day: number; options: CrisisOption[] };
   since: number;
 }
 
-export const REGIME_LABEL: Record<Regime, string> = { parliamentary: 'parlamentare', constitutional: 'monarchia costituzionale (il governo risponde alla Corona)', autocracy: 'autocrazia (fazioni di corte)' };
-/** sotto questa fiducia il governo rischia la crisi */
-export const THRESHOLD: Record<Regime, number> = { parliamentary: 50, constitutional: 35, autocracy: 30 };
+export const REGIME_LABEL: Record<Regime, string> = { parliamentary: 'parlamentare', constitutional: 'monarchia costituzionale (il governo risponde alla Corona)', autocracy: 'autocrazia (fazioni di corte)', presidential: 'repubblica presidenziale (mandato fisso)' };
+/** sotto questa fiducia il governo rischia la crisi (il presidente non ne ha: il mandato è fisso) */
+export const THRESHOLD: Record<Regime, number> = { parliamentary: 50, constitutional: 35, autocracy: 30, presidential: 0 };
+
+const yearOf = (w: World) => dateOf(w.state.day).getUTCFullYear();
+
+/**
+ * Un capo può guidare il governo quest'anno? (corte 05, capo 2: prima Gambetta, morto nel 1882, governava nel 1885 e
+ * Bismarck nel 1899). Gli anni vengono dalla scheda del ministro o da `LEADER_YEARS`; un nome senza anni si considera
+ * attivo per dieci anni, fino al 1890. I nomi che cominciano in minuscolo sono cariche o gruppi («lo Şeyhülislam»,
+ * «i notabili»): non muoiono.
+ */
+export function leaderActive(w: World, tag: Tag, name: string): boolean {
+  if (!name || name[0] === name[0].toLowerCase()) return true;
+  const y = yearOf(w);
+  const sheet = MINISTERS.find((x) => x.nation === tag && x.name === name);
+  const years = sheet?.years ?? LEADER_YEARS[`${tag}:${name}`] ?? [1881, 1890];
+  return y >= years[0] && y <= years[1];
+}
+
+/**
+ * Chi guida il governo: per la Corona che sceglie il capo (`fixedHead`) un capo con scheda e senza partito o del
+ * governo; altrimenti il primo capo attivo del partito che guida la maggioranza, poi un capo con scheda di quel
+ * partito, infine «un notabile» del partito. `after`: si comincia dal capo dopo questo (rimpasto).
+ */
+function pickHead(w: World, tag: Tag, ps: PoliticsState, gov: string[], after?: string): string {
+  const y = yearOf(w);
+  const sheets = MINISTERS.filter((x) => x.nation === tag && x.portfolios.includes('capo') && y >= x.years[0] && y <= x.years[1]);
+  if (ps.fixedHead) return sheets.find((x) => !x.party || gov.includes(x.party))?.name ?? 'un uomo della Corona';
+  const lead = ps.parties.find((p) => p.id === gov[0])!;
+  const active = lead.leaders.filter((n) => leaderActive(w, tag, n));
+  if (active.length) {
+    const i = after ? active.indexOf(after) : -1;
+    return active[(i + 1) % active.length];
+  }
+  return sheets.find((x) => x.party === lead.id)?.name ?? `un notabile del partito (${lead.name})`;
+}
 
 export const OPTION_LABEL: Record<CrisisOption, [string, string]> = {
   reshuffle: ['Nuovo governo dalla stessa Camera', 'si forma la maggioranza possibile con i seggi attuali; stabilità −1'],
@@ -92,11 +130,14 @@ export function politicsOf(w: World, tag: Tag): PoliticsState | null {
   s.politics ??= {};
   if (s.politics[tag]) return s.politics[tag];
   const seed = POLITICS[tag] ?? genericPolitics(pr.government, pr.leader.split(';')[0]);
+  // le nazioni senza dati propri votano in date sfalsate (corte 05, capo 5): prima 17 nazioni votavano tutte il
+  // 1° giugno 1883
+  const spread = !POLITICS[tag] && seed.election ? Math.floor(rand(s.seed, 'prima elezione', tag) * (seed.term ?? 4) * 365) : 0;
   const ps: PoliticsState = {
     regime: seed.regime,
     parties: seed.parties.map((x) => ({ id: x.id, name: x.name, program: x.program, axis: x.axis, leaders: [...x.leaders], seats: x.share, pop: x.share })),
     gov: [...seed.gov], head: seed.head, fixedHead: seed.fixedHead, crown: seed.crown, managed: seed.managed, majoritarian: seed.majoritarian, term: seed.term,
-    nextElection: seed.regime !== 'autocracy' && seed.election ? Math.max(7, dayOf(...seed.election)) : null,
+    nextElection: seed.regime !== 'autocracy' && seed.election ? Math.max(7, dayOf(...seed.election) + spread) : null,
     confidence: 0, honeymoon: 0, calmUntil: 0, since: 0,
   };
   s.politics[tag] = ps;
@@ -147,7 +188,9 @@ export function confidence(w: World, tag: Tag, ps: PoliticsState): number {
   const seats = share(ps, ps.gov, 'seats'), pop = share(ps, ps.gov, 'pop');
   const n = w.state.nations[tag];
   let c = seats + (pop - seats) * 0.7 + policyMood(w, tag, ps) + ps.honeymoon + ministerEffects(w, tag).confidence;
-  if (ps.regime === 'autocracy') c += (n.stability - 50) * 0.2; // a corte conta l'ordine nel paese
+  // a corte conta l'ordine nel paese: con peso 0,5 una Russia a stabilità 0 perde 25 punti e la crisi diventa
+  // possibile (corte 05, capo 3: con 0,2 la Russia a stabilità 0 restava sopra la soglia e non aveva mai crisi)
+  if (ps.regime === 'autocracy') c += (n.stability - 50) * 0.5;
   return clamp(Math.round(c * 10) / 10, 0, 100);
 }
 
@@ -193,11 +236,9 @@ function setGov(w: World, tag: Tag, ps: PoliticsState, gov: string[], sink: Game
   const s = w.state;
   const lead = ps.parties.find((p) => p.id === gov[0])!;
   const same = gov.length === ps.gov.length && gov.every((g) => ps.gov.includes(g));
-  let head = ps.head;
-  if (!ps.fixedHead) {
-    if (same) { const i = lead.leaders.indexOf(ps.head); head = lead.leaders[(i + 1) % lead.leaders.length]; }
-    else head = lead.leaders[0];
-  }
+  void lead;
+  // solo capi vivi e in attività (corte 05, capo 2); in un rimpasto si passa al capo successivo
+  const head = ps.fixedHead && leaderActive(w, tag, ps.head) ? ps.head : pickHead(w, tag, ps, gov, same && !ps.fixedHead && ps.regime !== 'presidential' ? ps.head : undefined);
   ps.gov = gov; ps.head = head; ps.honeymoon = 8; ps.since = s.day;
   reshuffleCabinet(w, tag);
   ps.confidence = confidence(w, tag, ps);
@@ -212,10 +253,13 @@ export function holdElection(w: World, tag: Tag, ps: PoliticsState, sink: GameEv
   const top = Math.max(...raw);
   const adj = raw.map((v) => Math.max(0.5, ps.majoritarian ? (v === top ? v * 1.15 : v * 0.95) : v));
   const tot = adj.reduce((a, b) => a + b, 0);
-  ps.parties.forEach((p, i) => { p.seats = Math.round((adj[i] / tot) * 1000) / 10; p.pop = p.seats; });
-  ps.nextElection = s.day + Math.round((ps.term ?? 4) * 365);
+  // il consenso si avvicina ai seggi di un quarto, non li copia (corte 05, capo 4): prima i seggi «fatti» dal governo
+  // (encasillado, prefetti) diventavano il consenso del paese, e il voto successivo li ingrandiva ancora
+  ps.parties.forEach((p, i) => { p.seats = Math.round((adj[i] / tot) * 1000) / 10; p.pop = Math.round((p.pop + (p.seats - p.pop) * 0.25) * 10) / 10; });
+  // il mandato presidenziale ha una scadenza fissa: si conta dalla data prevista, non dal giorno del voto
+  ps.nextElection = ps.regime === 'presidential' && ps.nextElection !== null ? ps.nextElection + Math.round((ps.term ?? 4) * 365.25) : s.day + Math.round((ps.term ?? 4) * 365);
   ps.calmUntil = s.day + 8 * 7;
-  ps.crisis = undefined;
+  delete ps.crisis;
   const res = [...ps.parties].sort((a, b) => b.seats - a.seats).map((p) => `${p.name} ${p.seats.toFixed(0)}%`).join(', ');
   emit(w, { type: 'election', nations: [tag], text: `Elezioni ${tag === s.player ? 'nel nostro paese' : `in ${w.profiles[tag].name}`}: ${res}.` }, sink);
   if (ps.regime === 'parliamentary') {
@@ -224,6 +268,12 @@ export function holdElection(w: World, tag: Tag, ps: PoliticsState, sink: GameEv
     const same = gov.length === ps.gov.length && gov.every((g) => ps.gov.includes(g));
     if (!same) setGov(w, tag, ps, gov, sink, 'il voto cambia la maggioranza');
     else { ps.honeymoon = 6; ps.confidence = confidence(w, tag, ps); }
+  } else if (ps.regime === 'presidential') {
+    // si elegge il presidente: il partito più votato governa, col suo primo capo in attività
+    const winner = [...ps.parties].sort((a, b) => b.seats - a.seats || (a.id < b.id ? -1 : 1))[0];
+    const head = pickHead(w, tag, ps, [winner.id]);
+    if (ps.gov[0] !== winner.id || head !== ps.head) setGov(w, tag, ps, [winner.id], sink, 'eletto un nuovo presidente');
+    else { ps.honeymoon = 6; ps.confidence = confidence(w, tag, ps); }
   } else ps.confidence = confidence(w, tag, ps);
 }
 
@@ -231,7 +281,10 @@ export function holdElection(w: World, tag: Tag, ps: PoliticsState, sink: GameEv
 export function crisisOptions(ps: PoliticsState): CrisisOption[] {
   if (ps.regime === 'autocracy') return ['concede', 'purge', 'resist'];
   if (ps.regime === 'constitutional') return ps.fixedHead ? ['dissolve', 'decree', 'resist'] : ['dissolve', 'concede', 'decree', 'resist'];
-  return ps.crown ? ['reshuffle', 'dissolve', 'resist'] : ['reshuffle', 'dissolve', 'resist'];
+  if (ps.regime === 'presidential') return ['resist'];
+  // una Corona parlamentare può anche nominare il governo che la Camera vuole (corte 05, capo 13: prima il ramo era
+  // morto e le opzioni dell'Italia erano identiche a quelle della Francia)
+  return ps.crown ? ['reshuffle', 'dissolve', 'concede', 'resist'] : ['reshuffle', 'dissolve', 'resist'];
 }
 
 /** Scelta del motore (nazioni non giocanti, o giocatore che non decide). */
@@ -242,6 +295,10 @@ export function defaultOption(w: World, tag: Tag, ps: PoliticsState): CrisisOpti
   }
   // se ha appena votato, sciogliere di nuovo non serve: decreto (o, senza Corona, nuovo governo)
   const votedRecently = ps.nextElection !== null && ps.term !== undefined && ps.nextElection - w.state.day > (ps.term - 1) * 365;
+  if (ps.regime === 'presidential') return 'resist';
+  // dopo un decreto la Corona non ne firma un altro: cede alla Camera, o (se sceglie lei il capo) scioglie
+  // (corte 05, capo 3: prima quattro crisi di fila davano quattro decreti e il governo non cambiava mai)
+  if (ps.regime === 'constitutional' && ps.lastOption === 'decree') return ps.fixedHead ? 'dissolve' : 'concede';
   if (ps.regime === 'constitutional') return (ps.confidence < 25 || votedRecently) && ps.crown ? 'decree' : votedRecently && !ps.fixedHead ? 'concede' : 'dissolve';
   const alt = bestCoalition(ps);
   return share(ps, alt, 'seats') > 50 || votedRecently ? 'reshuffle' : 'dissolve';
@@ -253,20 +310,24 @@ export function resolveCrisis(w: World, tag: Tag, opt: CrisisOption, sink: GameE
   const ps = politicsOf(w, tag);
   if (!ps?.crisis) return 'non c\'è nessuna crisi di governo';
   if (!ps.crisis.options.includes(opt)) return 'scelta non possibile in questo regime';
-  ps.crisis = undefined;
+  delete ps.crisis;
   ps.calmUntil = s.day + 6 * 7;
+  ps.lastOption = opt;
   const name = w.profiles[tag].name;
   switch (opt) {
     case 'reshuffle': n.stability = clamp(n.stability - 1, 0, 100); setGov(w, tag, ps, bestCoalition(ps), sink, 'crisi di governo, nuova maggioranza dalla stessa Camera'); break;
-    case 'dissolve': n.stability = clamp(n.stability - 2, 0, 100); ps.nextElection = s.day + 28; ps.calmUntil = s.day + 35; emit(w, { type: 'crisis', nations: [tag], text: `${name}: Camere sciolte, elezioni anticipate il ${formatDate(s.day + 28)}.` }, sink); break;
-    case 'resist': n.stability = clamp(n.stability - 4, 0, 100); ps.calmUntil = s.day + 3 * 7; ps.honeymoon += 3; emit(w, { type: 'crisis', nations: [tag], text: `${name}: il governo ${ps.head} resta in carica nonostante la crisi.` }, sink); break;
-    case 'decree': n.stability = clamp(n.stability - 6, 0, 100); ps.decreeUntil = s.day + 26 * 7; ps.calmUntil = s.day + 26 * 7; emit(w, { type: 'crisis', nations: [tag], text: `${name}: la Corona governa per decreto, scavalcando il parlamento.` }, sink); break;
+    case 'dissolve': n.stability = clamp(n.stability - 2, 0, 100); ps.nextElection = s.day + 28; ps.calmUntil = s.day + 35; emit(w, { type: 'crisis_end', nations: [tag], text: `${name}: Camere sciolte, elezioni anticipate il ${formatDate(s.day + 28)}.` }, sink); break;
+    case 'resist': n.stability = clamp(n.stability - 4, 0, 100); ps.calmUntil = s.day + 3 * 7; ps.honeymoon += 3; emit(w, { type: 'crisis_end', nations: [tag], text: `${name}: il governo ${ps.head} resta in carica nonostante la crisi.` }, sink); break;
+    case 'decree': n.stability = clamp(n.stability - 6, 0, 100); ps.decreeUntil = s.day + 26 * 7; ps.calmUntil = s.day + 26 * 7; emit(w, { type: 'crisis_end', nations: [tag], text: `${name}: la Corona governa per decreto, scavalcando il parlamento.` }, sink); break;
     case 'concede': {
       n.stability = clamp(n.stability + 1, 0, 100);
       const gov = ps.regime === 'autocracy' ? [[...ps.parties].sort((a, b) => b.seats - a.seats)[0].id] : bestCoalition(ps);
-      const fixed = ps.fixedHead; ps.fixedHead = false;
+      // la Corona nomina il capo della maggioranza; il campo si tocca solo se c'è (un campo assente rimesso a
+      // `undefined` cambierebbe l'ordine delle chiavi fra la partita e il suo salvataggio)
+      const fixed = ps.fixedHead;
+      if (fixed) ps.fixedHead = false;
       setGov(w, tag, ps, gov, sink, ps.regime === 'autocracy' ? 'il sovrano cambia linea' : 'la Corona nomina un governo gradito alla Camera');
-      ps.fixedHead = fixed;
+      if (fixed) ps.fixedHead = fixed;
       break;
     }
     case 'purge': {
@@ -275,7 +336,7 @@ export function resolveCrisis(w: World, tag: Tag, opt: CrisisOption, sink: GameE
       const mine = ps.parties.find((p) => p.id === ps.gov[0])!;
       if (rival) { const d = Math.min(12, rival.seats - 2); rival.seats -= d; rival.pop = Math.max(0.5, rival.pop - d); mine.seats += d; mine.pop += d; }
       ps.honeymoon = 5;
-      emit(w, { type: 'crisis', nations: [tag], text: `${name}: epurazione a corte${rival ? `, colpiti i ${rival.name.toLowerCase()}` : ''}.` }, sink);
+      emit(w, { type: 'crisis_end', nations: [tag], text: `${name}: epurazione a corte${rival ? `, colpiti i ${rival.name.toLowerCase()}` : ''}.` }, sink);
       break;
     }
   }
@@ -285,6 +346,7 @@ export function resolveCrisis(w: World, tag: Tag, opt: CrisisOption, sink: GameE
 
 /** Probabilità settimanale di crisi: zero sopra soglia, poi cresce dolcemente. */
 export function crisisChance(ps: PoliticsState): number {
+  if (ps.regime === 'presidential') return 0;
   // rischio piccolo già 5 punti sopra la soglia, poi cresce: nessun crollo automatico
   const gap = THRESHOLD[ps.regime] + 5 - ps.confidence;
   if (gap <= 0) return 0;
@@ -301,16 +363,29 @@ export function weeklyPolitics(w: World, sink: GameEvent[]) {
     // crisi lasciata aperta dal giocatore: decide il motore
     if (ps.crisis && (tag !== s.player || s.day - ps.crisis.day >= 7)) resolveCrisis(w, tag, defaultOption(w, tag, ps), sink);
     drift(w, tag, ps);
+    // il capo morto o ritirato lascia il posto (corte 05, capo 2), senza crisi: il governo resta, cambia chi lo guida
+    if (!leaderActive(w, tag, ps.head)) {
+      const old = ps.head;
+      ps.head = pickHead(w, tag, ps, ps.gov);
+      if (ps.head !== old) {
+        reshuffleCabinet(w, tag);
+        ps.honeymoon = Math.max(ps.honeymoon, 4);
+        emit(w, { type: 'government', nations: [tag], text: `${w.profiles[tag].name}: ${old} lascia la guida del governo; gli succede ${ps.head}.` }, sink);
+      }
+    }
     ps.honeymoon = Math.max(0, ps.honeymoon - 1);
-    if (ps.decreeUntil && s.day >= ps.decreeUntil) ps.decreeUntil = undefined;
+    if (ps.decreeUntil && s.day >= ps.decreeUntil) delete ps.decreeUntil;
     if (ps.nextElection !== null && s.day >= ps.nextElection) holdElection(w, tag, ps, sink);
     ps.confidence = confidence(w, tag, ps);
     if (ps.crisis || s.day < ps.calmUntil || ps.decreeUntil) continue;
-    const p = crisisChance(ps);
+    // disordini (stabilità sotto 30): il rischio di crisi raddoppia (corte 05, capo 1)
+    const p = crisisChance(ps) * (s.nations[tag].stability < UNREST ? 2 : 1);
     if (p > 0 && rand(s.seed, 'crisi', tag, s.day) < p) {
       ps.crisis = { day: s.day, options: crisisOptions(ps) };
       const what = ps.regime === 'autocracy' ? 'crisi a corte: il governo perde il favore' : ps.regime === 'constitutional' ? 'il parlamento blocca il governo' : 'il governo perde la maggioranza';
-      emit(w, { type: 'crisis', nations: [tag], text: `${w.profiles[tag].name}: ${what} (fiducia ${Math.round(ps.confidence)}).` }, sink);
+      // `crisis_open` all'apertura, `crisis_end` agli esiti (corte 05, capo 8: prima un solo tipo per tutti e il
+      // rapporto contava due crisi per ciascuna)
+      emit(w, { type: 'crisis_open', nations: [tag], text: `${w.profiles[tag].name}: ${what} (fiducia ${Math.round(ps.confidence)}).` }, sink);
     }
   }
 }
@@ -328,12 +403,13 @@ export function callElection(w: World, tag: Tag, sink: GameEvent[] = []): string
   const s = w.state;
   const ps = politicsOf(w, tag);
   if (!ps || ps.regime === 'autocracy' || ps.nextElection === null) return 'in questo regime non si vota';
+  if (ps.regime === 'presidential') return 'il mandato presidenziale è fisso: si vota alla scadenza';
   if (ps.nextElection - s.day <= 28) return 'le elezioni sono già vicine';
   if (ps.term !== undefined && ps.nextElection - s.day > (ps.term - 0.5) * 365) return 'si è votato da meno di sei mesi';
   s.nations[tag].stability = clamp(s.nations[tag].stability - 2, 0, 100);
   ps.nextElection = s.day + 28;
-  ps.crisis = undefined;
+  delete ps.crisis;
   ps.calmUntil = s.day + 35;
-  emit(w, { type: 'crisis', nations: [tag], text: `${w.profiles[tag].name}: il governo scioglie le Camere, si vota il ${formatDate(ps.nextElection)}.` }, sink);
+  emit(w, { type: 'election_called', nations: [tag], text: `${w.profiles[tag].name}: il governo scioglie le Camere, si vota il ${formatDate(ps.nextElection)}.` }, sink);
   return null;
 }

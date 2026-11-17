@@ -63,6 +63,11 @@ export function provinceIndex(w: World): ProvinceIndex {
   return { owned, touched };
 }
 
+/** Sotto questa stabilità ci sono disordini: entrate −5% e rischio di crisi doppio. */
+export const UNREST = 30;
+/** Peso della stabilità su entrate e leva: 0,85 a stabilità 0, 1 a 75, 1,05 a 100. */
+export const stabilityFactor = (stability: number) => 0.85 + 0.2 * clamp(stability, 0, 100) / 100;
+
 export function budget(w: World, tag: Tag, idx?: ProvinceIndex): Budget {
   const s = w.state;
   const n = s.nations[tag];
@@ -88,7 +93,11 @@ export function budget(w: World, tag: Tag, idx?: ProvinceIndex): Budget {
   const relief = te.coalRelief && w.map.provinces.filter((p) => s.owner[p.id] === tag && p.terrain === 'mountain').length >= 3 ? te.coalRelief : 0;
   const coalMalus = ind >= 50 && res.missing.includes('carbone') ? 1 - 0.05 * (1 - relief) : 1;
   const works = buildingIncome(w, tag);
-  const income = (popEff / 1e6) * (0.6 + (0.8 * ind) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income + works;
+  // la stabilità conta (corte 05, capo 1): un paese in ordine riscuote e arruola meglio, uno in disordine peggio.
+  // Fattore 0,85 a stabilità 0, 1 a 75, 1,05 a 100; sotto 30 i disordini tolgono un altro 5% delle entrate.
+  // Prima l'Italia a stabilità 80 e a 15 aveva entrate e leva identiche
+  const order = stabilityFactor(n.stability);
+  const income = ((popEff / 1e6) * (0.6 + (0.8 * ind) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income + works) * order * (n.stability < UNREST ? 0.95 : 1);
   const men = s.units.filter((u) => u.nation === tag).reduce((x, u) => x + u.strength, 0);
   const war = warsOf(s, tag).length > 0;
   const upkeep = (men / 1000) * UPKEEP_PER_THOUSAND * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
@@ -100,7 +109,7 @@ export function budget(w: World, tag: Tag, idx?: ProvinceIndex): Budget {
   const researchSpend = researchCost(w, tag);
   const interest = ((n.debt * 0.045) / 52) * gov.interest;
   const infrastructure = income * POLICY_EFFECTS.infrastructure[pol.infrastructure].cost;
-  const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower * gov.manpower * manpowerBonus(w, tag));
+  const manpowerGain = Math.round(popEff * 7e-5 * POLICY_EFFECTS.mobilization[pol.mobilization].manpower * gov.manpower * manpowerBonus(w, tag) * order);
   const r = (v: number) => Math.round(v * 100) / 100;
   const tradeNet = res.earn - res.pay;
   const tribute = tributeOf(w, tag);

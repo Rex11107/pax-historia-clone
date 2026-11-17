@@ -13,7 +13,7 @@ Quasi tutto è 🔴: si cambiano numeri che muovono l'intera simulazione.
 | Guerra (01) | fuoco tecnologico; malattia e clima; rifornimento per km; occupazione dopo una sosta; assedi a contatore; artiglieria proporzionata | battaglie e perdite plausibili nelle guerre del rapporto |
 | Intelligenza (02) | piano per gruppi con un obiettivo per fronte; guarnigioni; arruolamento a debito | nessun fronte sguarnito; Guerra del Pacifico verso il 1883 |
 | Coloniale (00) | guerra coloniale come campagna, con un fronte per coppia | 0 vittorie senza condizioni; 0 fasi ripetute |
-| Politica (05) | frequenza delle crisi per paese | crisi per paese vicine ai cambi di governo storici |
+| Politica (05) | frequenza delle crisi per paese: troppe nei Paesi Bassi e in Belgio (legislatura di 2 anni), nessuna in Italia, Spagna (manca il turno) e Russia; Belgio col Congo −2,6 di stabilità (obiettivo meno di −2) | `scripts/sim/governi.mts`: governi per paese vicini a quelli storici (scheda B3, tabella delle misure) |
 | Costruzione e ricerca (04) | `provinceCapacity` con la popolazione grezza (lasciata così in A2: è capienza militare locale); costi e tempi delle opere | — |
 
 **Prima di cominciare**: rileggere in `STATO.md` le misure di riferimento e tenerle aggiornate dopo ogni intervento.

@@ -84,9 +84,13 @@ export const MINISTERS: MinisterSeed[] = [
   m('parnell', 'GBR', 'Charles Stewart Parnell', 'homerule', ['capo'], [1881, 1891], { stability: -2 }, 'Il "re senza corona" d\'Irlanda.'),
 
   // --- Germania ---
-  m('bismarck', 'GER', 'Otto von Bismarck', null, ['capo'], [1881, 1898], { confidence: 5, stability: 1, relations: { AUH: 0.2, RUS: 0.15, ITA: 0.1, FRA: -0.05 } }, 'Il sistema di alleanze: Duplice, Tre Imperatori, Triplice, Contrassicurazione.'),
+  // cancelliere fino alle dimissioni del 20 marzo 1890 (morto nel 1898): prima la scheda arrivava al 1898
+  m('bismarck', 'GER', 'Otto von Bismarck', null, ['capo'], [1881, 1890], { confidence: 5, stability: 1, relations: { AUH: 0.2, RUS: 0.15, ITA: 0.1, FRA: -0.05 } }, 'Il sistema di alleanze: Duplice, Tre Imperatori, Triplice, Contrassicurazione.'),
   m('hatzfeldt', 'GER', 'Paul von Hatzfeldt', null, ['esteri'], [1881, 1901], { relations: { GBR: 0.15 } }, 'Segretario di Stato agli Esteri, poi ambasciatore a Londra.'),
   m('hbismarck', 'GER', 'Herbert von Bismarck', null, ['esteri'], [1886, 1904], { relations: { RUS: 0.15, GBR: -0.05 } }, 'Il figlio del cancelliere: il trattato di contrassicurazione (1887).'),
+  // i cancellieri dopo Bismarck, perché la Corona abbia un successore (corte 05, capo 2)
+  m('caprivi', 'GER', 'Leo von Caprivi', null, ['capo'], [1890, 1894], { income: 1.01, relations: { RUS: -0.1, AUH: 0.1 } }, 'Il "nuovo corso": trattati commerciali con dazi più bassi, contrassicurazione con la Russia non rinnovata (1890).'),
+  m('hohenlohe', 'GER', 'Chlodwig zu Hohenlohe-Schillingsfürst', null, ['capo'], [1894, 1900], {}, 'Cancelliere anziano e conciliante (1894-1900), all\'ombra del Kaiser.'),
   m('kameke', 'GER', 'Georg von Kameke', null, ['guerra'], [1881, 1883], { quality: 1.02 }, 'Ministro della Guerra prussiano dal 1873.'),
   m('bronsart', 'GER', 'Paul Bronsart von Schellendorff', null, ['guerra'], [1883, 1891], { quality: 1.05 }, 'Riorganizza lo stato maggiore e l\'artiglieria.'),
   m('scholz', 'GER', 'Adolf von Scholz', null, ['finanze'], [1881, 1890], { income: 1.02 }, 'Tesoro del Reich, poi Finanze prussiane: dazi protettivi.'),
