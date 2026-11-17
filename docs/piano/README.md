@@ -90,7 +90,8 @@ toccano file diversi.
 | `npx tsx scripts/sim/determinismo.mts` | se si tocca il motore | «260 turni identici» |
 | `npx tsx scripts/sim/invarianti.mts` e `… --fasi --caos` | se si tocca il motore | «0 violazioni» |
 | `npx tsx scripts/sim/storia.mts 19 regnum docs/rapporti/1881-1899.md` | a fine blocco, da solo | rapporto rigenerato, 0 invarianti violate |
-| `npx tsx scripts/sim/turno.mts` | se si teme di rallentare | ms per fase, da confrontare con `STATO.md` |
+| `npx tsx scripts/sim/turno.mts` | se si teme di rallentare | ms per fase, da confrontare con `main` sulla stessa macchina |
+| `npx tsx scripts/sim/governi.mts` | se si tocca la politica interna | governi e crisi per paese in 19 anni |
 
 **Chi non può eseguire comandi** (per esempio un modello in chat senza terminale): apre comunque la PR. Il workflow
 `Verifica` (`.github/workflows/verifica.yml`) esegue tipi, `map:check`, test, determinismo e invarianti su ogni
@@ -119,3 +120,6 @@ Il rapporto `storia.mts` non gira nella CI: lo rigenera chi ha un terminale, pri
   rallenta si misura `main` sulla stessa macchina (un `git worktree` di `main` e la stessa sonda su tutti e due).
 - Una funzione chiamata per ogni nazione e ogni tecnica che scorre tutte le 4.500 province: usare `controlled(w, tag)`.
 - Unire le PR a catena nell'ordine sbagliato (sezione 3).
+- Azzerare un campo facoltativo dello stato con `x.campo = undefined`: nella partita la chiave resta al suo posto,
+  nel salvataggio sparisce e, quando torna, finisce in fondo. Le due copie hanno allora le chiavi in ordine diverso e
+  `determinismo.mts` le vede divergere. Si usa `delete x.campo`.
