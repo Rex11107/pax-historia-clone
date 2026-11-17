@@ -1,0 +1,36 @@
+# Su ogni pull request: le stesse verifiche del job «test» di Build, più determinismo e invarianti.
+# Non pubblica nulla e non usa segreti. Serve soprattutto quando il lavoro lo fa un modello che non può eseguire
+# comandi (vedi docs/piano/README.md, sezione 5): il risultato si legge nella scheda «Checks» della PR.
+name: Verifica
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verifica-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verifica:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - name: Tipi
+        run: npx tsc --noEmit
+      - name: Mappa
+        run: npm run map:check
+      - name: Test
+        run: npm test
+      - name: Determinismo (260 turni)
+        run: npx tsx scripts/sim/determinismo.mts
+      - name: Invarianti
+        run: npx tsx scripts/sim/invarianti.mts
+      - name: Invarianti a ogni fase, con caos
+        run: npx tsx scripts/sim/invarianti.mts --fasi --caos
