@@ -12,7 +12,7 @@ Aggiornato al 17 novembre 2026, dopo il blocco B4. Si aggiorna alla fine di ogni
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| #PRB4 | `fix/b4-coloniale` → `main` | blocco B4 | unire |
+| #37 | `fix/b4-coloniale` → `main` | blocco B4 | unire |
 
 Le PR #28-#36 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1 dalla #34, B2 dalla #35, B3 dalla #36).
 
@@ -30,7 +30,7 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | B1 — una sola pace | 07, 02, 00 | `fix/b1-pace` | fatto (#34) — [scheda ed esito](blocchi/B1-pace.md) |
 | B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto (#35) — [scheda ed esito](blocchi/B2-diplomazia.md) |
 | B3 — politica che conta | 05 | `fix/b3-politica` | fatto (#36) — [scheda ed esito](blocchi/B3-politica.md) |
-| B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | fatto (#PRB4) — [scheda ed esito](blocchi/B4-coloniale.md) |
+| B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | fatto (#37) — [scheda ed esito](blocchi/B4-coloniale.md) |
 | **C — bilanciamento** | 00-05 | un ramo per area | **prossimo** — [scheda](blocchi/C-bilanciamento.md) |
 | D — sistemi nuovi | varie | un ramo per sistema | da fare — [scheda](blocchi/D-sistemi-nuovi.md) |
 
