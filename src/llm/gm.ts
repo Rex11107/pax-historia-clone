@@ -3,6 +3,7 @@
 
 import { addTreaty, declareWar, makePeace } from '../engine/diplomacy';
 import { recruit, setPolicy } from '../engine/economy';
+import { whitePeaceOk } from '../engine/peace';
 import { assignOrders } from '../engine/orders';
 import type { Condition, GameEvent, Order, Policies, Tag, TreatyType, TurnReport, UnitType } from '../engine/types';
 import { atWar, changeOpinion, emit, formatDate, nationName, opinion, treatyBetween, warsOf, type World } from '../engine/world';
@@ -136,6 +137,9 @@ export function applyWorldActions(w: World, json: Record<string, unknown>, sink:
       const war = s.wars.find((x) => (x.attackers.includes(A) && x.defenders.includes(B)) || (x.attackers.includes(B) && x.defenders.includes(A)));
       if (!war) { rejected.push(`${A} e ${B} non sono in guerra`); continue; }
       if (s.day - war.startDay < 28) { rejected.push('guerra troppo recente per una pace'); continue; }
+      // la pace bianca del Game Master passa dallo stesso controllo della conferenza (corte 07, capo 1)
+      const white = whitePeaceOk(w, war);
+      if (!white.ok) { rejected.push(`pace ${A}-${B}: ${white.reason}`); continue; }
       makePeace(w, A, B, {}, sink); applied.push(`pace ${A}-${B}`);
     } else if (a.type === 'treaty') {
       const t = String(a.treaty) as TreatyType;

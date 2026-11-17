@@ -1,9 +1,9 @@
 import { geoKm } from './map';
-import { concludePeace, engineTerms, warScore } from './peace';
+import { concludePeace, engineTerms, playerPeace, warScore } from './peace';
 import { aiFinances, aiMobilize, recruit } from './economy';
 import { moveCost, planPath } from './orders';
-import type { GameEvent, Tag, Unit } from './types';
-import { allied, emit, enemiesOf, NOBODY, rand, The, warsOf, type World } from './world';
+import type { GameEvent, Tag, Unit, War } from './types';
+import { allied, clamp, di, emit, enemiesOf, nationName, NOBODY, rand, The, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
 import { hasProgram } from './colonial';
 import { colonialWeight } from './ethnic';
@@ -191,6 +191,58 @@ export function aiColonize(w: World, sink: GameEvent[]) {
 }
 
 /** Fine turno: arruolamenti e paci automatiche fra nazioni non giocanti. */
+/**
+ * La guerra è matura per la pace? Stanchezza (55, o 35 dopo sei mesi), guerra decisa sul campo dopo due mesi, o
+ * guerra che dura da un anno e mezzo. Prima una guerra senza scontri non finiva mai.
+ */
+function peaceDue(w: World, war: War): boolean {
+  const s = w.state;
+  const weA = s.nations[war.attackers[0]].warExhaustion, weD = s.nations[war.defenders[0]].warExhaustion;
+  // età contata dall'inizio della partita: la Guerra del Pacifico (aperta nel 1879, startDay negativo) non si
+  // chiude d'ufficio nella prima settimana del 1881
+  const age = s.day - Math.max(war.startDay, 0);
+  const long = age > 180;
+  const decided = age > 60 && warScore(w, war).points >= 50;
+  return Math.max(weA, weD) >= 55 || (long && Math.max(weA, weD) > 35) || decided || age > 540;
+}
+
+/** Settimane fra l'offerta di pace al giocatore e la pressione, e fra la pressione e la pace imposta. */
+export const PEACE_OFFER_WEEKS = 4, PEACE_PRESSURE_WEEKS = 4;
+
+/**
+ * Guerre del giocatore (corte 07, capo 2): prima il motore le saltava tutte, e il giocatore battuto restava in guerra
+ * per sempre senza perdere nulla. Ora, con le stesse soglie delle guerre fra nazioni non giocanti, se vince il nemico:
+ * 1. offre le sue condizioni (il giocatore le vede e le accetta da Diplomazia → Conferenze di pace);
+ * 2. dopo quattro settimane senza risposta il rifiuto pesa: stanchezza +2 e stabilità −1 a settimana;
+ * 3. dopo altre quattro la pace è imposta con le condizioni del momento.
+ * Se vince il giocatore non cambia nulla: è lui a dettare la pace. Vale in ogni modalità della pace: le modalità
+ * "own" e "all" danno al giocatore il diritto di dettare condizioni da vincitore, non di non perdere mai.
+ */
+function playerWar(w: World, war: War, sink: GameEvent[]) {
+  const s = w.state, me = s.player, n = s.nations[me];
+  const sc = warScore(w, war);
+  const enemySide = war.attackers.includes(me) ? 'def' : 'att';
+  if (sc.winner !== enemySide || !peaceDue(w, war)) { delete war.offer; return; }
+  const victor = enemySide === 'att' ? war.attackers[0] : war.defenders[0];
+  if (!war.offer) {
+    war.offer = { since: s.day };
+    const mine = engineTerms(w, war).filter((d) => d.from === me).length;
+    emit(w, { type: 'peace_offer', nations: [me, victor], text: `${nationName(w, victor)} offre la pace alle sue condizioni${mine ? ` (${mine} richieste a noi)` : ''}: si leggono in Diplomazia → Conferenze di pace. Rifiutarle per più di ${PEACE_OFFER_WEEKS} settimane costerà stanchezza e stabilità, e dopo ${PEACE_OFFER_WEEKS + PEACE_PRESSURE_WEEKS} la pace sarà imposta.` }, sink);
+    return;
+  }
+  const weeks = Math.floor((s.day - war.offer.since) / 7);
+  if (weeks >= PEACE_OFFER_WEEKS + PEACE_PRESSURE_WEEKS) {
+    emit(w, { type: 'peace_imposed', nations: [me, victor], text: `${nationName(w, victor)} impone la pace: il paese non regge altri mesi di una guerra perduta.` }, sink);
+    playerPeace(w, war, sink);
+    return;
+  }
+  if (weeks >= PEACE_OFFER_WEEKS) {
+    n.warExhaustion = clamp(n.warExhaustion + 2, 0, 100);
+    n.stability = clamp(n.stability - 1, 0, 100);
+    if (weeks === PEACE_OFFER_WEEKS) emit(w, { type: 'unrest', nations: [me], text: `Il rifiuto della pace offerta ${di(w, victor)} pesa sul paese: scioperi, diserzioni, giornali contro il governo.` }, sink);
+  }
+}
+
 export function aiEndOfTurn(w: World, sink: GameEvent[]) {
   const s = w.state;
   for (const tag of Object.keys(s.nations)) {
@@ -217,18 +269,10 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
   // con il punteggio di guerra; in modalità "tutte" la detta il giocatore
   const mode = s.options?.peaceMode ?? 'engine';
   for (const war of [...s.wars]) {
-    if ([...war.attackers, ...war.defenders].includes(s.player)) continue;
     const a = war.attackers[0], d = war.defenders[0];
     if (!a || !d || !s.wars.includes(war)) continue;
-    const weA = s.nations[a].warExhaustion, weD = s.nations[d].warExhaustion;
-    // età contata dall'inizio della partita: la Guerra del Pacifico (aperta nel 1879, startDay negativo) non si
-    // chiude d'ufficio nella prima settimana del 1881
-    const age = s.day - Math.max(war.startDay, 0);
-    const long = age > 180;
-    // oltre alla stanchezza: una guerra decisa sul campo (un lato quasi tutto occupato) si chiude dopo due mesi,
-    // e una che non va da nessuna parte dopo un anno e mezzo. Prima una guerra senza scontri non finiva mai
-    const decided = age > 60 && warScore(w, war).points >= 50;
-    if (Math.max(weA, weD) < 55 && !(long && Math.max(weA, weD) > 35) && !decided && age <= 540) continue;
+    if ([...war.attackers, ...war.defenders].includes(s.player)) { playerWar(w, war, sink); continue; }
+    if (!peaceDue(w, war)) continue;
     if (mode === 'all') {
       s.pendingPeace ??= [];
       const pend = s.pendingPeace.find((x) => x.war === war.id);

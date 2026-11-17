@@ -186,6 +186,10 @@ export interface War {
   defenders: Tag[];
   startDay: number;
   casualties: Record<Tag, number>;
+  /** province già occupate fra le due parti quando la guerra è cominciata: non contano nel punteggio */
+  pre?: number[];
+  /** condizioni di pace offerte al giocatore che sta perdendo: giorno dell'offerta (corte 07, capo 2) */
+  offer?: { since: number };
 }
 
 export interface Policies {

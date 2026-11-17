@@ -79,6 +79,21 @@ describe('Game Master', () => {
     expect(r.errors[0]).toMatch(/sconosciuta/);
   });
 
+  it('la pace bianca del Game Master la rifiuta chi vince nettamente (corte 07, capo 1)', () => {
+    const w = newGame(MAP);
+    declareWar(w, 'FRA', 'TUN', 'prova');
+    const war = w.state.wars.at(-1)!;
+    w.state.day += 60;
+    for (const p of w.map.provinces) if (w.state.owner[p.id] === 'TUN') w.state.controller[p.id] = 'FRA';
+    const r = applyWorldActions(w, { world: [{ type: 'peace', a: 'FRA', b: 'TUN' }] }, []);
+    expect(r.rejected.join(' ')).toMatch(/sta vincendo/);
+    expect(w.state.wars.includes(war)).toBe(true);
+    // il vincitore esausto la accetta
+    w.state.nations.FRA.warExhaustion = 60;
+    expect(applyWorldActions(w, { world: [{ type: 'peace', a: 'FRA', b: 'TUN' }] }, []).applied.join(' ')).toMatch(/pace/);
+    expect(w.state.wars.includes(war)).toBe(false);
+  });
+
   it('azioni del mondo: rifiuta guerre senza motivo, accetta quelle plausibili', () => {
     const w = newGame(MAP);
     const res = applyWorldActions(w, { world: [
