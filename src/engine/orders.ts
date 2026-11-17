@@ -172,6 +172,23 @@ function startLeg(w: World, u: Unit) {
   u.move.progress = 0;
 }
 
+/**
+ * Dopo un cambio di controllo: le unità di un terzo non in guerra col nuovo padrone (il signore di un protettorato
+ * che presidiava una provincia del vassallo) non possono restarci e tornano nella provincia propria più vicina.
+ * Prima restavano in terra altrui fino alla pace (invarianti: «dove non può stare»).
+ */
+export function evictFrom(w: World, p: number) {
+  const s = w.state;
+  for (const u of s.units) {
+    if (u.location !== p || canEnter(s, u.nation, p)) continue;
+    const here = w.map.provinces[p].lonlat;
+    let best = -1, bd = Infinity;
+    for (const q of w.map.provinces) if (s.controller[q.id] === u.nation && !q.impassable) { const d = geoKm(q.lonlat, here); if (d < bd) { bd = d; best = q.id; } }
+    if (best < 0) continue;
+    u.location = best; u.move = null; u.orders = []; u.inBattle = false;
+  }
+}
+
 function capture(w: World, u: Unit, p: number, sink: GameEvent[]) {
   const s = w.state;
   const ctrl = s.controller[p];
@@ -187,6 +204,7 @@ function capture(w: World, u: Unit, p: number, sink: GameEvent[]) {
   // (amico = alleato o cobelligerante: due protettorati dello stesso signore non si occupano a vicenda)
   const newCtrl = owner !== ctrl && (allied(s, u.nation, owner) || sameSide(s, u.nation, owner)) ? owner : u.nation;
   s.controller[p] = newCtrl;
+  evictFrom(w, p);
   emit(w, { type: 'province_captured', province: p, nations: [newCtrl, ctrl], text: `${w.map.provinces[p].name} passa sotto il controllo ${di(w, newCtrl)} (tolta ${al(w, ctrl)}).` }, sink);
 }
 

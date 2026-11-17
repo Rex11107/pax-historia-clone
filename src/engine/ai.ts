@@ -6,6 +6,7 @@ import type { GameEvent, Tag, Unit } from './types';
 import { allied, emit, enemiesOf, NOBODY, rand, The, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
 import { hasProgram } from './colonial';
+import { colonialWeight } from './ethnic';
 
 // Riflessi deterministici delle nazioni non giocanti (zero chiamate AI):
 // difendono, liberano le province occupate, attaccano dove hanno superiorità locale,
@@ -48,7 +49,8 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       const capital = Object.values(s.nations).some((n) => n.capital === p && isEnemy(n.tag)) ? 2 : 1;
       // le province con carbone, ferro o petrolio valgono di più
       const resBonus = 1 + map.resources[p].reduce((x, r) => x + (RESOURCES[r].strategic ? RESOURCES[r].value * 3 : 0), 0);
-      targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop + 10))) / (1 + defense / 20000) });
+      // la popolazione conta per quanto renderebbe: una provincia di un popolo estraneo fuori d'Europa vale l'8%
+      targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop * colonialWeight(w, tag, p) + 10))) / (1 + defense / 20000) });
     }
   }
   const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length);
@@ -205,7 +207,9 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     for (const u of s.units) { if (u.nation === tag) mine += u.strength; else if (foes.has(u.nation)) theirs += u.strength; }
     const invaded = s.owner.some((o, p) => o === tag && foes.has(s.controller[p]));
     if (mine < theirs * (invaded ? 3 : 1.5) && n.treasury > 30 && n.manpower > 20000) {
-      const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag).sort((a, b) => b.pop - a.pop || a.id - b.id);
+      // si arruola dove la leva rende davvero: la popolazione pesata col peso coloniale, come nelle leve del bilancio
+      const wpop = (p: { id: number; pop: number }) => p.pop * colonialWeight(w, tag, p.id);
+      const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag).sort((a, b) => wpop(b) - wpop(a) || a.id - b.id);
       for (const p of own.slice(0, 5)) if (!recruit(w, tag, 'infantry', p.id, sink)) break;
     }
   }

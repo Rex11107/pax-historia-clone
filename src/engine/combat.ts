@@ -3,7 +3,7 @@ import { techEffects } from './research';
 import { level } from './construction';
 import { govEffects } from './politics';
 import { TERRAIN_DEFENSE } from './map';
-import { UNIT_STATS } from './orders';
+import { evictFrom, UNIT_STATS } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
 import { allied, atWar, clamp, di, emit, rand, sameSide, the, The, treatyBetween, type World } from './world';
 
@@ -108,6 +108,7 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
       const owner = s.owner[b.province];
       const prev = s.controller[b.province];
       s.controller[b.province] = owner !== prev && (allied(s, winner, owner) || sameSide(s, winner, owner)) ? owner : winner;
+      evictFrom(w, b.province);
       emit(w, { type: 'province_captured', province: b.province, nations: [winner, prev], text: `${w.map.provinces[b.province].name} è occupata dalle truppe ${di(w, winner)}.` }, sink);
     }
     delete s.battles[key];

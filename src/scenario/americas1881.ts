@@ -49,6 +49,9 @@ export const AMERICAS_NATIONS: Record<string, P> = {
   // ===== Nord America, America centrale e Caraibi (fase 10) =====
   USA: base({ name: 'Stati Uniti d\'America', short: ['gli ', 'Stati Uniti'], adjective: 'statunitense', color: '#3a6ab0', capital: [-77.03, 38.9], leader: 'Presidente Rutherford B. Hayes (James A. Garfield, eletto, si insedia il 4 marzo)',
     major: true, industry: 75, militaryQuality: 45, cohesion: 70, finance: 80, naval: 15, rail: 70, armyPeace: 27000,
+    // debito federale al 30 giugno 1881: 2.069 milioni di dollari (US Treasury, TreasuryDirect, "Historical Debt
+    // Outstanding 1850-1899"), al cambio aureo di 5,18 franchi per dollaro: circa 10.700 milioni
+    debt: 10700,
     temperament: 'repubblica industriale in piena espansione dopo la Ricostruzione, con un esercito minuscolo impegnato contro gli Apache e una flotta antiquata; guarda all\'interno e all\'emisfero occidentale',
     goals: ['dottrina Monroe', 'ferrovie fino al Pacifico', 'un canale americano fra i due oceani'], redLines: ['potenze europee nelle Americhe'], rivals: ['GBR', 'SPA'], friends: ['RUS'] }),
   CAN: base({ name: 'Dominion del Canada', short: ['il ', 'Canada'], adjective: 'canadese', color: '#d06a6a', capital: [-75.7, 45.42], government: 'monarchia', leader: 'Primo ministro John A. Macdonald (governatore generale il marchese di Lorne)',

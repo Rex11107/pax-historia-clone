@@ -144,6 +144,11 @@ export const ASIA_NATIONS: Record<string, P> = {
   // ===== Asia orientale (fase 7) =====
   CHI: base({ name: 'Impero Qing', short: ["l'", 'Impero Qing'], adjective: 'cinese', color: '#d8c25a', capital: [116.4, 39.9], government: 'impero', leader: 'Imperatore Guangxu (reggenza delle imperatrici vedove Cixi e Ci\'an; Li Hongzhang a Tianjin)',
     militaryQuality: 30, cohesion: 45, finance: 15, armyPeace: 500000, fiscal: 0.15,
+    // debito: solo i prestiti esteri della Hongkong and Shanghai Bank garantiti dalle dogane (quelli del 1877-1878 in
+    // ammortamento, due del 1881 per 1,4 milioni di sterline), circa 2,5 milioni di sterline in tutto; nessun debito
+    // pubblico interno (elenco dei prestiti cinesi in un annuario di Hong Kong della metà degli anni 1880, trascritto su
+    // hkintexts.histsyn.com/page/997016). A 25,2 franchi per sterlina: circa 60 milioni
+    debt: 60,
     // marina: flotte del Fujian e del Beiyang, cannoniere Rendel e i due incrociatori Chaoyong e Yangwei in consegna
     // nel 1881; le corazzate Dingyuan e Zhenyuan arrivano solo nel 1885 (Wright, The Chinese Steam Navy, 2000)
     naval: 15, temperament: 'immenso impero manciù che si riprende dalle rivolte dei Taiping e dei musulmani; il movimento di autorafforzamento compra navi e fucili, ma la corte è divisa e diffida dell\'Occidente',
@@ -152,6 +157,10 @@ export const ASIA_NATIONS: Record<string, P> = {
     militaryQuality: 15, cohesion: 50, finance: 6, armyPeace: 5000, temperament: 'governo dei lama di Lhasa sotto la tutela nominale degli amban Qing, chiuso agli stranieri', goals: ['tenere fuori gli europei'], rivals: ['GBR'], friends: ['CHI'] }),
   JAP: base({ name: 'Impero del Giappone', short: ['il ', 'Giappone'], adjective: 'giapponese', color: '#c8506a', capital: [139.7, 35.68], government: 'monarchia', leader: 'Imperatore Meiji (gran consigliere Sanjō Sanetomi; Itō Hirobumi e Ōkuma Shigenobu)',
     militaryQuality: 55, cohesion: 70, finance: 35, armyPeace: 45000,
+    // debito: buoni della commutazione delle pensioni di daimyō e samurai (191,5 milioni di yen), debiti dei feudi
+    // (21,5), due prestiti esteri (16,5) e il prestito della guerra di Satsuma (15): circa 245 milioni di yen
+    // (Encyclopaedia Britannica 1911, "Japan", Finance). Lo yen d'argento valeva circa 4,5 franchi: circa 1.100 milioni
+    debt: 1100,
     // marina: le corazzate Fusō, Kongō e Hiei consegnate dall'Inghilterra nel 1878, più la Ryūjō e una ventina di
     // unità minori; più o meno quanto il Cile (Evans e Peattie, Kaigun, 1997, cap. 1)
     naval: 20, temperament: 'stato che si modernizza a tappe forzate dopo la restaurazione Meiji; ha appena annesso le Ryukyu, guarda alla Corea e vuole rivedere i trattati ineguali',
