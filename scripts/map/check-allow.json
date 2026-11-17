@@ -45,5 +45,12 @@
   "Asiut – Kharga",
   "Kharga – Esna",
   "Selima – Darfur"
+ ],
+ "_oasi-fuori-deserto": "oasi di margine accettate per la regola 13 (corte 08, capo 5): stanno davvero sul bordo del deserto, accanto a terre abitate. Figuig fra gli altipiani e la steppa di Bouarfa e Aïn Sefra; Liwa sul margine settentrionale del Rub al-Khali, verso la costa di Abu Dhabi; Najran nella valle ai piedi dei monti dell'Asir e di Saada; Giabrin fra il Rub al-Khali e il Kharj",
+ "oasi-fuori-deserto": [
+  "Figuig",
+  "Liwa",
+  "Najran (ovest)",
+  "Giabrin"
  ]
 }

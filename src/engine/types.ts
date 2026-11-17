@@ -271,7 +271,10 @@ export interface ChatMessage {
 }
 
 export interface GameState {
-  version: 1;
+  /** forma dello stato (`SAVE_VERSION` in migrate.ts): i salvataggi vecchi si portano avanti con `migrate` */
+  version: number;
+  /** impronta della mappa con cui la partita è nata (`mapKey` in migrate.ts) */
+  mapKey?: string;
   seed: string;
   scenario: string;
   player: Tag;

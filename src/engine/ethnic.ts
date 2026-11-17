@@ -65,10 +65,11 @@ export function colonialWeight(w: World, tag: Tag, p: number): number {
 }
 
 /** Quota della popolazione di uno Stato che appartiene ad altri popoli (0-1). */
-export function foreignShare(w: World, tag: Tag): number {
+export function foreignShare(w: World, tag: Tag, own?: number[]): number {
   const s = w.state;
   let tot = 0, foreign = 0;
-  for (const p of w.map.provinces) {
+  // `own` (province della nazione in ordine di indice) evita di scorrere tutta la mappa per ogni nazione
+  for (const p of own ? own.map((i) => w.map.provinces[i]) : w.map.provinces) {
     if (s.owner[p.id] !== tag) continue;
     tot += p.pop;
     for (const c of composition(w, p.id)) foreign += p.pop * (c.share / 100) * foreignness(tag, c.eth);
@@ -77,11 +78,11 @@ export function foreignShare(w: World, tag: Tag): number {
 }
 
 /** Effetto sulla stabilità obiettivo: conquistare popoli altrui la abbassa (fino a −8), perderli la rialza (fino a +3). */
-export function ethnicStability(w: World, tag: Tag): number {
+export function ethnicStability(w: World, tag: Tag, own?: number[]): number {
   const s = w.state;
   s.ethnicBase ??= {};
-  if (s.ethnicBase[tag] === undefined) s.ethnicBase[tag] = foreignShare(w, tag);
-  const d = foreignShare(w, tag) - s.ethnicBase[tag];
+  if (s.ethnicBase[tag] === undefined) s.ethnicBase[tag] = foreignShare(w, tag, own);
+  const d = foreignShare(w, tag, own) - s.ethnicBase[tag];
   return Math.max(-8, Math.min(3, -d * 40));
 }
 

@@ -83,6 +83,7 @@ export class App {
     game.state.options = { peaceMode: this.settings.peaceMode ?? 'engine', antiGore: this.settings.antiGore ?? true, colonialMode: this.settings.colonialMode ?? 'storico' };
     show($('#start'), false);
     show($('#game'), true);
+    if (game.loadWarnings.length) this.toast(game.loadWarnings.join(' '));
     const canvas = $<HTMLCanvasElement>('#map');
     if (!this.map) {
       this.map = new MapView(canvas, game.world, {
@@ -941,7 +942,7 @@ export class App {
       newer && isNative() ? h('p', { class: 'sub' }, 'Si apre il download del nuovo APK: al termine tocca la notifica e conferma l\'installazione. La partita resta salvata.') : null,
       h('div', { class: 'buttons' },
         h('button', { disabled: u.checking, onclick: () => this.checkUpdate() }, 'Controlla aggiornamenti'),
-        newer ? h('button', { class: 'primary', onclick: () => installUpdate() }, isNative() ? `Scarica e installa ${u.latest!.version}` : 'Ricarica') : null,
+        newer ? h('button', { class: 'primary', onclick: () => installUpdate(async () => { if (this.game && !this.game.busy) await this.game.save('auto'); }).catch((e) => this.toast(`Salvataggio non riuscito, aggiornamento sospeso: ${(e as Error).message}`)) }, isNative() ? `Scarica e installa ${u.latest!.version}` : 'Ricarica') : null,
       ),
     );
   }
@@ -971,8 +972,10 @@ export class App {
   private importSave() {
     const ta = h('textarea', { rows: 6, placeholder: 'Incolla qui il salvataggio esportato' }) as HTMLTextAreaElement;
     this.dialog('Importa una partita', [ta], 'Importa', () => {
-      try { const state = JSON.parse(ta.value); if (state?.version !== 1) throw new Error(); this.start(Game.fromState(this.mapData, state, this.settings)); }
-      catch (e) { this.toast((e as Error).message.startsWith('Questo salvataggio') ? (e as Error).message : 'Il testo incollato non è un salvataggio valido.'); }
+      // la validità la decide migrate: i suoi errori sono già scritti per il giocatore
+      let state: unknown;
+      try { state = JSON.parse(ta.value); } catch { this.toast('Il testo incollato non è un salvataggio valido.'); return; }
+      try { this.start(Game.fromState(this.mapData, state, this.settings)); } catch (e) { this.toast((e as Error).message); }
     });
   }
 

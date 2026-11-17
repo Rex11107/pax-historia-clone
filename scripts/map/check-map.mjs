@@ -95,7 +95,7 @@ for (const [n, list] of byName) if (list.length > 1) add('nome', list[0], `${lis
 
 // regole delle oasi (scripts/map/check-oasi.mjs): non filtrate da --from, i collegamenti
 // sono globali e una tratta che salta una terra di nessuno resta sbagliata comunque
-const oasi = checkOasi(M, arcs, ringPts, polysOf);
+const oasi = checkOasi(M, arcs, ringPts, polysOf, allow['oasi-fuori-deserto'] ?? []);
 for (const x of oasi.issues) add('oasi', P[x.id], x.text, x.ids);
 
 // riferimenti tra province (scripts/map/check-riferimenti.mjs): vicini, stretti e piste

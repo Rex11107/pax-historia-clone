@@ -35,6 +35,14 @@ async function boot() {
         try { app.start(Game.fromState(mapData, state, settings)); } catch (e) { status.textContent = (e as Error).message; }
       } }, `Continua: ${auto.label}`));
     }
+    // anche i salvataggi manuali si riprendono da qui (corte 10): prima comparivano solo dentro una partita già aperta
+    for (const m of saves.filter((x) => x.slot !== 'auto').slice(0, 5)) {
+      choices.append(h('button', { class: 'quiet', onclick: async () => {
+        const state = await loadGame(m.slot);
+        if (!state) { status.textContent = 'Salvataggio illeggibile.'; return; }
+        try { app.start(Game.fromState(mapData, state, settings)); } catch (e) { status.textContent = (e as Error).message; }
+      } }, `Carica: ${m.label}`));
+    }
     const majors = Object.entries(NATIONS).filter(([, p]) => p.major);
     const minors = Object.entries(NATIONS).filter(([t, p]) => !p.major && !p.micro && !p.releasable && !p.spawned && t !== 'NUL');
     const sel = h('select', { id: 'nation-select', 'aria-label': 'Nazione' },

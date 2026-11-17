@@ -1,9 +1,10 @@
 // Sessione di gioco: collega motore, AI e salvataggi. L'interfaccia parla solo con questa classe.
 
 import { GameMap } from './engine/map';
+import { migrate } from './engine/migrate';
 import { newGame, profilesFor } from './engine/setup';
 import { runTurn } from './engine/turn';
-import type { GameEvent, GameState, MapData, Tag, TurnReport } from './engine/types';
+import type { GameEvent, MapData, Tag, TurnReport } from './engine/types';
 import type { World } from './engine/world';
 import type { LLMConfig } from './llm/client';
 import { acceptOffer, talk, type TalkResult } from './llm/agents';
@@ -38,11 +39,15 @@ export class Game {
     return new Game(newGame(map, player, seed), config);
   }
 
-  static fromState(map: MapData, state: GameState, config: LLMConfig): Game {
-    // un salvataggio fatto con un'altra versione della mappa ha province diverse: non si può riprendere
-    if (state.owner?.length !== map.provinces.length) throw new Error('Questo salvataggio è stato fatto con una versione precedente della mappa e non si può riprendere: inizia una nuova partita.');
-    state.dispatches ??= [];
-    return new Game({ map: new GameMap(map), profiles: profilesFor(), state }, config);
+  /** avvisi della migrazione del salvataggio (vuoto per una partita nuova o già alla versione attuale) */
+  loadWarnings: string[] = [];
+
+  /** Riprende un salvataggio: lo porta alla versione attuale (o lancia un errore leggibile se non si può). */
+  static fromState(map: MapData, raw: unknown, config: LLMConfig): Game {
+    const { state, warnings } = migrate(raw, map);
+    const g = new Game({ map: new GameMap(map), profiles: profilesFor(), state }, config);
+    g.loadWarnings = warnings;
+    return g;
   }
 
   get state() { return this.world.state; }

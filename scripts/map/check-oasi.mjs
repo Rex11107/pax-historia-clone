@@ -33,7 +33,9 @@ function dentro(pt, anelli) {
   return true;
 }
 
-export function checkOasi(M, arcs, ringPts, polysOf) {
+// `fuoriDeserto`: nomi delle oasi di margine accettate per R-c (check-allow.json, "oasi-fuori-deserto"). Chiave
+// separata da "oasi" apposta: quella zittisce R-a e R-b, che sono regole, e per queste oasi devono restare attive.
+export function checkOasi(M, arcs, ringPts, polysOf, fuoriDeserto = []) {
   const P = M.provinces;
   const issues = [];
   const info = [];
@@ -121,7 +123,7 @@ export function checkOasi(M, arcs, ringPts, polysOf) {
 
   // --- R-c: informativa, oasi senza deserto attorno ---
   for (const p of P) {
-    if (!p.oasis || !p.n) continue;
+    if (!p.oasis || !p.n || fuoriDeserto.includes(p.name)) continue;
     const fuori = p.n.filter((id) => P[id] && !P[id].impassable);
     if (fuori.length) info.push(`${p.name} (${p.id}): vicini non deserto ${fuori.map((id) => P[id].name).join(', ')}`);
   }

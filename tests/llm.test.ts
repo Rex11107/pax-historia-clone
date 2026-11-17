@@ -4,7 +4,7 @@ import { newGame } from '../src/engine/setup';
 import { runTurn } from '../src/engine/turn';
 import { declareWar } from '../src/engine/diplomacy';
 import { atWar, treatyBetween } from '../src/engine/world';
-import { chatJSON, parseJSON, setTransport, type LLMConfig } from '../src/llm/client';
+import { baseUrlError, chatJSON, parseJSON, setTransport, type LLMConfig } from '../src/llm/client';
 import { applyTranslation, applyWorldActions, narrate, translate } from '../src/llm/gm';
 import { behavioralRules, talk } from '../src/llm/agents';
 import { resolveProvince, worldDigest } from '../src/llm/context';
@@ -39,6 +39,15 @@ describe('client', () => {
   });
   it('senza chiave non chiama la rete', async () => {
     await expect(chatJSON({ ...cfg, apiKey: '' }, [])).rejects.toThrow(/Chiave/);
+  });
+  it('la chiave parte solo verso https, o verso un modello sullo stesso dispositivo (corte 09, capo 4)', async () => {
+    await expect(chatJSON({ ...cfg, baseUrl: 'http://api.esempio.it/v1' }, [])).rejects.toThrow(/https/);
+    await expect(chatJSON({ ...cfg, baseUrl: 'http://localhost.esempio.it' }, [])).rejects.toThrow(/https/);
+    expect(requests.length).toBe(0);
+    expect(baseUrlError('https://api.deepseek.com')).toBeNull();
+    expect(baseUrlError('http://localhost:11434/v1')).toBeNull();
+    expect(baseUrlError('http://127.0.0.1')).toBeNull();
+    expect(baseUrlError('ftp://x')).toMatch(/https/);
   });
 });
 
@@ -133,6 +142,15 @@ describe('agenti-nazione', () => {
     const r = await talk(cfg, w, 'FRA', 'Alleanza?', { type: 'alliance' }, []);
     expect(r.veto).toBeTruthy();
     expect(treatyBetween(w.state, 'ITA', 'FRA', 'alliance')).toBeFalsy();
+  });
+
+  it('anche una controproposta passa dalla plausibilità (corte 09, capo 7)', async () => {
+    const w = newGame(MAP);
+    w.state.nations.FRA.opinion.ITA = -60;
+    replies = [{ reply: 'Piuttosto, alleiamoci.', intent: 'counter', proposal: { type: 'alliance' } }];
+    const r = await talk(cfg, w, 'FRA', 'Un patto commerciale?', { type: 'trade', years: 5 }, []);
+    expect(r.veto).toBeTruthy();
+    expect(r.proposal).toBeNull();
   });
 });
 

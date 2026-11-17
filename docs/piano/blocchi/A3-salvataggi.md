@@ -1,5 +1,7 @@
 # A3 — Salvataggi, aggiornamenti, sicurezza
 
+> **Fatto** il 17 novembre 2026 (ramo `fix/a3-salvataggi`). Esito in fondo alla scheda.
+
 - **Corti**: 10 (interfaccia e persistenza), 09 (LLM), 08 (mappa). Leggere la sezione «D» dei tre verdetti.
 - **Ramo**: `fix/a3-salvataggi`, da `main` aggiornato (dopo l'unione della #31).
 - **Test**: un file nuovo `tests/salvataggi.test.ts` per i punti 1-3; i punti LLM in `tests/llm.test.ts`.
@@ -11,7 +13,7 @@ Questo blocco tocca poco il motore: quasi tutto è in `src/game.ts`, `src/storag
 ## Compiti
 
 ### 1. Versione dei salvataggi e migrazione — 🟡
-- [ ] **Dove**: `src/engine/types.ts` (`GameState`), `src/engine/setup.ts` (`newGame`), `src/game.ts`
+- [x] **Dove**: `src/engine/types.ts` (`GameState`), `src/engine/setup.ts` (`newGame`), `src/game.ts`
   (`Game.fromState`, oggi riga 43).
 - **Oggi**: `fromState` rifiuta ogni salvataggio con un numero di province diverso dalla mappa, e lo stato non ha
   un numero di versione.
@@ -30,7 +32,7 @@ Questo blocco tocca poco il motore: quasi tutto è in `src/game.ts`, `src/storag
 - **Accettazione**: un salvataggio senza versione si riapre; i salvataggi nuovi hanno `version: 1`.
 
 ### 2. Scrittura sicura e copia di riserva — 🟡
-- [ ] **Dove**: `src/storage/storage.ts` (`saveGame`, `loadGame`, `listSaves`); `src/main.ts` riga 30 circa
+- [x] **Dove**: `src/storage/storage.ts` (`saveGame`, `loadGame`, `listSaves`); `src/main.ts` riga 30 circa
   (ripresa dello slot `auto`).
 - **Oggi**: i salvataggi sono in IndexedDB; `saveGame` sovrascrive lo slot con un solo `put`. Se lo stato è
   corrotto (JSON troncato, eccezione a metà) si perde l'ultima partita buona.
@@ -46,28 +48,28 @@ Questo blocco tocca poco il motore: quasi tutto è in `src/game.ts`, `src/storag
 - **Accettazione**: un record `auto` con JSON rotto fa ripartire da `auto.prev`.
 
 ### 3. Aggiornamenti — 🟢 + 🟢
-- [ ] **3a. Confronto delle versioni** — `src/update.ts`, funzione `build` (riga 16) e `isNewer`.
+- [x] **3a. Confronto delle versioni** — `src/update.ts`, funzione `build` (riga 16) e `isNewer`.
   Oggi confronta solo l'ultimo numero: «0.2.0» contro «0.1.84» dà 0 < 84 e l'aggiornamento non viene proposto.
   Scrivere `compareVersions(a, b)` che divide per `.`, converte in numeri e confronta parte per parte; esportarla.
   **Test**: `compareVersions('0.2.0', '0.1.84') > 0`, `('0.1.85', '0.1.84') > 0`, `('v0.1.84', '0.1.84') === 0`,
   `('0.1.9', '0.1.10') < 0`.
-- [ ] **3b. Salvare prima di ricaricare** — `installUpdate` (stesso file) nel browser fa `location.reload()` e
+- [x] **3b. Salvare prima di ricaricare** — `installUpdate` (stesso file) nel browser fa `location.reload()` e
   perde il turno in corso. Dare a `installUpdate` un parametro facoltativo `beforeReload?: () => Promise<void>` e
   passarlo da `src/ui/app.ts` (che salva lo slot `auto` con il metodo di `Game` a riga 110 circa) e da
   `src/main.ts` riga 50 (lì non c'è partita: niente da salvare). Prova a mano.
 
 ### 4. LLM — 🟢 + 🟢
-- [ ] **4a. HTTPS obbligatorio** — `src/llm/client.ts`, funzione `endpoint` (riga 34). Rifiutare un `baseUrl` che
+- [x] **4a. HTTPS obbligatorio** — `src/llm/client.ts`, funzione `endpoint` (riga 34). Rifiutare un `baseUrl` che
   non inizia con `https://` con un errore in italiano («L'indirizzo del modello deve iniziare con https://»).
   Eccezione ammessa: `http://localhost` e `http://127.0.0.1` (modelli locali), dichiarata nel commento.
   **Test** in `tests/llm.test.ts`: `http://api.esempio.it` rifiutato, `https://api.deepseek.com` accettato,
   `http://localhost:11434` accettato.
-- [ ] **4b. Plausibilità anche sulle controproposte** — `src/llm/agents.ts` riga 115: per `counter` e `propose`
+- [x] **4b. Plausibilità anche sulle controproposte** — `src/llm/agents.ts` riga 115: per `counter` e `propose`
   oggi si chiama solo `checkProposal`; aggiungere `?? plausibility(w, tag, proposal)` come alla riga 111.
   **Test**: una controproposta in cui la nazione cede le proprie province senza guerra viene scartata.
 
 ### 5. Mappa — 🟢 e 🔴 facoltativo
-- [ ] **5a. Le quattro oasi eccezione** — `npm run map:check` stampa come informativa Figuig, Liwa,
+- [x] **5a. Le quattro oasi eccezione** — `npm run map:check` stampa come informativa Figuig, Liwa,
   Najran (ovest), Giabrin. In `scripts/map/check-oasi.mjs` la parte «R-c» (riga 122 circa) non legge le eccezioni:
   farle passare un elenco `allow.oasi` (come fa `checkRiferimenti` con `allow.piste` in `check-map.mjs`, riga 102)
   e saltare le oasi elencate; aggiungere in `scripts/map/check-allow.json` la chiave `"oasi"` con i quattro nomi.
@@ -78,7 +80,7 @@ Questo blocco tocca poco il motore: quasi tutto è in `src/game.ts`, `src/storag
   con la fonte, per le sole province dove il nome esiste davvero.
 
 ### 6. Prestazioni (passo 7 della fase 2) — 🔴
-- [ ] Misurare con `npx tsx scripts/sim/turno.mts` (52 turni) e annotare qui le fasi più lente.
+- [x] Misurare con `npx tsx scripts/sim/turno.mts` (52 turni) e annotare qui le fasi più lente.
   Dopo A2: economia circa 80 ms, rifornimenti circa 55 ms a turno.
 - Cercare cicli su tutte le province dentro cicli su tutte le nazioni (`for (let i = 0; i < w.map.size; i++)`
   dentro un `for (const tag of …)`) e sostituirli con `controlled(w, tag)` (`src/engine/construction.ts`).
@@ -95,3 +97,24 @@ Questo blocco tocca poco il motore: quasi tutto è in `src/game.ts`, `src/storag
 ## Consegna
 
 PR `fix/a3-salvataggi` → `main` come da `README.md`, sezione 6. Aggiornare `STATO.md` (prossimo blocco: B1).
+
+## Esito (17 novembre 2026)
+
+| punto | com'è stato fatto |
+|---|---|
+| 1 | `src/engine/migrate.ts`: `SAVE_VERSION = 2` (la versione 1 esisteva già come valore fisso), passi `STEPS[v]`, `mapKey` (impronta della mappa sui centri delle province: una rinomina non la cambia). Rifiuta con un messaggio: mappa con un numero di province diverso, salvataggio di una versione più recente del gioco, salvataggio danneggiato. `Game.fromState` passa da `migrate` e mostra gli avvisi; anche l'importazione da testo |
+| 2 | `saveGame`: serializza e rilegge prima di scrivere; nella stessa transazione il record integro diventa `SLOT.prev`. `loadGame` ripiega sulla copia con `chooseRecord` (pura, testata). `listSaves` non elenca le copie. La schermata iniziale mostra anche i salvataggi manuali (prima solo dentro una partita) |
+| 3 | `compareVersions` in `src/update.ts`; `installUpdate(beforeReload)` salva lo slot `auto` prima di ricaricare e, se il salvataggio fallisce, non ricarica |
+| 4 | `baseUrlError` in `src/llm/client.ts` (https, o `localhost`/`127.0.0.1`), controllato prima di ogni tentativo; plausibilità su `counter` e `propose` |
+| 5a | chiave separata `"oasi-fuori-deserto"` in `check-allow.json`, letta da R-c: la chiave `"oasi"` zittirebbe anche R-a e R-b, che sono regole |
+| 6 | `provinceIndex` in `economy.ts`: un passaggio sulla mappa per tutta la fase economica (bilanci, popolazione, stabilità etnica) invece di uno per nazione. Simulazione identica al bit (impronta dello stato dopo 150 turni uguale a `main`, rapporto 1881-1899 identico tempi esclusi). Turno da 182 a **135 ms**, economia da 81 a 32 |
+
+**Non fatto, e perché**
+- 5b (nomi con «(ovest)/(est)»): facoltativo, 643 nomi dal generatore; resta qui.
+- La scrittura su IndexedDB non ha un test automatico: in Node manca IndexedDB, e aggiungere `fake-indexeddb` come
+  dipendenza non è stato fatto in questo blocco. È provata la scelta fra principale e copia (`chooseRecord`); il resto
+  va provato a mano nel browser (salvare, chiudere la scheda a metà, riaprire).
+- Rifornimenti (55 ms a turno, la fase più lenta): in pace la mappa di ogni nazione si ricalcola a ogni cambio di
+  padrone in qualsiasi punto del mondo (`cacheVersion` in `supply.ts`). Renderla più fine cambia *quando* si
+  ricalcola, quindi il comportamento: è un lavoro da fase C, con una misura prima e dopo.
+
