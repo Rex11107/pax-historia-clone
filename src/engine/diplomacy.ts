@@ -1,3 +1,4 @@
+import { aiMobilize } from './economy';
 import { transfer } from './ledger';
 import { geoKm } from './map';
 import { endSubjection, followers, subjectOf, warBlock } from './vassals';
@@ -61,7 +62,7 @@ export function declareWar(w: World, a: Tag, b: Tag, reason: string, sink?: Game
   if (a === s.player || b === s.player || callers.includes(s.player)) {
     s.situations.push({ id: war.id, title: war.name, startDay: s.day, nations: [a, ...defenders], summary: `Guerra in corso: ${the(w, a)} contro ${defenders.map((d) => the(w, d)).join(', ')}.` });
   }
-  for (const t of [a, ...defenders]) if (t !== s.player) s.nations[t].policies.mobilization = 'full';
+  for (const t of [a, ...defenders]) if (t !== s.player) aiMobilize(w, t);
   return null;
 }
 
@@ -281,7 +282,7 @@ export function applyProposal(w: World, from: Tag, to: Tag, p: Proposal, sink?: 
         (war.attackers.includes(from) ? war.attackers : war.defenders).push(to);
         changeOpinion(s, p.against!, to, -40);
         emit(w, { type: 'war_joined', nations: [to, from, p.against!], text: `${The(w, to)} entra in guerra al fianco ${di(w, from)} contro ${the(w, p.against!)}.` }, sink);
-        if (to !== s.player) s.nations[to].policies.mobilization = 'full';
+        if (to !== s.player) aiMobilize(w, to);
       }
       break;
     }

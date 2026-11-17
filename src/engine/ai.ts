@@ -1,6 +1,6 @@
 import { geoKm } from './map';
-import { concludePeace, engineTerms } from './peace';
-import { aiFinances, recruit } from './economy';
+import { concludePeace, engineTerms, warScore } from './peace';
+import { aiFinances, aiMobilize, recruit } from './economy';
 import { moveCost, planPath } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
 import { allied, emit, enemiesOf, NOBODY, rand, The, warsOf, type World } from './world';
@@ -54,6 +54,7 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
   const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length);
   if (!idle.length) return;
   const assigned = new Map<number, number>(); // provincia -> uomini già mandati
+  const stuck: Unit[] = []; // unità pronte che per terra non arrivano né a un obiettivo né al fronte
   for (const u of idle) {
     if (u.strength < u.maxStrength * 0.45 || u.supply < 0.35) continue; // si riorganizza
     const dist = map.distancesFrom(u.location, moveCost(w, u, true), 60);
@@ -75,7 +76,8 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       continue;
     }
     // altrimenti rinforza il punto del fronte più scoperto
-    if (!front.length || front.includes(u.location)) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; continue; }
+    if (front.includes(u.location)) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; continue; }
+    if (!front.length) { stuck.push(u); continue; }
     const best = front
       .map((p) => {
         const threat = map.adj[p].reduce((x, e) => x + strengthAt(w, e.to, (y) => isEnemy(y.nation)), 0);
@@ -90,9 +92,41 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
     if (best) {
       u.orders = [{ type: 'move', target: best.p, status: 'pending', label: 'al fronte' }, { type: 'entrench', status: 'pending' }];
       assigned.set(best.p, (assigned.get(best.p) ?? 0) + u.strength);
+    } else stuck.push(u);
+  }
+  overseas(w, tag, enemies, targets, stuck);
+}
+
+/** Rinforzi per mare. Per terra una potenza non raggiunge una guerra oltremare: la Francia teneva 470.000 uomini
+ *  fermi in patria mentre 8.000 tunisini razziavano l'Algeria. Finché le forze già impegnate non superano di
+ *  metà quelle del nemico (e almeno un corpo), fino a tre unità ferme per volta partono per nave verso gli
+ *  obiettivi migliori o, se non c'è ancora un fronte, verso le coste nemiche più vicine. */
+function overseas(w: World, tag: Tag, enemies: Set<Tag>, targets: { p: number; score: number }[], stuck: Unit[]) {
+  const s = w.state, map = w.map;
+  if (!stuck.length || (w.profiles[tag]?.naval ?? 0) <= 0) { for (const u of stuck) hold(u); return; }
+  let enemyMen = 0, engaged = 0;
+  for (const u of s.units) {
+    if (enemies.has(u.nation)) enemyMen += u.strength;
+    else if (u.nation === tag && !stuck.includes(u) && (u.orders.some((o) => o.type !== 'entrench' && o.type !== 'hold') || enemies.has(s.owner[u.location]))) engaged += u.strength;
+  }
+  const need = Math.max(15000, enemyMen * 1.5);
+  let sent = 0;
+  for (const u of stuck) {
+    if (engaged >= need || sent >= 3) { hold(u); continue; }
+    const here = map.provinces[u.location].lonlat;
+    const pool = targets.length ? targets.map((t) => t.p) : map.provinces.filter((x) => x.coast && !x.impassable && enemies.has(s.controller[x.id])).map((x) => x.id);
+    const cand = pool.map((p) => ({ p, km: geoKm(map.provinces[p].lonlat, here) })).sort((a, b) => a.km - b.km || a.p - b.p).slice(0, 3);
+    let best: { p: number; days: number } | null = null;
+    for (const c of cand) {
+      const plan = planPath(w, u, c.p, true);
+      if (plan && plan.days <= 75 && (!best || plan.days < best.days)) best = { p: c.p, days: plan.days };
     }
+    if (!best) { hold(u); continue; }
+    u.orders = [{ type: 'attack', target: best.p, status: 'pending', label: 'oltremare' }];
+    engaged += u.strength; sent++;
   }
 }
+const hold = (u: Unit) => { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; };
 
 // --- espansione nelle terre di nessuno degli stati locali ---
 // Le potenze coloniali seguono i loro interessi (colonial.ts). Gli stati africani e arabi si allargano di rado,
@@ -162,8 +196,15 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     const n = s.nations[tag];
     aiFinances(w, tag);
     if (!warsOf(s, tag).length) continue;
-    // arruolamento nella provincia più popolosa e sicura
-    if (n.treasury > 30 && n.manpower > 20000) {
+    aiMobilize(w, tag); // la mobilitazione segue la guerra: sale se il nemico entra in casa, scende se si riduce
+    // arruolamento nella provincia più popolosa e sicura, ma solo se serve: finché l'esercito non supera di metà
+    // quello dei nemici (del doppio se il nemico è in casa). Prima chi era in guerra arruolava ogni settimana, anche contro
+    // un nemico cento volte più piccolo, fino alla bancarotta
+    const foes = enemiesOf(s, tag);
+    let mine = 0, theirs = 0;
+    for (const u of s.units) { if (u.nation === tag) mine += u.strength; else if (foes.has(u.nation)) theirs += u.strength; }
+    const invaded = s.owner.some((o, p) => o === tag && foes.has(s.controller[p]));
+    if (mine < theirs * (invaded ? 3 : 1.5) && n.treasury > 30 && n.manpower > 20000) {
       const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag).sort((a, b) => b.pop - a.pop);
       for (const p of own.slice(0, 5)) if (!recruit(w, tag, 'infantry', p.id, sink)) break;
     }
@@ -176,8 +217,12 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     const a = war.attackers[0], d = war.defenders[0];
     if (!a || !d || !s.wars.includes(war)) continue;
     const weA = s.nations[a].warExhaustion, weD = s.nations[d].warExhaustion;
-    const long = s.day - war.startDay > 180;
-    if (Math.max(weA, weD) < 55 && !(long && Math.max(weA, weD) > 35)) continue;
+    const age = s.day - war.startDay;
+    const long = age > 180;
+    // oltre alla stanchezza: una guerra decisa sul campo (un lato quasi tutto occupato) si chiude dopo due mesi,
+    // e una che non va da nessuna parte dopo un anno e mezzo. Prima una guerra senza scontri non finiva mai
+    const decided = age > 60 && warScore(w, war).points >= 50;
+    if (Math.max(weA, weD) < 55 && !(long && Math.max(weA, weD) > 35) && !decided && age <= 540) continue;
     if (mode === 'all') {
       s.pendingPeace ??= [];
       const pend = s.pendingPeace.find((x) => x.war === war.id);
