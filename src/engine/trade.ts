@@ -10,6 +10,7 @@ import { techEffects } from './research';
 
 import { addTreaty, checkProposal } from './diplomacy';
 import { extraLots, industryOf } from './construction';
+import { colonialWeight } from './ethnic';
 import { nationResources, RESOURCES, resourceValue, type ResourceId } from './resources';
 import type { GameEvent, GameState, Tag } from './types';
 import { atWar, changeOpinion, emit, nationName, newId, opinion, treatyBetween, type World } from './world';
@@ -50,7 +51,7 @@ const industry = (w: World, t: Tag) => industryOf(w, t);
 /** Lotti propri (province controllate) di una risorsa. */
 function ownLots(w: World, tag: Tag) {
   const s = w.state;
-  return nationResources(w.map, w.map.resources, s.controller, s.owner, tag, industry(w, tag), (i) => extraLots(w, i));
+  return nationResources(w.map, w.map.resources, s.controller, s.owner, tag, industry(w, tag), (i) => extraLots(w, i), (i) => colonialWeight(w, tag, i));
 }
 
 function flows(s: GameState, tag: Tag) {
@@ -75,10 +76,14 @@ export function effectiveResources(w: World, tag: Tag) {
   const f = flows(w.state, tag);
   const ind = industry(w, tag);
   let income = r.income;
-  for (const [res, q] of Object.entries(f.exports) as [ResourceId, number][]) income -= resourceValue(res, ind) * Math.min(q, r.count[res] ?? 0);
+  // un lotto esportato toglie quanto rendeva: i lotti coloniali rendono l'8%, quindi si toglie la media pesata
+  for (const [res, q] of Object.entries(f.exports) as [ResourceId, number][]) {
+    const n = r.count[res] ?? 0;
+    income -= resourceValue(res, ind) * Math.min(q, n) * (n ? (r.weighted[res] ?? n) / n : 1);
+  }
   for (const [res, q] of Object.entries(f.imports) as [ResourceId, number][]) income += resourceValue(res, ind) * q * scarcity(r.count[res] ?? 0);
   const oil = techEffects(w, tag).oilValue;
-  if (oil !== 1) income += resourceValue('petrolio', ind) * (r.count.petrolio ?? 0) * (oil - 1);
+  if (oil !== 1) income += resourceValue('petrolio', ind) * (r.weighted.petrolio ?? 0) * (oil - 1);
   const missing = (['carbone', 'ferro'] as ResourceId[]).filter((x) => !r.count[x] && !f.imports[x]);
   return { count: r.count, income: Math.round(income * 100) / 100, missing, ...f };
 }

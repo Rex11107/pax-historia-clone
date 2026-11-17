@@ -58,7 +58,7 @@ export const BUILDINGS_1881: [BuildingId, number, number, number, string][] = [
   ['bellica', 1, 28.98, 41.01, 'Tophane'], ['bellica', 1, 5.57, 50.63, 'Liegi'],
   // miniere già sfruttate
   ['miniera', 2, 7.2, 51.5, 'Ruhr'], ['miniera', 2, -3.4, 51.7, 'Galles meridionale'], ['miniera', 2, -1.6, 54.8, 'Durham'], ['miniera', 1, 18.9, 50.3, 'Alta Slesia'],
-  ['miniera', 1, 3.6, 50.4, 'Borinage'], ['miniera', 1, 6.1, 49.25, 'Lorena'], ['miniera', 1, -6.6, 37.7, 'Rio Tinto'], ['miniera', 1, 13.9, 37.5, 'Zolfare di Sicilia'], ['miniera', 1, 49.87, 40.4, 'Baku'],
+  ['miniera', 1, 3.89, 50.41, 'Borinage'], ['miniera', 1, 6.1, 49.25, 'Lorena'], ['miniera', 1, -6.6, 37.7, 'Rio Tinto'], ['miniera', 1, 13.9, 37.5, 'Zolfare di Sicilia'], ['miniera', 1, 49.87, 40.4, 'Baku'],
   // --- fuori dall'Europa (1881) ---
   // porti
   ['porto', 3, -74.0, 40.7, 'New York'], ['porto', 2, -71.05, 42.36, 'Boston'], ['porto', 2, -75.15, 39.95, 'Filadelfia'], ['porto', 2, -76.6, 39.28, 'Baltimora'],

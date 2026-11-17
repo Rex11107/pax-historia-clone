@@ -1,7 +1,7 @@
 import { APP_VERSION, installUpdate, isNative, isNewer, latestRelease, type Release } from '../update';
 import { Game, type Phase, type TurnOutcome } from '../game';
 import { describeProposal, TREATY_LABEL, type Proposal } from '../engine/diplomacy';
-import { budget, POLICY_EFFECTS, RECRUIT, recruit, setPolicy, stabilityTarget } from '../engine/economy';
+import { budget, loanRoom, POLICY_EFFECTS, RECRUIT, recruit, repayDebt, setPolicy, stabilityTarget, takeLoan } from '../engine/economy';
 import { nearX, TERRAIN_NAME } from '../engine/map';
 import { ENTRY_LABEL, type EntryKind } from '../engine/ledger';
 import { RESOURCES, resourceLabel, type ResourceId } from '../engine/resources';
@@ -460,7 +460,7 @@ export class App {
       h('h3', null, 'Cantieri aperti'),
       mine.length ? h('ul', { class: 'list plain' }, ...mine.map((x) => h('li', null,
         h('div', { class: 'row' }, h('span', null, `${BUILDINGS[x.type].icon} ${BUILDINGS[x.type].label} ${x.level} a `, h('button', { class: 'link', onclick: () => this.onProvince(x.province) }, w.map.provinces[x.province].name)),
-          h('button', { class: 'link', onclick: () => { cancelProject(w, x.id); this.toast('Cantiere chiuso: rientra metà della spesa.'); this.afterStateChange(); } }, 'Annulla')),
+          h('button', { class: 'link', onclick: () => { const err = cancelProject(w, x.id, w.state.player); this.toast(err ?? 'Cantiere chiuso: rientra metà della spesa.'); this.afterStateChange(); } }, 'Annulla')),
         h('div', { class: 'meter' }, h('i', { style: `width:${Math.round((1 - x.daysLeft / x.total) * 100)}%` })),
         h('div', { class: 'sub' }, `${Math.ceil(x.daysLeft / 7)} settimane${s.controller[x.province] !== s.owner[x.province] ? ' · fermo: provincia occupata' : ''}`)))) : h('p', { class: 'muted' }, 'Nessun cantiere. Tocca una provincia sulla mappa e scegli cosa costruire.'),
       h('h3', null, 'Che cosa si costruisce'),
@@ -689,6 +689,23 @@ export class App {
         h('dt', null, 'Stanchezza di guerra'), h('dd', null, `${Math.round(n.warExhaustion)}/100`),
         h('dt', null, 'Rete ferroviaria'), h('dd', null, `${Math.round(n.rail)}/100`),
       ),
+      (() => {
+        // debito volontario: rimborso con le casse, prestito con il 10% di sovrapprezzo sul debito
+        const input = h('input', { type: 'number', min: '1', step: '10', inputmode: 'numeric', value: String(Math.max(10, Math.round(Math.min(n.treasury, n.debt) / 10) * 10 || 50)), class: 'amount' }) as HTMLInputElement;
+        const act = (fn: typeof repayDebt, ok: (v: number, d: number) => string) => () => {
+          const v = Math.round(Number(input.value));
+          const d0 = n.debt;
+          const err = fn(w, me, v);
+          this.toast(err ?? ok(v, n.debt - d0));
+          if (!err) { this.refreshTop(); this.render(); }
+        };
+        const room = loanRoom(w, me);
+        return h('div', { class: 'policy' }, h('h4', null, 'Debito'),
+          h('div', { class: 'debt-row' }, input, h('span', null, ' M'),
+            h('button', { disabled: n.debt <= 0 || n.treasury <= 0, onclick: act(repayDebt, (_v, d) => `Rimborsati ${Math.round(-d)} M di debito.`) }, 'Rimborsa'),
+            h('button', { disabled: room <= 0, onclick: act(takeLoan, (v, d) => `Prestito di ${v} M: il debito cresce di ${Math.round(d)} M.`) }, 'Prendi in prestito')),
+          h('p', { class: 'sub' }, `Il rimborso usa le casse (al più quanto c'è). Un prestito costa il 10% in più di quanto rende, e ogni anno il 4,5% d'interesse. Si può ancora prendere in prestito fino a ${room.toLocaleString('it-IT')} M.`));
+      })(),
       (() => {
         const r = effectiveResources(w, me);
         const ids = (Object.keys(r.count) as ResourceId[]).sort((a, c) => RESOURCES[c].value - RESOURCES[a].value);

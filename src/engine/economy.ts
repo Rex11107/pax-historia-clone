@@ -9,7 +9,7 @@ import { govEffects } from './politics';
 import { buildingIncome, industryOf, maintenanceOf, manpowerBonus, recruitDiscount } from './construction';
 import { tributeOf } from './vassals';
 import { colonyIncome } from './colonial';
-import { applyBudget, post, repay } from './ledger';
+import { applyBudget, borrow, LOAN_MARKUP, post, repay } from './ledger';
 
 // Effetti meccanici delle politiche interne (il pannello "Interno" li mostra così come sono).
 export const POLICY_EFFECTS = {
@@ -51,7 +51,9 @@ export function budget(w: World, tag: Tag): Budget {
   let popEff = 0, popOwn = 0, provinces = 0, occupied = 0;
   const fiscal = w.profiles[tag]?.fiscal ?? 1;
   for (let i = 0; i < s.owner.length; i++) {
-    const p = w.map.provinces[i].pop * fiscal * (s.owner[i] === tag ? colonialWeight(w, tag, i) : 1);
+    // il peso coloniale vale anche per le province occupate (corte 03, capo 11): prima un'occupata in Cina rendeva
+    // al Giappone il 25% della popolazione, un'annessa l'8%, e occupare conveniva più che annettere
+    const p = w.map.provinces[i].pop * fiscal * (s.owner[i] === tag || s.controller[i] === tag ? colonialWeight(w, tag, i) : 1);
     if (s.owner[i] === tag) { popOwn += p; if (!w.map.provinces[i].impassable) provinces++; }
     if (s.owner[i] === tag && s.controller[i] === tag) popEff += p;
     else if (s.controller[i] === tag) { popEff += p * 0.25; occupied++; } // requisizioni nelle province occupate
@@ -183,4 +185,43 @@ export function aiFinances(w: World, tag: Tag) {
   }
   if (b.net < 0 && n.treasury < 4 * b.income) n.policies.tax = 'high';
   else if (n.policies.tax === 'high' && b.net > 0.15 * b.income && n.stability < 60) n.policies.tax = 'normal';
+}
+
+// --- debito volontario (corte 03, capo 6) ---
+// Il registro unico sapeva già rimborsare, ma lo usavano solo le nazioni non giocanti: il giocatore non poteva né
+// azzerare il debito né indebitarsi per una guerra. Le due azioni passano dal registro come tutte le altre.
+
+/**
+ * Tetto provvisorio al debito volontario: dodici anni di entrate (il Regno Unito del 1881 ne aveva circa nove,
+ * l'Italia sette e mezzo). Il tasso per paese e il default arrivano con il bilanciamento (corte 03, punto 9).
+ */
+export const DEBT_CAP_YEARS = 12;
+
+/** Quanto si può ancora prendere in prestito (milioni incassati, sovrapprezzo escluso). */
+export function loanRoom(w: World, tag: Tag): number {
+  const n = w.state.nations[tag];
+  const inc = n?.lastBudget?.income ?? budget(w, tag).income;
+  return Math.max(0, Math.floor((DEBT_CAP_YEARS * 52 * Math.max(0, inc) - n.debt) / LOAN_MARKUP));
+}
+
+/** Rimborso volontario: restituisce il motivo del rifiuto, o null. */
+export function repayDebt(w: World, tag: Tag, amount: number): string | null {
+  const n = w.state.nations[tag];
+  if (!n?.alive) return 'nazione inesistente';
+  if (!(amount > 0)) return 'importo non valido';
+  if (n.debt <= 0) return 'non abbiamo debito';
+  if (n.treasury <= 0) return 'le casse sono vuote';
+  repay(w, tag, amount);
+  return null;
+}
+
+/** Nuovo prestito volontario: il debito cresce del 10% in più di quanto entra (commissioni e sconto d'emissione). */
+export function takeLoan(w: World, tag: Tag, amount: number): string | null {
+  const n = w.state.nations[tag];
+  if (!n?.alive) return 'nazione inesistente';
+  if (!(amount > 0)) return 'importo non valido';
+  const room = loanRoom(w, tag);
+  if (amount > room) return room > 0 ? `i banchieri non prestano più di ${room} M` : `i banchieri non prestano più: il debito supera ${DEBT_CAP_YEARS} anni di entrate`;
+  borrow(w, tag, amount);
+  return null;
 }

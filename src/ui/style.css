@@ -138,6 +138,9 @@ textarea { resize: vertical; font-family: var(--serif); font-size: 1rem; }
 .budget .total td { border-top: 1px solid var(--ink); border-bottom: 0; font-weight: 700; }
 
 .policy { margin: 14px 0; }
+.policy input.amount { width: 6.5em; padding: 7px 8px; border: 1px solid var(--ink); background: var(--paper); border-radius: 3px; }
+.debt-row { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+.debt-row button { padding: 7px 10px; border: 1px solid var(--ink); background: var(--paper); border-radius: 3px; margin-left: 6px; }
 .seg { display: flex; flex-wrap: wrap; gap: 0; }
 .seg button { border-radius: 0; margin-left: -1px; font-size: 0.88rem; padding: 7px 10px; }
 .seg button:first-child { margin-left: 0; border-radius: 3px 0 0 3px; }
