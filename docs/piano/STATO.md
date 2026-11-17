@@ -1,20 +1,20 @@
 # Stato del lavoro
 
-Aggiornato al 17 novembre 2026, dopo il blocco B1. Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
+Aggiornato al 17 novembre 2026, dopo il blocco B2. Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
 
 ## In breve
 
 - **Gioco**: Regnum Historia, grande strategia dal 1° gennaio 1881. TypeScript, Vite, Capacitor; APK nelle Releases.
-- **Ultima release**: quella nata dall'unione della #33 (A3). B1 arriva con la sua PR.
-- **Prossimo blocco**: **B2 — diplomazia coerente** → [`blocchi/B2-diplomazia.md`](blocchi/B2-diplomazia.md).
+- **Ultima release**: quella nata dall'unione della #34 (B1). B2 arriva con la sua PR.
+- **Prossimo blocco**: **B3 — politica che conta** → [`blocchi/B3-politica.md`](blocchi/B3-politica.md).
 
 ## PR aperte
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| #34 | `fix/b1-pace` → `main` | blocco B1 | unire |
+| (B2) | `fix/b2-diplomazia` → `main` | blocco B2 | unire |
 
-Le PR #28-#33 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33).
+Le PR #28-#34 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1 dalla #34).
 
 ## Blocchi
 
@@ -28,24 +28,22 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | A2 — economia, costruzione, ricerca | 03, 04 | `fix/a2-economia` | fatto (#30, in `main` con #31) |
 | A3 — salvataggi, aggiornamenti, sicurezza | 08, 09, 10 | `fix/a3-salvataggi` | fatto (#33) — [scheda ed esito](blocchi/A3-salvataggi.md) |
 | B1 — una sola pace | 07, 02, 00 | `fix/b1-pace` | fatto (#34) — [scheda ed esito](blocchi/B1-pace.md) |
-| **B2 — diplomazia coerente** | 06 | `fix/b2-diplomazia` | **prossimo** — [scheda](blocchi/B2-diplomazia.md) |
-| B3 — politica che conta | 05 | `fix/b3-politica` | da fare — [scheda](blocchi/B3-politica.md) |
+| B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto — [scheda ed esito](blocchi/B2-diplomazia.md) |
+| **B3 — politica che conta** | 05 | `fix/b3-politica` | **prossimo** — [scheda](blocchi/B3-politica.md) |
 | B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | da fare — [scheda](blocchi/B4-coloniale.md) |
 | C — bilanciamento | 00-05 | un ramo per area | da fare — [scheda](blocchi/C-bilanciamento.md) |
 | D — sistemi nuovi | varie | un ramo per sistema | da fare — [scheda](blocchi/D-sistemi-nuovi.md) |
 
-L'ordine conta: B1 prima di B2 perché la difesa dei vassalli (B2) allunga le guerre che B1 deve saper chiudere.
-
-## Misure di riferimento (dopo B1)
+## Misure di riferimento (dopo B2)
 
 Servono a capire se un blocco ha rotto o rallentato qualcosa.
 
 | misura | valore |
 |---|---|
-| test | 126 in 19 file, tutti verdi |
+| test | 135 in 19 file, tutti verdi |
 | determinismo | 260 turni identici |
 | invarianti (`--fasi --caos` compreso) | 0 violazioni |
-| turno medio nel rapporto 1881-1899 | 131 ms (rifornimenti 52, economia 31, costruzione 10, piani 9) |
+| turno medio nel rapporto 1881-1899 | 131 ms (rifornimenti 52, economia 31). Dopo B2 il rapporto è uscito identico salvo i tempi e non è stato sostituito. I tempi assoluti dipendono dalla macchina: per un confronto si misura `main` sulla stessa macchina (`docs/piano/README.md`, sezione 7) |
 | guerre nel rapporto 1881-1899 | 7 dichiarate, 7 paci; la guerra Francia-Kong (ottobre 1899) è aperta a fine rapporto |
 | versione dei salvataggi | `SAVE_VERSION = 2` in `src/engine/migrate.ts`: chi cambia la forma dello stato aggiunge un passo e alza il numero |
 | risparmio in pace nel 1881 (saldo/entrate) | Regno Unito 30%, Stati Uniti 43%, Germania 30%, Russia 11%, Austria-Ungheria 8%, Italia 5% |

@@ -6,6 +6,7 @@ import { colonialWeight } from './ethnic';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
 import { AMERICAS_OCCUPATIONS } from '../scenario/americas1881';
 import { mapKey, SAVE_VERSION } from './migrate';
+import { dayOf } from '../scenario/politics1881';
 
 export const ROMAN = (n: number) => {
   const t: [number, string][] = [[1000, 'M'], [900, 'CM'], [500, 'D'], [400, 'CD'], [100, 'C'], [90, 'XC'], [50, 'L'], [40, 'XL'], [10, 'X'], [9, 'IX'], [5, 'V'], [4, 'IV'], [1, 'I']];
@@ -55,7 +56,7 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
     day: 0, turn: 1, owner, controller: [...owner], nations,
     units: [], battles: {}, wars: [], treaties: [], situations: [], events: [], memory: [], chronicle: '', dispatches: [], chats: {}, nextId: 0,
   };
-  INITIAL_TREATIES.forEach((t, i) => state.treaties.push({ id: `t${i}`, ...t, startDay: -365, endDay: null }));
+  INITIAL_TREATIES.forEach(({ until, ...t }, i) => state.treaties.push({ id: `t${i}`, ...t, startDay: -365, endDay: until ? dayOf(...until) : null }));
   // guerra del Pacifico (dal 5 aprile 1879): il Cile occupa il Litorale boliviano e il sud del Perù
   if (nations.CHL && nations.PRU && nations.BOL) {
     for (const o of AMERICAS_OCCUPATIONS) for (const p of map.provinces) if (o.owners.includes(owner[p.id]) && o.names.includes(p.name)) state.controller[p.id] = o.by;

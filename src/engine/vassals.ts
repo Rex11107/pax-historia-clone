@@ -166,11 +166,20 @@ export function followers(w: World, overlord: Tag): Tag[] {
 
 // --- azioni ---
 
+/**
+ * Giorni fra due azioni sul legame con lo stesso soggetto (corte 06, giurato 3.2): sei cicli di allenta e stringi
+ * nello stesso giorno abbassavano il desiderio d'indipendenza da 24 a 15 senza costi.
+ */
+export const BOND_GAP = 182;
+const bondRefusal = (w: World, x: Subject) => (w.state.day - x.since < BOND_GAP ? `il legame è cambiato da meno di sei mesi: si potrà toccare di nuovo fra ${BOND_GAP - (w.state.day - x.since)} giorni` : null);
+
 export function tighten(w: World, overlord: Tag, sub: Tag, sink: GameEvent[] = []): string | null {
   const x = subjectOf(w, sub);
   if (!x || x.overlord !== overlord) return 'non è un nostro soggetto';
   const i = LEVELS.indexOf(x.level);
   if (i >= LEVELS.length - 1) return 'è già un protettorato';
+  const wait = bondRefusal(w, x);
+  if (wait) return wait;
   if (x.liberty >= 25) return `desiderio di indipendenza troppo alto (${Math.round(x.liberty)}, serve sotto 25)`;
   x.level = LEVELS[i + 1]; x.liberty = clamp(x.liberty + 15, 0, 100); x.since = w.state.day;
   changeOpinion(w.state, sub, overlord, -10);
@@ -183,6 +192,8 @@ export function loosen(w: World, overlord: Tag, sub: Tag, sink: GameEvent[] = []
   const x = subjectOf(w, sub);
   if (!x || x.overlord !== overlord) return 'non è un nostro soggetto';
   const i = LEVELS.indexOf(x.level);
+  const wait = bondRefusal(w, x);
+  if (wait) return wait;
   changeOpinion(s, sub, overlord, 10);
   if (i === 0) {
     s.subjects = subjects(w).filter((y) => y !== x);
@@ -190,7 +201,7 @@ export function loosen(w: World, overlord: Tag, sub: Tag, sink: GameEvent[] = []
     emit(w, { type: 'subject', nations: [overlord, sub], text: `${nationName(w, overlord)} riconosce la piena indipendenza ${di(w, sub)}.` }, sink);
     return null;
   }
-  x.level = LEVELS[i - 1]; x.liberty = clamp(x.liberty - 20, 0, 100);
+  x.level = LEVELS[i - 1]; x.liberty = clamp(x.liberty - 20, 0, 100); x.since = s.day;
   emit(w, { type: 'subject', nations: [overlord, sub], text: `${nationName(w, overlord)} allenta la presa: ${nationName(w, sub)} ora è ${x.level}.` }, sink);
   return null;
 }
@@ -273,7 +284,10 @@ export function weeklySubjects(w: World, sink: GameEvent[]) {
     x.liberty = Math.round((x.liberty + (target - x.liberty) * 0.08) * 10) / 10;
     if (before < 75 && x.liberty >= 75 && (x.subject === s.player || x.overlord === s.player)) emit(w, { type: 'subject', nations: [x.overlord, x.subject], text: `${nationName(w, x.subject)} non versa più il tributo: il desiderio di indipendenza è alto.` }, sink);
     const r = rand(s.seed, 'vassallo', x.subject, s.day);
-    if (x.subject !== s.player && x.liberty >= 80 && r < 0.06) { declareIndependence(w, x.subject, sink); continue; }
+    // si proclama l'indipendenza solo se anche l'obiettivo la sostiene (corte 06, capo 5): Canada, Corea, Maldive,
+    // Kongo, Kuwait, Tibet e Terengganu partono sopra 80 per i dati del 1881, ma l'obiettivo li riporta in basso; prima
+    // il 15% delle partite cominciava con una guerra d'indipendenza canadese
+    if (x.subject !== s.player && x.liberty >= 80 && target >= 75 && r < 0.06) { declareIndependence(w, x.subject, sink); continue; }
     if (x.overlord !== s.player) {
       if (x.level === 'protettorato' && !annexRefusal(w, x.overlord, x.subject) && r > 0.97 && s.day - x.since > 5 * 365) annex(w, x.overlord, x.subject, sink);
       else if (x.liberty < 20 && r > 0.95) tighten(w, x.overlord, x.subject, sink);

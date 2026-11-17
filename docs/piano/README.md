@@ -115,5 +115,7 @@ Il rapporto `storia.mts` non gira nella CI: lo rigenera chi ha un terminale, pri
 - Ordinare con `sort` senza spareggio: il risultato dipende dall'ordine d'ingresso e il determinismo salta.
 - Contare un'età di guerra da `startDay` negativo: la Guerra del Pacifico (aperta nel 1879) si chiudeva l'8 gennaio 1881.
 - Lanciare `storia.mts` in parallelo con altre simulazioni: i tempi per fase raddoppiano e sembrano un rallentamento.
+- Confrontare tempi misurati su macchine diverse: la macchina della sessione può cambiare. Per dire se un ramo
+  rallenta si misura `main` sulla stessa macchina (un `git worktree` di `main` e la stessa sonda su tutti e due).
 - Una funzione chiamata per ogni nazione e ogni tecnica che scorre tutte le 4.500 province: usare `controlled(w, tag)`.
 - Unire le PR a catena nell'ordine sbagliato (sezione 3).

@@ -139,8 +139,10 @@ export const NATIONS: Record<string, P> = {
 };
 
 /** Trattati in vigore al 1° gennaio 1881. */
-export const INITIAL_TREATIES: { type: 'alliance' | 'non_aggression' | 'guarantee'; a: string; b: string }[] = [
-  { type: 'alliance', a: 'GER', b: 'AUH' }, // Duplice Alleanza, 1879
+export const INITIAL_TREATIES: { type: 'alliance' | 'non_aggression' | 'guarantee'; a: string; b: string; until?: [number, number, number] }[] = [
+  // Duplice Alleanza, firmata a Vienna il 7 ottobre 1879 per cinque anni, poi rinnovata più volte fino al 1918:
+  // scade il 7 ottobre 1884 e si rinnova se le due parti si stimano ancora (expireTreaties)
+  { type: 'alliance', a: 'GER', b: 'AUH', until: [1884, 10, 7] },
   { type: 'guarantee', a: 'GBR', b: 'BEL' }, // Trattato di Londra, 1839
   { type: 'guarantee', a: 'FRA', b: 'BEL' },
   { type: 'guarantee', a: 'GER', b: 'BEL' },

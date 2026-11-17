@@ -36,6 +36,21 @@ describe('invarianti dello stato', () => {
     expect(subjectOf(w, 'HYD')).toBeUndefined(); // la guerra ha sciolto il protettorato
   }, 120000);
 
+  it('entrare in guerra su richiesta non produce stati vietati (corte 06, capo 2)', async () => {
+    const { applyProposal, checkProposal } = await import('../src/engine/diplomacy');
+    const w = newGame(MAP, 'ITA');
+    declareWar(w, 'ITA', 'AUH', '');
+    declareWar(w, 'ITA', 'TUR', '');
+    // le proposte vietate non passano il controllo; quelle lecite, applicate, lasciano lo stato sano
+    for (const [to, against] of [['GER', 'AUH'], ['EGY', 'TUR'], ['GRE', 'TUR'], ['SER', 'TUR']] as const) {
+      const p = { type: 'join_war' as const, against };
+      if (!checkProposal(w, 'ITA', to, p)) applyProposal(w, 'ITA', to, p);
+    }
+    expect(checkInvariants(w)).toEqual([]);
+    runTurn(w);
+    expect(checkInvariants(w)).toEqual([]);
+  });
+
   it('una nazione che scompare esce da trattati, contratti, cantieri e legami', () => {
     const w = newGame(MAP, 'ITA');
     const s = w.state;
