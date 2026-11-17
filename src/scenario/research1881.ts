@@ -57,7 +57,7 @@ export const TECHS: Tech[] = [
   // --- Industria ---
   t('bessemer', 'industria', 'acciaio', 'Convertitore Bessemer', 1856, 30, 0.6, [], { industry: 2 }, 'L\'acciaio in grande quantità: ghisa soffiata nel convertitore.', { start: 25, consumes: ['ferro', 'carbone'] }),
   t('siemens_martin', 'industria', 'acciaio', 'Forno Siemens-Martin', 1865, 36, 0.8, ['bessemer'], { industry: 2 }, 'Il forno a suola: acciaio di qualità anche da rottami.', { start: 50, consumes: ['ferro', 'carbone'], unlocks: [['siderurgia', 2]] }),
-  t('thomas', 'industria', 'acciaio', 'Processo Thomas-Gilchrist', 1879, 40, 0.9, ['bessemer'], { industry: 3 }, 'Il rivestimento basico rende utilizzabile il ferro fosforoso: la minette di Lorena e Lussemburgo, il ferro svedese.', { start: 85, consumes: ['ferro', 'carbone'], sites: [['ferro', 5.9, 49.25, 'Briey'], ['ferro', 6.0, 49.55, 'Minette lussemburghese'], ['ferro', 20.2, 67.85, 'Kiruna'], ['ferro', 15.0, 60.1, 'Grängesberg']] }),
+  t('thomas', 'industria', 'acciaio', 'Processo Thomas-Gilchrist', 1879, 40, 0.9, ['bessemer'], { industry: 3 }, 'Il rivestimento basico rende utilizzabile il ferro fosforoso: la minette di Lorena e Lussemburgo, il ferro svedese.', { start: 85, consumes: ['ferro', 'carbone'], sites: [['ferro', 6.05, 49.33, 'minette lorenese (Hayange)'], ['ferro', 5.9, 49.25, 'Briey'], ['ferro', 6.0, 49.55, 'Minette lussemburghese'], ['ferro', 20.2, 67.85, 'Kiruna'], ['ferro', 15.0, 60.1, 'Grängesberg']] }),
   t('acciaio_massa', 'industria', 'acciaio', 'Acciaierie integrate', 1890, 52, 1.2, ['siemens_martin', 'thomas'], { industry: 4, industrialYield: 1.1 }, 'Altiforni, convertitori e laminatoi in un solo stabilimento.', { minIndustry: 45, consumes: ['ferro', 'carbone'], unlocks: [['siderurgia', 3]] }),
   t('soda_solvay', 'industria', 'chimica', 'Soda Solvay', 1872, 30, 0.6, [], { industry: 1, industrialYield: 1.03 }, 'Il processo all\'ammoniaca per la soda: vetro, sapone, carta.', { start: 55, consumes: ['sale'], unlocks: [['chimica', 2]] }),
   t('coloranti', 'industria', 'chimica', 'Coloranti sintetici', 1880, 40, 0.9, ['soda_solvay'], { income: 1.02, industrialYield: 1.05 }, 'L\'anilina e l\'indaco sintetico: la chimica tedesca conquista il mondo.', { start: 82, consumes: ['carbone'] }),
@@ -72,7 +72,7 @@ export const TECHS: Tech[] = [
   t('dinamo', 'energia', 'elettricita', 'Dinamo industriale', 1871, 26, 0.6, [], { industry: 1 }, 'La dinamo di Gramme e di Siemens: la corrente continua in quantità.', { start: 75, consumes: ['metalli'] }),
   t('illuminazione', 'energia', 'elettricita', 'Illuminazione elettrica', 1882, 30, 0.7, ['dinamo'], { income: 1.01, stability: 1 }, 'Centrali urbane e lampade: Pearl Street, Milano Santa Radegonda.', { consumes: ['metalli'] }),
   t('corrente_alternata', 'energia', 'elettricita', 'Corrente alternata e trasformatori', 1886, 40, 0.9, ['illuminazione'], { industry: 2 }, 'Il campo magnetico rotante di Ferraris e Tesla, i trasformatori.', { consumes: ['metalli'] }),
-  t('motore_elettrico', 'energia', 'elettricita', 'Motore elettrico industriale', 1889, 40, 0.9, ['corrente_alternata'], { industrialYield: 1.05, industry: 2 }, 'La forza motrice si stacca dalla macchina a vapore.', { consumes: ['metalli'] }),
+  t('motore_elettrico', 'energia', 'elettricita', 'Motore elettrico industriale', 1889, 40, 0.9, ['corrente_alternata'], { industrialYield: 1.05, industry: 2 }, 'La forza motrice si stacca dalla macchina a vapore: argani, pompe e perforatrici elettriche nei pozzi profondi.', { consumes: ['metalli'], unlocks: [['miniera', 3]] }),
   t('trasmissione', 'energia', 'elettricita', 'Trasmissione a distanza', 1891, 40, 1.0, ['corrente_alternata'], { industry: 1 }, 'Lauffen-Francoforte, 175 km: l\'energia viaggia.', { consumes: ['metalli'] }),
   t('centrali_idro', 'energia', 'idro', 'Centrali idroelettriche', 1886, 40, 0.8, ['illuminazione'], { coalRelief: 0.5 }, 'Il "carbone bianco": dove ci sono montagne e fiumi l\'industria usa meno carbone.', { consumes: ['metalli'] }),
   t('impianti_alpini', 'energia', 'idro', 'Grandi impianti alpini', 1898, 52, 1.1, ['centrali_idro', 'trasmissione'], { coalRelief: 0.5, industry: 3 }, 'Paderno d\'Adda, Vizzola: le Alpi alimentano le fabbriche della pianura.', { minIndustry: 25, consumes: ['metalli'] }),
@@ -99,10 +99,10 @@ export const TECHS: Tech[] = [
   // --- Militare ---
   t('retrocarica', 'militare', 'fanteria', 'Fucile a retrocarica', 1866, 20, 0.5, [], { quality: 1.02 }, 'Dreyse, Chassepot, Martini-Henry, Vetterli.', { start: 15 }),
   t('ripetizione', 'militare', 'fanteria', 'Fucile a ripetizione', 1886, 40, 1.0, ['retrocarica', 'pezzi_intercambiabili'], { quality: 1.04 }, 'Lebel, Mannlicher, Mauser: il serbatoio e la polvere senza fumo.', { consumes: ['ferro'] }),
-  t('mitragliatrice', 'militare', 'fanteria', 'Mitragliatrice', 1884, 46, 1.1, ['retrocarica', 'pezzi_intercambiabili'], { quality: 1.04, exhaustion: 1.03 }, 'La Maxim: una sola arma ferma un battaglione.', { consumes: ['ferro'] }),
-  t('cannoni_acciaio', 'militare', 'artiglieria', 'Cannoni d\'acciaio a retrocarica', 1870, 30, 0.8, ['bessemer'], { quality: 1.02 }, 'Le canne d\'acciaio di Krupp e Armstrong.', { start: 45, consumes: ['ferro'] }),
-  t('tiro_rapido', 'militare', 'artiglieria', 'Artiglieria a tiro rapido', 1897, 52, 1.2, ['cannoni_acciaio', 'senza_fumo', 'acciaio_massa'], { quality: 1.05 }, 'Il 75 francese: freno di rinculo e quindici colpi al minuto.', { consumes: ['ferro'] }),
-  t('dinamite', 'militare', 'esplosivi', 'Dinamite', 1867, 20, 0.5, [], { income: 1.01 }, 'Nobel: gallerie, miniere, demolizioni.', { start: 30, consumes: ['zolfo'] }),
+  t('mitragliatrice', 'militare', 'fanteria', 'Mitragliatrice', 1884, 46, 1.1, ['retrocarica', 'pezzi_intercambiabili'], { quality: 1.04 }, 'La Maxim: una sola arma ferma un battaglione.', { consumes: ['ferro'] }),
+  t('cannoni_acciaio', 'militare', 'artiglieria', 'Cannoni d\'acciaio a retrocarica', 1870, 30, 0.8, ['bessemer'], { quality: 1.02 }, 'Le canne d\'acciaio di Krupp e Armstrong.', { start: 45, consumes: ['ferro'], unlocks: [['bellica', 2]] }),
+  t('tiro_rapido', 'militare', 'artiglieria', 'Artiglieria a tiro rapido', 1897, 52, 1.2, ['cannoni_acciaio', 'senza_fumo', 'acciaio_massa'], { quality: 1.05 }, 'Il 75 francese: freno di rinculo e quindici colpi al minuto.', { consumes: ['ferro'], unlocks: [['bellica', 3]] }),
+  t('dinamite', 'militare', 'esplosivi', 'Dinamite', 1867, 20, 0.5, [], { income: 1.01 }, 'Nobel: gallerie, miniere, demolizioni.', { start: 30, consumes: ['zolfo'], unlocks: [['miniera', 2]] }),
   t('senza_fumo', 'militare', 'esplosivi', 'Polvere senza fumo', 1884, 40, 1.0, ['dinamite'], { quality: 1.03 }, 'La Poudre B di Vieille: più gittata, nessuna nube a tradire i tiratori.', { consumes: ['zolfo'] }),
   t('alti_esplosivi', 'militare', 'esplosivi', 'Granate ad alto esplosivo', 1885, 40, 1.0, ['dinamite'], { fortBreak: 0.4 }, 'Melinite e lyddite: le granate-torpedine sventrano i forti in muratura.', { consumes: ['zolfo'] }),
   t('forti_poligonali', 'militare', 'fortificazioni', 'Forti poligonali staccati', 1860, 26, 0.6, [], {}, 'Cinture di forti attorno alle piazzeforti.', { start: 25, unlocks: [['fortezza', 2]] }),
@@ -127,6 +127,16 @@ export const TECHS: Tech[] = [
   t('vaccini', 'medicina', 'batteriologia', 'Vaccini e sieri', 1890, 46, 0.9, ['batteriologia'], { stability: 1, manpower: 1.03 }, 'Pasteur, Behring: rabbia, difterite, tetano.', {}),
   t('chinino', 'medicina', 'tropicale', 'Profilassi col chinino', 1854, 20, 0.4, [], { attrition: 0.95 }, 'Il chinino ogni giorno per le truppe in Africa.', { start: 20 }),
   t('medicina_tropicale', 'medicina', 'tropicale', 'Medicina tropicale', 1897, 46, 0.9, ['chinino', 'batteriologia'], { attrition: 0.88 }, 'Laveran e Ross: la malaria viene dalla zanzara.', {}),
+];
+
+/**
+ * Giacimenti che si aprono in una data, non con una ricerca: li scopre un cercatore, non un laboratorio.
+ * [risorsa, lon, lat, nome, anno]. Valgono per chiunque controlli la provincia da quell'anno.
+ * Witwatersrand: George Harrison trova l'affioramento della Main Reef a Langlaagte nel 1886, Johannesburg nasce
+ * lo stesso anno (Encyclopaedia Britannica, "Witwatersrand").
+ */
+export const DATED_SITES: [ResourceId, number, number, string, number][] = [
+  ['oro', 28.0, -26.2, 'Witwatersrand', 1886],
 ];
 
 export interface Scientist {

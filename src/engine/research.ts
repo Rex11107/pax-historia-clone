@@ -1,9 +1,10 @@
 // Ricerca: albero 1880-1914, progetti con costo settimanale e risorse, scienziati storici,
 // collaborazione scientifica fra due nazioni. Tutto nel motore.
 
-import { CATEGORIES, SCIENTISTS, TECHS, type Category, type Scientist, type Tech, type TechEffects } from '../scenario/research1881';
+import { CATEGORIES, DATED_SITES, SCIENTISTS, TECHS, type Category, type Scientist, type Tech, type TechEffects } from '../scenario/research1881';
 import type { BuildingId } from '../scenario/buildings1881';
 import type { ResourceId } from './resources';
+import { cacheVersion, industryOf } from './construction';
 import type { GameEvent, Tag } from './types';
 import { atWar, changeOpinion, dateOf, emit, nationName, newId, opinion, rand, treatyBetween, type World } from './world';
 
@@ -35,7 +36,28 @@ const SCI = new Map(SCIENTISTS.map((x) => [x.id, x]));
 export const scientist = (id: string | undefined) => (id ? SCI.get(id) : undefined);
 
 const yearOf = (w: World) => dateOf(w.state.day).getUTCFullYear() + dateOf(w.state.day).getUTCMonth() / 12;
-const industry = (w: World, t: Tag) => w.profiles[t]?.industry ?? 20;
+/** Industria del 1881 (dal profilo): decide solo le conoscenze iniziali. */
+const industry1881 = (w: World, t: Tag) => w.profiles[t]?.industry ?? 20;
+/**
+ * Industria di oggi, con ciò che si è costruito o perso: decide ricerche contemporanee, velocità e soglie
+ * (corte 04, capo 3). Prima era quella del 1881, e un Giappone che si industrializzava non guadagnava nulla.
+ */
+const industry = (w: World, t: Tag) => {
+  if (!w.profiles[t]) return 20;
+  // memo per giorno, opere e conoscenze: ogni ricerca avviata cambia `nextId` e svuota le cache delle costruzioni,
+  // e senza questo la scelta delle ricerche dell'IA ricalcolava i punti industriali di tutti dopo ogni avvio
+  const s = w.state;
+  const key = `${s.day}:${cacheVersion()}:${(s.trades ?? []).length}`;
+  let m = indMemo.get(s);
+  if (!m || m.key !== key) indMemo.set(s, (m = { key, per: new Map() }));
+  const k = s.research?.known[t]?.length ?? 0;
+  const hit = m.per.get(t);
+  if (hit && hit[0] === k) return hit[1];
+  const v = industryOf(w, t);
+  m.per.set(t, [k, v]);
+  return v;
+};
+const indMemo = new WeakMap<object, { key: string; per: Map<Tag, [number, number]> }>();
 
 /** Stato della ricerca (al primo uso: ogni nazione conosce ciò che il suo livello industriale del 1881 giustifica). */
 export function research(w: World): ResearchState {
@@ -44,7 +66,7 @@ export function research(w: World): ResearchState {
   const known: Record<Tag, string[]> = {};
   for (const tag of Object.keys(s.nations)) {
     if (w.profiles[tag]?.micro || tag === 'NUL') { known[tag] = []; continue; }
-    const ind = industry(w, tag);
+    const ind = industry1881(w, tag);
     const k = new Set<string>();
     // in ordine di data, così i prerequisiti vengono prima
     for (const x of [...TECHS].sort((a, b) => a.year - b.year)) if (x.start !== undefined && ind >= x.start && x.prereq.every((p) => k.has(p))) k.add(x.id);
@@ -58,7 +80,7 @@ export const knows = (w: World, tag: Tag, id: string) => (research(w).known[tag]
 export const projectsOf = (w: World, tag: Tag) => research(w).projects.filter((p) => p.nations.includes(tag));
 
 /** Ricerche contemporanee: 1, 2 dall'industria 35, 3 dall'industria 75. */
-export const researchSlots = (w: World, tag: Tag) => 1 + (industry(w, tag) >= 35 ? 1 : 0) + (industry(w, tag) >= 75 ? 1 : 0);
+export const researchSlots = (w: World, tag: Tag) => { const i = industry(w, tag); return 1 + (i >= 35 ? 1 : 0) + (i >= 75 ? 1 : 0); };
 
 /** Anni di anticipo sulla data storica (0 se è già il suo tempo). */
 export const yearsAhead = (w: World, x: Tech) => Math.max(0, Math.ceil(x.year - yearOf(w)));
@@ -208,12 +230,14 @@ const effCache = new WeakMap<object, Map<string, { key: string; eff: Required<Om
 export function techEffects(w: World, tag: Tag) {
   const r = research(w);
   // solo ciò che si è ricercato dopo il 1881: il resto è già nei profili (industria, qualità militare…)
-  const list = (r.known[tag] ?? []).slice(r.start?.[tag] ?? 0);
-  const key = `${list.length}:${list[list.length - 1] ?? ''}`;
+  const all = r.known[tag] ?? [];
+  const from = r.start?.[tag] ?? 0;
+  const key = `${Math.max(0, all.length - from)}:${all.length > from ? all[all.length - 1] : ''}`;
   let per = effCache.get(r);
   if (!per) effCache.set(r, (per = new Map()));
   const c = per.get(tag);
   if (c && c.key === key) return c.eff;
+  const list = all.slice(from);
   const e = { income: 1, quality: 1, exhaustion: 1, manpower: 1, logistics: 1, railSpeed: 1, agri: 1, industrialYield: 1, attrition: 1, oilValue: 1, upkeep: 1, stability: 0, industry: 0, coalRelief: 0, fortBreak: 0, fortArmor: false };
   for (const id of list) {
     const x = tech(id)?.effects;
@@ -243,18 +267,25 @@ export function siteLots(w: World, p: number): ResourceId[] {
   if (!siteMap || siteMapFor !== w.map) {
     siteMap = new Map();
     siteMapFor = w.map;
-    for (const x of TECHS) for (const [r, lon, lat] of x.sites ?? []) {
+    const add = (r: ResourceId, lon: number, lat: number, key: string) => {
       const id = w.map.locate(lon, lat);
-      if (id === null || w.map.provinces[id].impassable) continue;
-      const l = siteMap.get(id) ?? [];
-      l.push([r, x.id]);
-      siteMap.set(id, l);
-    }
+      if (id === null || w.map.provinces[id].impassable) return;
+      const l = siteMap!.get(id) ?? [];
+      l.push([r, key]);
+      siteMap!.set(id, l);
+    };
+    for (const x of TECHS) for (const [r, lon, lat] of x.sites ?? []) add(r, lon, lat, x.id);
+    // giacimenti scoperti in una data, non da una ricerca: valgono per chiunque controlli la provincia (chiave "@anno")
+    for (const [r, lon, lat, , year] of DATED_SITES) add(r, lon, lat, `@${year}`);
   }
   const l = siteMap.get(p);
   if (!l) return [];
   const ctrl = w.state.controller[p];
-  return l.filter(([r, id]) => knows(w, ctrl, id) && !w.map.resources[p].includes(r)).map(([r]) => r);
+  // un giacimento aggiunge un lotto anche dove la provincia ha già quella risorsa (corte 04, capo 7): la minette
+  // lorenese, Kiruna, Grozny e Maikop cadevano in province che il ferro o il petrolio li avevano già, e restavano inerti
+  const year = dateOf(w.state.day).getUTCFullYear();
+  const out = l.filter(([r, id]) => (id.startsWith('@') ? year >= Number(id.slice(1)) : knows(w, ctrl, id))).map(([r]) => r);
+  return out;
 }
 
 // --- fine settimana ---

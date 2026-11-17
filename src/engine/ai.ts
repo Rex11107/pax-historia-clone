@@ -6,6 +6,7 @@ import type { GameEvent, Tag, Unit } from './types';
 import { allied, emit, enemiesOf, NOBODY, rand, The, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
 import { hasProgram } from './colonial';
+import { colonialWeight } from './ethnic';
 
 // Riflessi deterministici delle nazioni non giocanti (zero chiamate AI):
 // difendono, liberano le province occupate, attaccano dove hanno superiorità locale,
@@ -48,7 +49,8 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       const capital = Object.values(s.nations).some((n) => n.capital === p && isEnemy(n.tag)) ? 2 : 1;
       // le province con carbone, ferro o petrolio valgono di più
       const resBonus = 1 + map.resources[p].reduce((x, r) => x + (RESOURCES[r].strategic ? RESOURCES[r].value * 3 : 0), 0);
-      targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop + 10))) / (1 + defense / 20000) });
+      // la popolazione conta per quanto renderebbe: una provincia di un popolo estraneo fuori d'Europa vale l'8%
+      targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop * colonialWeight(w, tag, p) + 10))) / (1 + defense / 20000) });
     }
   }
   const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length);
@@ -69,7 +71,7 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
         return { t, plan, ratio, value: t.score * Math.min(2, ratio) / (1 + plan.days / 10) };
       })
       .filter((x): x is NonNullable<typeof x> => !!x && (x.ratio >= 1.3 || strengthAt(w, x.t.p, (y) => isEnemy(y.nation)) === 0))
-      .sort((a, b) => b.value - a.value)[0];
+      .sort((a, b) => b.value - a.value || a.t.p - b.t.p)[0];
     if (cand) {
       u.orders = [{ type: 'attack', target: cand.t.p, status: 'pending', label: 'offensiva' }];
       assigned.set(cand.t.p, (assigned.get(cand.t.p) ?? 0) + u.strength);
@@ -84,13 +86,13 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
         const mine = strengthAt(w, p, (y) => allied(s, tag, y.nation)) + (assigned.get(p) ?? 0);
         return { p, need: threat - mine };
       })
-      .sort((a, b) => b.need - a.need)
+      .sort((a, b) => b.need - a.need || a.p - b.p)
       .slice(0, 8)
       .map((x) => ({ ...x, days: dist[x.p] }))
       .filter((x) => x.days < 45)
-      .sort((a, b) => b.need / (1 + b.days / 15) - a.need / (1 + a.days / 15))[0];
+      .sort((a, b) => b.need / (1 + b.days / 15) - a.need / (1 + a.days / 15) || a.p - b.p)[0];
     if (best) {
-      u.orders = [{ type: 'move', target: best.p, status: 'pending', label: 'al fronte' }, { type: 'entrench', status: 'pending' }];
+      u.orders = [{ type: 'move', target: best.p, status: 'pending', label: 'al fronte' }, { type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }];
       assigned.set(best.p, (assigned.get(best.p) ?? 0) + u.strength);
     } else stuck.push(u);
   }
@@ -167,13 +169,13 @@ export function aiColonize(w: World, sink: GameEvent[]) {
     const cap = s.nations[tag].capital;
     const abroad = idle.filter((u) => w.map.adj[u.location].some((e) => nullSet.has(e.to)) || nullSet.has(u.location));
     const pool = abroad.length ? abroad : colonial ? idle.filter((u) => u.location !== cap || idle.length === 1) : idle.filter((u) => w.map.adj[u.location].some((e) => near.includes(e.to)));
-    const unit = [...pool].sort((a, b) => a.strength - b.strength)[0];
+    const unit = [...pool].sort((a, b) => a.strength - b.strength || a.id.localeCompare(b.id))[0];
     if (!unit) continue;
     // candidati: i migliori per valore e vicinanza in linea d'aria, poi il percorso vero per i primi
     const here = w.map.provinces[unit.location].lonlat;
     const cand = [...near.map((p) => ({ p, k: 1 })), ...far.map((p) => ({ p, k: 0.6 }))]
       .map(({ p, k }) => { return { p, sc: (colonyValue(w, p) * k) / (1 + geoKm(w.map.provinces[p].lonlat, here) / 800) }; })
-      .sort((a, b) => b.sc - a.sc).slice(0, 4);
+      .sort((a, b) => b.sc - a.sc || a.p - b.p).slice(0, 4);
     let best: { p: number; v: number } | null = null;
     for (const c of cand) {
       const plan = planPath(w, unit, c.p, false);
@@ -205,7 +207,9 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     for (const u of s.units) { if (u.nation === tag) mine += u.strength; else if (foes.has(u.nation)) theirs += u.strength; }
     const invaded = s.owner.some((o, p) => o === tag && foes.has(s.controller[p]));
     if (mine < theirs * (invaded ? 3 : 1.5) && n.treasury > 30 && n.manpower > 20000) {
-      const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag).sort((a, b) => b.pop - a.pop);
+      // si arruola dove la leva rende davvero: la popolazione pesata col peso coloniale, come nelle leve del bilancio
+      const wpop = (p: { id: number; pop: number }) => p.pop * colonialWeight(w, tag, p.id);
+      const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag).sort((a, b) => wpop(b) - wpop(a) || a.id - b.id);
       for (const p of own.slice(0, 5)) if (!recruit(w, tag, 'infantry', p.id, sink)) break;
     }
   }
@@ -217,7 +221,9 @@ export function aiEndOfTurn(w: World, sink: GameEvent[]) {
     const a = war.attackers[0], d = war.defenders[0];
     if (!a || !d || !s.wars.includes(war)) continue;
     const weA = s.nations[a].warExhaustion, weD = s.nations[d].warExhaustion;
-    const age = s.day - war.startDay;
+    // età contata dall'inizio della partita: la Guerra del Pacifico (aperta nel 1879, startDay negativo) non si
+    // chiude d'ufficio nella prima settimana del 1881
+    const age = s.day - Math.max(war.startDay, 0);
     const long = age > 180;
     // oltre alla stanchezza: una guerra decisa sul campo (un lato quasi tutto occupato) si chiude dopo due mesi,
     // e una che non va da nessuna parte dopo un anno e mezzo. Prima una guerra senza scontri non finiva mai

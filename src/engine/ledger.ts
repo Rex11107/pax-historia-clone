@@ -69,6 +69,15 @@ export function repay(w: World, tag: Tag, amount: number): number {
   return pay;
 }
 
+/** Prestito volontario: entra `amount` in cassa, il debito cresce di `amount` più il sovrapprezzo d'emissione. */
+export function borrow(w: World, tag: Tag, amount: number): number {
+  const n = w.state.nations[tag];
+  if (!n || !(amount > 0)) return 0;
+  n.treasury += amount; n.debt += amount * LOAN_MARKUP;
+  record(w, tag, 'prestito', amount);
+  return amount;
+}
+
 /** Il saldo del bilancio entra in cassa (solo la fase dell'economia). Restituisce il nuovo debito, se c'è stato. */
 export function applyBudget(w: World, tag: Tag, net: number): number {
   w.state.nations[tag].treasury += net;

@@ -35,7 +35,14 @@ export function ethnicTable(w: World) {
 }
 
 export const composition = (w: World, p: number) => ethnicTable(w)[p].comp;
-export const majority = (w: World, p: number) => composition(w, p).reduce((a, b) => (b.share > a.share ? b : a)).eth;
+// la maggioranza si chiede molto spesso (il peso coloniale entra in bilancio, risorse, opere e scelte dell'IA): una
+// tabella per mappa invece di rifare la riduzione a ogni chiamata
+const majCache = new WeakMap<object, string[]>();
+export const majority = (w: World, p: number) => {
+  let m = majCache.get(w.map);
+  if (!m) { m = ethnicTable(w).map((x) => x.comp.reduce((a, b) => (b.share > a.share ? b : a)).eth); majCache.set(w.map, m); }
+  return m[p];
+};
 export const ethLabel = (id: string) => ETHNICITIES[id]?.label ?? id;
 
 /** Quanto un popolo è "estraneo" per uno Stato: 0 proprio, 0,5 regionale, 1 altrimenti. */

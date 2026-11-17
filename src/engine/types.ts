@@ -175,6 +175,8 @@ export interface Battle {
   startDay: number;
   losses: Record<Tag, number>;
   sides: [Tag[], Tag[]]; // [attaccanti, difensori]
+  /** forza di ogni unità quando è entrata in questa battaglia: una leva appena arruolata non si ritira al primo colpo */
+  start?: Record<string, number>;
 }
 
 export interface War {
