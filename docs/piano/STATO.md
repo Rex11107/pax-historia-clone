@@ -12,7 +12,7 @@ Aggiornato al 17 novembre 2026, dopo il blocco A3. Si aggiorna alla fine di ogni
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| (A3) | `fix/a3-salvataggi` → `main` | blocco A3 | unire |
+| #33 | `fix/a3-salvataggi` → `main` | blocco A3 | unire |
 
 Le PR #28-#32 sono unite (A1 e A2 sono in `main` dalla #31).
 
