@@ -5,6 +5,9 @@ TypeScript + Vite + Capacitor (APK Android), pubblicato su GitHub Pages e nelle 
 Questo file è il contratto per chi lavora al codice. `docs/SPEC.md` resta la descrizione estesa
 delle fasi; in caso di dubbio, vince questo file.
 
+**Chi riprende il lavoro** (qualsiasi modello): parte da `docs/piano/README.md` (come si lavora) e
+`docs/piano/STATO.md` (dove siamo e qual è il prossimo blocco); i compiti sono in `docs/piano/blocchi/`.
+
 ## Principi
 
 1. **Il modello propone, il codice dispone.** Nessuna azione dell'AI scrive lo stato del mondo:
