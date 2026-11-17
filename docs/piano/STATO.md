@@ -13,7 +13,7 @@ Aggiornato al 17 novembre 2026, dopo il blocco A2. Si aggiorna alla fine di ogni
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
 | #31 | `feat/fase2-storia` → `main` | A1 e A2, rimasti fuori da `main` per l'ordine delle unioni | unire |
-| (questa) | `docs/piano-agenti` → `main` | questa cartella e il workflow `Verifica` sulle PR | unire |
+| #32 | `docs/piano-agenti` → `main` | questa cartella e il workflow `Verifica` sulle PR | unire |
 
 ## Blocchi
 
