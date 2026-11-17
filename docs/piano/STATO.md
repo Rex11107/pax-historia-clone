@@ -12,7 +12,7 @@ Aggiornato al 17 novembre 2026, dopo il blocco B1. Si aggiorna alla fine di ogni
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| (B1) | `fix/b1-pace` → `main` | blocco B1 | unire |
+| #34 | `fix/b1-pace` → `main` | blocco B1 | unire |
 
 Le PR #28-#33 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33).
 
@@ -27,7 +27,7 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | A1 — guerra e IA | 01, 02 | `fix/a1-guerra` | fatto (#29, in `main` con #31) |
 | A2 — economia, costruzione, ricerca | 03, 04 | `fix/a2-economia` | fatto (#30, in `main` con #31) |
 | A3 — salvataggi, aggiornamenti, sicurezza | 08, 09, 10 | `fix/a3-salvataggi` | fatto (#33) — [scheda ed esito](blocchi/A3-salvataggi.md) |
-| B1 — una sola pace | 07, 02, 00 | `fix/b1-pace` | fatto — [scheda ed esito](blocchi/B1-pace.md) |
+| B1 — una sola pace | 07, 02, 00 | `fix/b1-pace` | fatto (#34) — [scheda ed esito](blocchi/B1-pace.md) |
 | **B2 — diplomazia coerente** | 06 | `fix/b2-diplomazia` | **prossimo** — [scheda](blocchi/B2-diplomazia.md) |
 | B3 — politica che conta | 05 | `fix/b3-politica` | da fare — [scheda](blocchi/B3-politica.md) |
 | B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | da fare — [scheda](blocchi/B4-coloniale.md) |
