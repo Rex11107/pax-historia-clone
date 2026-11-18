@@ -202,6 +202,13 @@ function peaceDue(w: World, war: War): boolean {
   // chiude d'ufficio nella prima settimana del 1881
   const age = s.day - Math.max(war.startDay, 0);
   const long = age > 180;
+  // un'ancora storica tiene aperta la guerra (corte 00, passo 2): prima si chiude solo se chi perde è sfinito, o se
+  // chi vince è allo stremo. Il Cile del 1881-83 era stanco ma non cedette: la stanchezza del vincitore conta meno
+  if (war.resistance !== undefined && s.day < war.resistance) {
+    const win = warScore(w, war).winner;
+    const loser = win === 'att' ? weD : win === 'def' ? weA : Math.max(weA, weD);
+    return loser >= 70 || Math.max(weA, weD) >= 95;
+  }
   const decided = age > 60 && warScore(w, war).points >= 50;
   return Math.max(weA, weD) >= 55 || (long && Math.max(weA, weD) > 35) || decided || age > 540;
 }

@@ -92,6 +92,8 @@ toccano file diversi.
 | `npx tsx scripts/sim/storia.mts 19 regnum docs/rapporti/1881-1899.md` | a fine blocco, da solo | rapporto rigenerato, 0 invarianti violate |
 | `npx tsx scripts/sim/turno.mts` | se si teme di rallentare | ms per fase, da confrontare con `main` sulla stessa macchina |
 | `npx tsx scripts/sim/governi.mts` | se si tocca la politica interna | governi e crisi per paese in 19 anni |
+| `npx tsx scripts/sim/traguardi.mts regnum,a,b,c --intestazione` | se si tocca il coloniale o le guerre | tabella dei traguardi storici (corte 00) per seme, circa 3 minuti a seme |
+| `npx tsx scripts/sim/tunisi.mts 20` | se si tocca il coloniale | Tunisi e Tel el-Kebir entro il 1882 su venti semi |
 
 **Chi non può eseguire comandi** (per esempio un modello in chat senza terminale): apre comunque la PR. Il workflow
 `Verifica` (`.github/workflows/verifica.yml`) esegue tipi, `map:check`, test, determinismo e invarianti su ogni
@@ -115,6 +117,8 @@ Il rapporto `storia.mts` non gira nella CI: lo rigenera chi ha un terminale, pri
 - Ritoccare a mano la mappa generata: rompe le adiacenze.
 - Ordinare con `sort` senza spareggio: il risultato dipende dall'ordine d'ingresso e il determinismo salta.
 - Contare un'età di guerra da `startDay` negativo: la Guerra del Pacifico (aperta nel 1879) si chiudeva l'8 gennaio 1881.
+- Usare `subjectOf(w, 'EGY')` come «l'Egitto è libero»: nel 1881 è tributario della Porta. Si confronta il signore
+  (`subjectOf(…)?.overlord !== 'GBR'`).
 - Lanciare `storia.mts` in parallelo con altre simulazioni: i tempi per fase raddoppiano e sembrano un rallentamento.
 - Confrontare tempi misurati su macchine diverse: la macchina della sessione può cambiare. Per dire se un ramo
   rallenta si misura `main` sulla stessa macchina (un `git worktree` di `main` e la stessa sonda su tutti e due).

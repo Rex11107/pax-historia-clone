@@ -9,6 +9,7 @@
 // forza relativa del soggetto, debolezza del signore (guerre, stanchezza, instabilità), sostegno
 // straniero, meno la stima verso il signore, i commerci con lui, gli investimenti e le sue truppe.
 
+import { LOCAL_STANCE } from '../scenario/colonial1881';
 import { checkAlive, declareWar, makePeace, settleOccupations } from './diplomacy';
 import type { GameEvent, Tag } from './types';
 import { atWar, changeOpinion, clamp, emit, nationName, opinion, rand, warsOf, type World } from './world';
@@ -256,6 +257,9 @@ export function protectorateRefusal(w: World, overlord: Tag, target: Tag): strin
   if (w.profiles[target]?.major) return 'una grande potenza non diventa un protettorato';
   if (s.controller[s.nations[target].capital] !== overlord) return 'bisogna occuparne la capitale';
   if (subjectOf(w, overlord)) return 'uno stato soggetto non impone protettorati';
+  // chi rifiuta ogni protettore si annette o si lascia, non si protegge (corte 00, principio 8)
+  const st = LOCAL_STANCE[target];
+  if (st?.hostile === '*' || st?.hostile?.includes(overlord) || (st?.toward && st.toward !== overlord)) return 'non accetterà mai un protettore: si prendono le province';
   return null;
 }
 

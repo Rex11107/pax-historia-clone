@@ -14,7 +14,7 @@ import { geoKm } from './map';
 // Qui c'è anche la crisi egiziana: rivolta del Mahdi, occupazione britannica, ritiro dal Sudan e dalla costa.
 // I possedimenti egiziani del Mar Rosso entrano in liquidazione: chi ha un interesse può chiedere di subentrare.
 
-import { INTERESTS_1881, type ColonialPath, type InterestSeed } from '../scenario/colonial1881';
+import { INTERESTS_1881, LOCAL_STANCE, type ColonialPath, type InterestSeed } from '../scenario/colonial1881';
 import { declareWar } from './diplomacy';
 import { planPath } from './orders';
 import { politicsOf } from './politics';
@@ -230,6 +230,21 @@ export function actionsFor(w: World, seed: InterestSeed): ColonialAction[] {
   return out;
 }
 
+/** Pressione armata: nostre truppe dentro o a un passo dalle terre del sovrano, o un confine di terra con noi
+ *  (i francesi entrati dall'Algeria contro i Krumiri, aprile 1881: il bey firma al Bardo con le truppe davanti al
+ *  palazzo). Corte 00, capo 3. */
+function pressureOf(w: World, tag: Tag, target: Tag): number {
+  const s = w.state, theirs: number[] = [];
+  for (let p = 0; p < w.map.size; p++) if (s.owner[p] === target) theirs.push(p);
+  const h = w.map.hops(theirs, () => true, 1);
+  const troops = s.units.filter((u) => u.nation === tag && h[u.location] >= 0).reduce((a, u) => a + u.strength, 0);
+  // un confine di terra con le nostre province (l'Algeria per Tunisi) vale come una minaccia: un quarto dell'esercito
+  const border = theirs.some((p) => w.map.adj[p].some((e) => s.owner[e.to] === tag)) ? army(w, tag) * 0.25 : 0;
+  const near = Math.max(troops, border);
+  if (!near) return 0;
+  return Math.round(clamp(Math.log2(Math.max(1, near / (army(w, target) || 500))) * 8, 0, 30));
+}
+
 /** Presenza: proprie truppe o proprie terre vicine (due passi), oppure una flotta per le coste. */
 function presence(w: World, tag: Tag, ids: number[]): number {
   const s = w.state;
@@ -249,11 +264,34 @@ function fearOf(w: World, target: Tag, besides: Tag): number {
   const mine = army(w, target) || 500;
   let worst = 0;
   const nb = new Set<Tag>();
-  for (let p = 0; p < w.map.size; p++) if (s.owner[p] === target) for (const e of w.map.adj[p]) { const o = s.owner[e.to]; if (o && o !== target && o !== besides) nb.add(o); }
-  for (const r of w.profiles[target]?.rivals ?? []) if (s.nations[r]?.alive && r !== besides) nb.add(r);
+  // il proprio sovrano non fa paura: l'esercito ottomano non spinge Tunisi verso un protettore (corte 00, passo 1)
+  const lord = subjectOf(w, target)?.overlord;
+  for (let p = 0; p < w.map.size; p++) if (s.owner[p] === target) for (const e of w.map.adj[p]) { const o = s.owner[e.to]; if (o && o !== target && o !== besides && o !== lord) nb.add(o); }
+  for (const r of w.profiles[target]?.rivals ?? []) if (s.nations[r]?.alive && r !== besides && r !== lord) nb.add(r);
   for (const o of nb) worst = Math.max(worst, army(w, o) / mine);
   return Math.round(clamp(Math.log2(Math.max(1, worst)) * 8, 0, 30));
 }
+
+/** Una guerra contro uno Stato europeo o una grande potenza: è l'unica guerra che ferma la politica coloniale.
+ *  Una campagna coloniale altrove non è una causa di ritardo (corte 00, principio 2). */
+export function europeanWar(w: World, tag: Tag): boolean {
+  const s = w.state, eu = w.map.data.euCount ?? Infinity;
+  return warsOf(s, tag).some((x) => (x.attackers.includes(tag) ? x.defenders : x.attackers).some((f) => w.profiles[f]?.major || (s.nations[f]?.capital ?? Infinity) < eu));
+}
+
+/** Urgenza di un interesse nella sua finestra (corte 00, principio 4): cresce di settimana in settimana dall'inizio
+ *  della finestra fino a un tetto, poi a finestra chiusa decade in due anni. Deterministica: niente dadi. */
+export function urgency(w: World, seed: InterestSeed): number {
+  if (!seed.window || mode(w) === 'libero') return 1;
+  const s = w.state, from = (seed.window[0] - 1881) * 365, to = (seed.window[1] + 1 - 1881) * 365;
+  if (s.day < from) return 1;
+  if (s.day < to) return Math.min(URGENCY_CAP, 1 + (s.day - from) / 120);
+  const peak = Math.min(URGENCY_CAP, 1 + (to - from) / 120);
+  return Math.max(1, peak - (peak - 1) * (s.day - to) / 730);
+}
+export const URGENCY_CAP = 6;
+/** Anni di tregua dopo una guerra coloniale fra le stesse due nazioni. */
+export const TRUCE_YEARS = 3;
 
 const windowBonus = (w: World, seed: InterestSeed) => (mode(w) === 'storico' && seed.window && year(w) >= seed.window[0] && year(w) <= seed.window[1] ? 10 : 0);
 
@@ -266,7 +304,7 @@ export function evaluate(w: World, a: ColonialAction): Evaluation {
   const parts: [string, number][] = [];
   const fail = (refusal: string): Evaluation => ({ ok: false, score: 0, need: 0, parts, cost: 0, refusal });
   if (interestStatus(w, seed).state !== 'available') return fail('interesse non disponibile');
-  if (warsOf(s, tag).length && a.path !== 'guerra' && a.path !== 'occupazione') return fail('in guerra la diplomazia coloniale si ferma');
+  if (europeanWar(w, tag) && a.path !== 'guerra' && a.path !== 'occupazione') return fail('in guerra in Europa la diplomazia coloniale si ferma');
   const cd = (who: Tag) => c.cooldown[`${tag}|${who}|${a.path}`];
   switch (a.path) {
     case 'occupazione': return { ok: true, score: 0, need: 0, parts: [['muovi un esercito in una delle terre di nessuno indicate', 0]], cost: 0 };
@@ -282,6 +320,9 @@ export function evaluate(w: World, a: ColonialAction): Evaluation {
       if (ov && ov.overlord !== tag) parts.push([`sovranità nominale ${di(w, ov.overlord)}`, -10]);
       if (ov && ov.overlord === tag) return fail('è già un nostro soggetto');
       if (atWar(s, tag, t)) return fail('siamo in guerra: si impone con la pace');
+      const st = LOCAL_STANCE[t];
+      if (st?.hostile === '*' || st?.hostile?.includes(tag)) return fail(`${name(w, t)} non accetta protettori: solo la guerra`);
+      if (st?.toward && st.toward !== tag) return fail(`${name(w, t)} cerca la protezione ${di(w, st.toward)}`);
       const pres = presence(w, tag, interestProvinces(w, seed));
       if (pres < -50) return fail('nessuna presenza: servono truppe o terre a due passi, o una marina per le coste');
       parts.push(['presenza', pres]);
@@ -289,10 +330,13 @@ export function evaluate(w: World, a: ColonialAction): Evaluation {
       parts.push(['sovranità', -20]);
       if (warsOf(s, t).length) return fail(`${name(w, t)} è in guerra: non firma trattati`);
       const fear = fearOf(w, t, tag); if (fear) parts.push(['paura dei vicini', fear]);
+      const press = pressureOf(w, tag, t); if (press) parts.push(['le nostre truppe al confine', press]);
       const big = army(w, t); if (big > 20000) parts.push(['un grande esercito', -Math.round(Math.min(45, big / 1500))]);
       parts.push(['orgoglio e coesione', -Math.round((w.profiles[t]?.cohesion ?? 50) * 0.35)]);
       parts.push(['doni e sussidi', 20]);
-      const wb = windowBonus(w, seed); if (wb) parts.push(['il momento storico', wb]);
+      if (st?.toward === tag) parts.push(['cerca un protettore', 15]);
+      // nella finestra l'impegno cresce con l'urgenza, fino a un tetto (corte 00, principio 4)
+      const wb = windowBonus(w, seed); if (wb) parts.push(['il momento storico', Math.round(Math.min(25, wb * urgency(w, seed) / 2 + 5))]);
       const cost = Math.max(5, Math.round(popOf(w, w.map.provinces.filter((p) => s.owner[p.id] === t).map((p) => p.id)) / 1e5 * 2));
       const score = parts.reduce((x, [, v]) => x + v, 0);
       if (s.nations[tag].treasury < cost) return { ok: false, score, need: 30, parts, cost, refusal: `servono ${cost} milioni` };
@@ -530,9 +574,14 @@ export function aiColonial(w: World, sink: GameEvent[]) {
   const s = w.state, c = colonial(w);
   for (const tag of COLONIAL_POWERS) {
     if (tag === s.player || !s.nations[tag]?.alive) continue;
-    if (warsOf(s, tag).length) continue;
-    const units = s.units.filter((u) => u.nation === tag);
-    if (units.some((u) => u.orders.some((o) => o.label === 'spedizione'))) continue;
+    // solo una guerra in Europa ferma la politica coloniale; una spedizione in marcia non ferma i trattati (corte 00, principio 2)
+    if (europeanWar(w, tag)) continue;
+    // memoria per coppia (corte 00, principio 6): finché si combatte la tregua si allunga, e dopo la pace dura tre anni
+    for (const x of warsOf(s, tag)) for (const o of x.attackers.includes(tag) ? x.defenders : x.attackers) {
+      const k = `${tag}|${o}|guerra`;
+      if ((c.cooldown[k] ?? -1) > s.day) c.cooldown[k] = Math.max(c.cooldown[k], s.day + TRUCE_YEARS * 365);
+    }
+    const busy = s.units.some((u) => u.nation === tag && u.orders.some((o) => o.label === 'spedizione'));
     const list = available(w, tag).filter((x) => actionsFor(w, x).length);
     if (!list.length) continue;
     const y = year(w);
@@ -545,24 +594,32 @@ export function aiColonial(w: World, sink: GameEvent[]) {
     let best = sc[0].x;
     for (const e of sc) { r -= e.v; if (r <= 0) { best = e.x; break; } }
     const inWindow = !best.window || (y >= best.window[0] - 1);
-    if (rand(s.seed, 'colonia', tag, s.turn) > (inWindow ? 0.08 : 0.02) * Math.min(1.5, 0.5 + best.weight)) continue;
+    // l'urgenza nella finestra, con tetto, sostituisce l'attesa a dadi: un'ancora decide l'azione, non l'esito
+    if (rand(s.seed, 'colonia', tag, s.turn) > Math.min(0.6, (inWindow ? 0.08 : 0.02) * Math.min(1.5, 0.5 + best.weight) * urgency(w, best))) continue;
     const acts = actionsFor(w, best);
     // prima la diplomazia (protettorato, acquisto, assenso) se ha buone possibilità, poi le spedizioni, la guerra per ultima
-    const diplo = acts.filter((a) => a.path === 'protettorato' || a.path === 'acquisto' || a.path === 'assenso').map((a) => ({ a, ev: evaluate(w, a) })).filter((x) => x.ev.ok && s.nations[tag].treasury > x.ev.cost + 20);
+    // guerra: solo contro uno Stato debole, senza protettori, che le nostre truppe possono raggiungere
+    const war = acts.find((a) => a.path === 'guerra' && warOk(w, tag, a.against));
+    // un trattato vicino alla soglia si tenta se non c'è una spedizione possibile: il rifiuto è una causa di partita,
+    // registrata (corte 00, capo 3); con la spedizione pronta si sceglie l'azione (Tunisi 1881: prima le truppe, poi il Bardo)
+    const diplo = acts.filter((a) => a.path === 'protettorato' || a.path === 'acquisto' || a.path === 'assenso').map((a) => ({ a, ev: evaluate(w, a) })).filter((x) => (x.ev.ok || (!war && !x.ev.refusal && x.ev.need - x.ev.score <= 10)) && s.nations[tag].treasury > x.ev.cost + 20);
     if (diplo.length && (c.cooldown[`${tag}|*`] ?? -1) <= s.day) {
       if (!execute(w, diplo.sort((p, q) => q.ev.score - q.ev.need - (p.ev.score - p.ev.need))[0].a, sink)) c.cooldown[`${tag}|*`] = s.day + 26 * 7; // un trattato ogni sei mesi circa
       continue;
     }
     const occ = acts.find((a) => a.path === 'occupazione');
-    if (occ && occ.path === 'occupazione' && sendExpedition(w, tag, occ.provinces, sink)) continue;
-    // guerra: solo contro uno Stato debole, senza protettori, che le nostre truppe possono raggiungere; una volta ogni cinque anni
-    const war = acts.find((a) => a.path === 'guerra' && warOk(w, tag, a.against));
-    if (war && war.path === 'guerra' && y >= (best.window?.[0] ?? 0) && rand(s.seed, 'guerra-coloniale', tag, s.turn) < 0.2) {
+    if (!busy && occ && occ.path === 'occupazione' && sendExpedition(w, tag, occ.provinces, sink)) continue;
+    // una campagna alla volta: con una guerra già aperta fuori dall'Europa non se ne apre un'altra
+    const campaign = warsOf(s, tag).length > 0;
+    if (war && war.path === 'guerra' && !campaign && y >= (best.window?.[0] ?? 0) && rand(s.seed, 'guerra-coloniale', tag, s.turn) < (best.anchor ? Math.min(0.9, 0.2 * urgency(w, best)) : 0.2)) {
       c.cooldown[`${tag}|${war.against}|guerra`] = s.day + 5 * 365;
       declareWar(w, tag, war.against, `impresa coloniale: ${best.name}`, sink);
       continue;
     }
-    c.cooldown[`${tag}|${best.id}`] = s.day + 52 * 7; // nessuna via percorribile: per un anno pesa poco
+    // una via c'è (la spedizione in cammino; per un'ancora, la guerra possibile): niente raffreddamento
+    if ((busy && occ) || (best.anchor && war && !campaign)) continue;
+    // nessuna via percorribile: pesa poco per un anno, per tre mesi se la finestra è aperta (la via può riaprirsi)
+    c.cooldown[`${tag}|${best.id}`] = s.day + (urgency(w, best) > 1 && y <= (best.window?.[1] ?? 0) ? 13 : 52) * 7;
   }
 }
 
@@ -613,7 +670,8 @@ const MAHDI_A = ['Kordofan', 'El Obeid', 'Monti Nuba', 'Talodi', 'Duem', 'Dara',
 const MAHDI_B = ['Sennar', 'Uad Medani', 'Fazogli', 'Gallabat', 'Berber', 'Khartum (ovest)'];
 const MAHDI_C = ['Khartum', 'Dongola', 'Taka', 'Cassala'];
 const EQUATORIA = ['Equatoria', 'Lado', 'Bor', 'Rohl', 'Sobat', 'Fascioda'];
-const LIQUIDATION = ['Massaua', 'Zula', 'Bogos', 'Sahel', 'Barca', 'Zeila', 'Berbera', 'Harar', 'Gildessa', 'Beni Shangul'];
+// il Bogos non è in liquidazione: col trattato Hewett (3 giugno 1884) l'Egitto lo cede all'Etiopia (corte 00, capo 3)
+const LIQUIDATION = ['Massaua', 'Zula', 'Sahel', 'Barca', 'Zeila', 'Berbera', 'Harar', 'Gildessa', 'Beni Shangul'];
 const HARAR = ['Harar', 'Gildessa'];
 
 function byNames(w: World, names: string[], owner?: Tag): number[] {
@@ -663,9 +721,11 @@ function weeklyEgypt(w: World, sink: GameEvent[]) {
     s.situations.push({ id: 'mahdi', title: 'La rivolta del Mahdi', startDay: s.day, nations: ['EGY', 'GBR', 'ETH'], summary: 'Sull\'isola di Aba, nel Nilo Bianco, Muhammad Ahmad si proclama Mahdi e chiama alla guerra santa contro il governo egiziano del Sudan, odiato per le tasse e i funzionari stranieri.' });
     emit(w, { type: 'colonial', nations: ['EGY'], text: 'Sudan: Muhammad Ahmad si proclama Mahdi e chiama alla rivolta contro il governo egiziano.' }, sink);
   }
-  if (e.stage === 1 && at(555, 'urabi')) {
-    e.stage = 2;
-    if (s.nations.GBR?.alive && player !== 'GBR' && player !== 'EGY' && !warsOf(s, 'GBR').length && !warsOf(s, 'EGY').length) {
+  if (e.stage === 1 && at(555, 'urabi')) e.stage = 2;
+  // Tel el-Kebir: se Londra è in guerra in Europa (o l'Egitto è in guerra) l'intervento aspetta, non salta per sempre;
+  // la crisi di Urabi resta aperta quattro anni (corte 00, passo 1)
+  if (e.stage >= 2 && c.done['gbr-egitto'] === undefined && subjectOf(w, 'EGY')?.overlord !== 'GBR' && s.day < 555 + 4 * 365) {
+    if (s.nations.GBR?.alive && player !== 'GBR' && player !== 'EGY' && !europeanWar(w, 'GBR') && !warsOf(s, 'EGY').length) {
       setSubject(w, 'EGY', 'GBR', 'vassallo', 55);
       changeOpinion(s, 'TUR', 'GBR', -15); changeOpinion(s, 'FRA', 'GBR', -10);
       emit(w, { type: 'colonial', nations: ['EGY', 'GBR'], text: 'Egitto: dopo la rivolta di Urabi e il bombardamento di Alessandria, Wolseley vince a Tel el-Kebir. L\'Egitto resta del chedivè, ma lo governano gli inglesi.' }, sink);
@@ -690,9 +750,10 @@ function weeklyEgypt(w: World, sink: GameEvent[]) {
     e.stage = 5;
     if (s.nations.MAH?.alive) transfer(w, byNames(w, MAHDI_C, 'EGY'), 'MAH');
     transfer(w, byNames(w, EQUATORIA, 'EGY'), NOBODY);
+    if (s.nations.ETH?.alive && player !== 'EGY') transfer(w, byNames(w, ['Bogos'], 'EGY'), 'ETH');
     const liq = byNames(w, LIQUIDATION, 'EGY');
     c.liquidating = { provinces: liq, until: s.day + 540 };
-    s.situations = s.situations.map((x) => x.id === 'mahdi' ? { ...x, title: 'Il ritiro egiziano', summary: 'Khartum è caduta e Gordon è morto. L\'Egitto lascia il Sudan e non può più tenere la costa: Massaua, il Bogos, Zeila, Berbera e l\'Harar sono in liquidazione. Chi ha interessi nella regione può chiedere di subentrare.' } : x);
+    s.situations = s.situations.map((x) => x.id === 'mahdi' ? { ...x, title: 'Il ritiro egiziano', summary: 'Khartum è caduta e Gordon è morto. L\'Egitto lascia il Sudan e non può più tenere la costa (il Bogos è andato all\'Etiopia col trattato Hewett): Massaua, Zeila, Berbera e l\'Harar sono in liquidazione. Chi ha interessi nella regione può chiedere di subentrare.' } : x);
     emit(w, { type: 'colonial', nations: ['EGY', 'MAH', 'GBR', 'ITA', 'FRA'], text: 'Cade Khartum, muore Gordon. L\'Egitto si ritira dal Sudan; i suoi possedimenti del Mar Rosso e dell\'Harar sono in liquidazione: chi vuole subentrare deve chiederlo.' }, sink);
   }
   if (e.stage === 5 && c.liquidating && s.day >= c.liquidating.until) {

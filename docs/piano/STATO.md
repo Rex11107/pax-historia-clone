@@ -1,20 +1,20 @@
 # Stato del lavoro
 
-Aggiornato al 17 novembre 2026, dopo il blocco B3. Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
+Aggiornato al 17 novembre 2026, dopo il blocco B4. Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
 
 ## In breve
 
 - **Gioco**: Regnum Historia, grande strategia dal 1° gennaio 1881. TypeScript, Vite, Capacitor; APK nelle Releases.
-- **Ultima release**: quella nata dall'unione della #35 (B2). B3 arriva con la sua PR.
-- **Prossimo blocco**: **B4 — coloniale** → [`blocchi/B4-coloniale.md`](blocchi/B4-coloniale.md).
+- **Ultima release**: quella nata dall'unione della #36 (B3). B4 arriva con la sua PR.
+- **Prossimo blocco**: **fase C — bilanciamento** → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md).
 
 ## PR aperte
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| #36 | `fix/b3-politica` → `main` | blocco B3 | unire |
+| #37 | `fix/b4-coloniale` → `main` | blocco B4 | unire |
 
-Le PR #28-#35 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1 dalla #34, B2 dalla #35).
+Le PR #28-#36 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1 dalla #34, B2 dalla #35, B3 dalla #36).
 
 ## Blocchi
 
@@ -30,26 +30,27 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | B1 — una sola pace | 07, 02, 00 | `fix/b1-pace` | fatto (#34) — [scheda ed esito](blocchi/B1-pace.md) |
 | B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto (#35) — [scheda ed esito](blocchi/B2-diplomazia.md) |
 | B3 — politica che conta | 05 | `fix/b3-politica` | fatto (#36) — [scheda ed esito](blocchi/B3-politica.md) |
-| **B4 — coloniale, passi 1-3** | 00 | `fix/b4-coloniale` | **prossimo** — [scheda](blocchi/B4-coloniale.md) |
-| C — bilanciamento | 00-05 | un ramo per area | da fare — [scheda](blocchi/C-bilanciamento.md) |
+| B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | fatto (#37) — [scheda ed esito](blocchi/B4-coloniale.md) |
+| **C — bilanciamento** | 00-05 | un ramo per area | **prossimo** — [scheda](blocchi/C-bilanciamento.md) |
 | D — sistemi nuovi | varie | un ramo per sistema | da fare — [scheda](blocchi/D-sistemi-nuovi.md) |
 
-## Misure di riferimento (dopo B3)
+## Misure di riferimento (dopo B4)
 
 Servono a capire se un blocco ha rotto o rallentato qualcosa.
 
 | misura | valore |
 |---|---|
-| test | 142 in 19 file, tutti verdi |
+| test | 150 in 19 file, tutti verdi |
 | determinismo | 260 turni identici |
 | invarianti (`--fasi --caos` compreso) | 0 violazioni |
-| turno medio nel rapporto 1881-1899 | 152 ms nel rapporto dopo B3 (rifornimenti 63, economia 36), sulla macchina più lenta dove `main` misurava 160 dopo B2. I tempi assoluti dipendono dalla macchina: per un confronto si misura `main` sulla stessa macchina (`docs/piano/README.md`, sezione 7) |
-| guerre nel rapporto 1881-1899 | 7 dichiarate, 7 paci; la guerra Francia-Kong (ottobre 1899) è aperta a fine rapporto |
+| turno medio nel rapporto 1881-1899 | 141 ms dopo B4 contro 106 di `main` sulla stessa macchina (rifornimenti 54, piani 29, economia 25): le guerre coloniali britanniche fanno pianificare anche i trenta Stati indiani; da riportare giù nella fase C. I tempi assoluti dipendono dalla macchina: per un confronto si misura `main` sulla stessa macchina (`docs/piano/README.md`, sezione 7) |
+| guerre nel rapporto 1881-1899 | 7 dichiarate, 8 paci (con la Guerra del Pacifico); Francia-Tunisi febbraio-aprile 1881; due paci «senza condizioni» (Regno Unito con Bornu e con gli Aro) |
 | versione dei salvataggi | `SAVE_VERSION = 3` in `src/engine/migrate.ts`: chi cambia la forma dello stato aggiunge un passo e alza il numero |
 | politica, 19 anni (`scripts/sim/governi.mts`) | Francia 17 governi, Paesi Bassi 18, Belgio 11, Regno Unito 5, Italia 1, Spagna 1, Russia 0 crisi: vedi la scheda B3 |
 | risparmio in pace nel 1881 (saldo/entrate) | Regno Unito 30%, Stati Uniti 43%, Germania 30%, Russia 11%, Austria-Ungheria 8%, Italia 5% |
 | obiettivo del risparmio (fase C) | fra 5 e 15% |
-| Guerra del Pacifico | finisce il 23 luglio 1881 (storicamente 1883, Ancón: tocca a B4/C) |
+| Guerra del Pacifico | ancora di Ancón (`War.resistance`), ma il Cile la perde sul campo nel settembre 1881: fase C (piano e rifornimenti) |
+| traguardi coloniali (`scripts/sim/traguardi.mts`, 4 semi) | Tunisi 1881 4 su 4, Tel el-Kebir 1882 4 su 4, Khartum gennaio-febbraio 1885; Congo e Sudan mai; 0 protettorati impossibili; al più 3,7 anni senza eventi coloniali. Su 20 semi (`tunisi.mts`): Tunisi entro il 1882 20 su 20 (18 alla Francia) |
 
 ## Voti delle corti (1-10)
 
