@@ -444,7 +444,9 @@ export function applyDemand(w: World, d: Demand, sink: GameEvent[]) {
   const s = w.state;
   switch (d.type) {
     case 'cede': {
-      const chk = checkCession(w, d.from, d.to, d.provinces, false);
+      // i resti piccoli che resterebbero staccati dalla capitale passano col resto: il costo li aveva già contati
+      // (a metà prezzo). Prima il controllo senza `antiGore` non li calcolava e restavano exclavi del perdente
+      const chk = checkCession(w, d.from, d.to, d.provinces, true);
       const ids = [...new Set([...d.provinces, ...chk.added])].filter((p) => s.owner[p] === d.from);
       for (const p of ids) { s.owner[p] = d.to; s.controller[p] = d.to; }
       recordLoss(w, d.from, ids);
