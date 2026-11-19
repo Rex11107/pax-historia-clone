@@ -24,53 +24,64 @@ export function aiPlan(w: World) {
   }
 }
 
-function strengthAt(w: World, p: number, pred: (u: Unit) => boolean) {
-  let x = 0;
-  for (const u of w.state.units) if (u.location === p && pred(u)) x += u.strength;
-  return x;
-}
-
 function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
   const s = w.state;
   const map = w.map;
   const isEnemy = (t: Tag) => enemies.has(t);
-  const friendlyCtrl = (p: number) => allied(s, tag, s.controller[p]);
+  const ally = new Map<Tag, boolean>();
+  const isAlly = (t: Tag) => { let a = ally.get(t); if (a === undefined) { a = allied(s, tag, t); ally.set(t, a); } return a; };
+  const friendlyCtrl = (p: number) => isAlly(s.controller[p]);
+  // forza nemica e amica per provincia, calcolate una volta per piano (corte 02, capo 9): prima ogni bersaglio e ogni
+  // punto del fronte scorreva tutte le unità del mondo. Somme nello stesso ordine delle unità: risultati identici
+  const foeAt = new Float64Array(map.size), ownAt = new Float64Array(map.size);
+  for (const u of s.units) {
+    if (isEnemy(u.nation)) foeAt[u.location] += u.strength;
+    if (isAlly(u.nation)) ownAt[u.location] += u.strength;
+  }
+  const capitals = new Set<number>();
+  for (const n of Object.values(s.nations)) if (isEnemy(n.tag)) capitals.add(n.capital);
   // fronte: province amiche adiacenti a province controllate dal nemico
   const front: number[] = [];
   const targets: { p: number; score: number }[] = [];
-  for (let p = 0; p < map.size; p++) {
+  // solo le province nemiche e le loro vicine possono essere fronte o bersaglio: prima si scorreva tutta la mappa
+  // chiedendo l'alleanza di ogni controllore, per ognuna delle trenta nazioni che seguono il Regno Unito in guerra
+  const near = new Set<number>();
+  for (let p = 0; p < map.size; p++) if (isEnemy(s.controller[p])) { near.add(p); for (const e of map.adj[p]) near.add(e.to); }
+  for (const p of [...near].sort((a, b) => a - b)) {
     if (friendlyCtrl(p)) {
       if (map.adj[p].some((e) => !e.strait && isEnemy(s.controller[e.to]))) front.push(p);
     } else if (isEnemy(s.controller[p])) {
       const touches = map.adj[p].some((e) => friendlyCtrl(e.to));
       if (!touches) continue;
-      const defense = strengthAt(w, p, (u) => isEnemy(u.nation));
+      const defense = foeAt[p];
       const liberation = s.owner[p] === tag || allied(s, tag, s.owner[p]) ? 3 : 1;
-      const capital = Object.values(s.nations).some((n) => n.capital === p && isEnemy(n.tag)) ? 2 : 1;
+      const capital = capitals.has(p) ? 2 : 1;
       // le province con carbone, ferro o petrolio valgono di più
       const resBonus = 1 + map.resources[p].reduce((x, r) => x + (RESOURCES[r].strategic ? RESOURCES[r].value * 3 : 0), 0);
       // la popolazione conta per quanto renderebbe: una provincia di un popolo estraneo fuori d'Europa vale l'8%
       targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop * colonialWeight(w, tag, p) + 10))) / (1 + defense / 20000) });
     }
   }
+  const frontSet = new Set(front);
   const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length);
   if (!idle.length) return;
   const assigned = new Map<number, number>(); // provincia -> uomini già mandati
   const stuck: Unit[] = []; // unità pronte che per terra non arrivano né a un obiettivo né al fronte
   for (const u of idle) {
     if (u.strength < u.maxStrength * 0.45 || u.supply < 0.35) continue; // si riorganizza
-    const dist = map.distancesFrom(u.location, moveCost(w, u, true), 60);
+    // oltre 45 giorni nessuna distanza serve (bersagli entro 40, fronte entro 45): stesso risultato, meno province visitate
+    const dist = map.distancesFrom(u.location, moveCost(w, u, true), 45);
     // attacco se c'è superiorità locale
     const cand = targets
       .map((t) => {
         const plan = { days: dist[t.p] };
         if (!isFinite(plan.days) || plan.days > 40) return null;
-        const defense = strengthAt(w, t.p, (x) => isEnemy(x.nation));
+        const defense = foeAt[t.p];
         const ours = u.strength + (assigned.get(t.p) ?? 0);
         const ratio = ours / Math.max(1, defense);
         return { t, plan, ratio, value: t.score * Math.min(2, ratio) / (1 + plan.days / 10) };
       })
-      .filter((x): x is NonNullable<typeof x> => !!x && (x.ratio >= 1.3 || strengthAt(w, x.t.p, (y) => isEnemy(y.nation)) === 0))
+      .filter((x): x is NonNullable<typeof x> => !!x && (x.ratio >= 1.3 || foeAt[x.t.p] === 0))
       .sort((a, b) => b.value - a.value || a.t.p - b.t.p)[0];
     if (cand) {
       u.orders = [{ type: 'attack', target: cand.t.p, status: 'pending', label: 'offensiva' }];
@@ -78,12 +89,12 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       continue;
     }
     // altrimenti rinforza il punto del fronte più scoperto
-    if (front.includes(u.location)) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; continue; }
+    if (frontSet.has(u.location)) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; continue; }
     if (!front.length) { stuck.push(u); continue; }
     const best = front
       .map((p) => {
-        const threat = map.adj[p].reduce((x, e) => x + strengthAt(w, e.to, (y) => isEnemy(y.nation)), 0);
-        const mine = strengthAt(w, p, (y) => allied(s, tag, y.nation)) + (assigned.get(p) ?? 0);
+        const threat = map.adj[p].reduce((x, e) => x + foeAt[e.to], 0);
+        const mine = ownAt[p] + (assigned.get(p) ?? 0);
         return { p, need: threat - mine };
       })
       .sort((a, b) => b.need - a.need || a.p - b.p)
