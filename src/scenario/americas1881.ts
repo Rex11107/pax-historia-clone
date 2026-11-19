@@ -87,4 +87,14 @@ export const AMERICAS_OPINIONS: [string, string, number][] = [
 export const AMERICAS_OCCUPATIONS: { by: string; owners: string[]; names: string[] }[] = [
   { by: 'CHL', owners: ['BOL'], names: ['Antofagasta', 'Cobija', 'Calama', 'Atacama', 'Taltal'] },
   { by: 'CHL', owners: ['PRU'], names: ['Tarapacá', 'Iquique', 'Pisagua', 'Arica', 'Putre', 'Tacna', 'Tarata', 'Moquegua'] },
+  // la campagna di Lima: Lynch sbarca a Pisco il 20 novembre 1880, l'esercito di Baquedano a Curayaco e Lurín il
+  // 22 dicembre; Chorrillos e Miraflores sono del 13 e 15 gennaio 1881 (Bulnes, Guerra del Pacífico, vol. II)
+  { by: 'CHL', owners: ['PRU'], names: ['Pisco', 'Cañete'] },
+];
+
+/** L'esercito cileno al 1° gennaio 1881 non è a Santiago: circa 26.000 uomini dell'esercito di operazioni davanti a
+ *  Lima e le guarnigioni di Tarapacá, Tacna e Arica (Bulnes). Il resto resta in patria. */
+export const ARMY_SPLITS: { nation: string; province: string; strength: number; name: string }[] = [
+  { nation: 'CHL', province: 'Cañete', strength: 26000, name: 'Esercito di operazioni del Nord' },
+  { nation: 'CHL', province: 'Tacna', strength: 8000, name: 'Divisione di Tacna e Arica' },
 ];

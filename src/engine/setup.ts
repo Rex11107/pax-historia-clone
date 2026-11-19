@@ -4,7 +4,7 @@ import { NOBODY, rand, type World } from './world';
 import { updateDeserts } from './desert';
 import { colonialWeight } from './ethnic';
 import { INITIAL_OPINIONS, INITIAL_TREATIES, NATIONS } from '../scenario/europe1881';
-import { AMERICAS_OCCUPATIONS } from '../scenario/americas1881';
+import { AMERICAS_OCCUPATIONS, ARMY_SPLITS } from '../scenario/americas1881';
 import { mapKey, SAVE_VERSION } from './migrate';
 import { dayOf } from '../scenario/politics1881';
 
@@ -99,6 +99,14 @@ export function newGame(mapData: MapData, player: Tag = 'ITA', seed = 'regnum'):
   const w: World = { map, profiles, state };
   updateDeserts(w); // il deserto circondato da un solo stato è suo fin dall'inizio
   for (const tag of present) placeArmies(w, tag);
+  // eserciti già in campo al 1° gennaio 1881 (la Guerra del Pacifico): si staccano dal corpo principale
+  for (const x of ARMY_SPLITS) {
+    const home = state.units.find((u) => u.nation === x.nation && u.strength > x.strength * 1.2);
+    const at = map.provinces.find((p) => p.name === x.province && state.controller[p.id] === x.nation);
+    if (!home || !at) continue;
+    home.strength -= x.strength; home.maxStrength -= x.strength;
+    state.units.push({ ...home, id: `${home.id}-${at.id}`, name: x.name, strength: x.strength, maxStrength: x.strength, location: at.id, orders: [], move: null });
+  }
   return w;
 }
 
