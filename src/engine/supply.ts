@@ -19,7 +19,9 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   // una marina media i porti, senza marina servono porti grandi (livello 2+)
   const naval = w.profiles[tag].naval ?? 0;
   const need = naval >= 30 ? 0 : naval >= 15 ? 1 : 2;
-  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && s.owner[p] === tag && level(w, p, 'porto') >= need) seeds.push(p);
+  // anche i porti occupati, con una marina almeno media: il Cile del 1880-83 riforniva per mare da Pisagua, Iquique e
+  // Arica l'esercito che occupava Tarapacá e Lima; prima i porti presi al nemico non rifornivano nessuno
+  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && (s.owner[p] === tag || naval >= 15) && level(w, p, 'porto') >= need) seeds.push(p);
   if (!seeds.length) for (let p = 0; p < n; p++) if (s.controller[p] === tag && s.owner[p] === tag) { seeds.push(p); break; }
   const core = w.map.hops(seeds, friendly, 200);
   const lv = new Float32Array(n);
@@ -36,6 +38,8 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
 // in pace la mappa dei rifornimenti cambia solo con i confini e le opere: si ricalcola una volta a turno
 const peaceCache = new WeakMap<object, { key: string; maps: Map<Tag, Float32Array> }>();
 
+const warCache = new WeakMap<object, Map<Tag, { key: string; map: Float32Array }>>();
+
 export function updateSupply(w: World, sink: GameEvent[]) {
   const s = w.state;
   const cache = new Map<Tag, Float32Array>();
@@ -50,7 +54,22 @@ export function updateSupply(w: World, sink: GameEvent[]) {
     let m = cache.get(u.nation);
     if (!m) {
       if (atPeace(u.nation)) { m = pc.maps.get(u.nation); if (!m) { m = supplyMap(w, u.nation); pc.maps.set(u.nation, m); } }
-      else m = supplyMap(w, u.nation);
+      else {
+        // in guerra la mappa cambia solo se cambia un controllore o un'opera (cacheVersion), la logistica o se un nemico entra o
+        // esce da una provincia: prima si ricalcolava ogni giorno per ogni belligerante, anche per i trenta Stati
+        // indiani al seguito del Regno Unito in una guerra in Africa (corte 02, capo 9). Stesso risultato
+        const foes = enemiesOf(s, u.nation);
+        const at: number[] = [];
+        for (const x of s.units) if (foes.has(x.nation)) at.push(x.location);
+        const wkey = `${key}:${logistics(w, u.nation).factor}:${industryOf(w, u.nation)}:${at.sort((a, b) => a - b).join(',')}`;
+        const hit = warCache.get(s)?.get(u.nation);
+        if (hit && hit.key === wkey) m = hit.map;
+        else {
+          m = supplyMap(w, u.nation);
+          let wc = warCache.get(s); if (!wc) { wc = new Map(); warCache.set(s, wc); }
+          wc.set(u.nation, { key: wkey, map: m });
+        }
+      }
       cache.set(u.nation, m);
     }
     const men = (crowd.get(`${u.nation}:${u.location}`) ?? 0) / 1000;

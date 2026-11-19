@@ -35,6 +35,11 @@ function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean, 
   return p;
 }
 
+/** Stima della forza per il piano dell'IA, con la stessa formula del combattimento (corte 02, capo 2): chi attacca
+ *  è messo nella provincia bersaglio (terreno), chi difende resta dov'è (terreno, trinceramento, fortezza). */
+export function attackPower(w: World, u: Unit, at: number): number { return power(w, { ...u, location: at, from: undefined }, false, true); }
+export function defensePower(w: World, u: Unit): number { return power(w, u, true, true); }
+
 /** Risolve un giorno di combattimento in tutte le province contese. */
 export function resolveBattles(w: World, sink: GameEvent[]) {
   const s = w.state;

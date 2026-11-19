@@ -1,7 +1,10 @@
 import { geoKm } from './map';
 import { concludePeace, engineTerms, playerPeace, warScore } from './peace';
-import { aiFinances, aiMobilize, recruit } from './economy';
+import { aiFinances, aiMobilize, budget, loanRoom, recruit, takeLoan } from './economy';
 import { moveCost, planPath } from './orders';
+import { attackPower, defensePower } from './combat';
+import { supplyMap } from './supply';
+import { provinceCapacity } from './construction';
 import type { GameEvent, Tag, Unit, War } from './types';
 import { allied, clamp, di, emit, enemiesOf, nationName, NOBODY, rand, The, warsOf, type World } from './world';
 import { RESOURCES } from './resources';
@@ -24,67 +27,160 @@ export function aiPlan(w: World) {
   }
 }
 
-function strengthAt(w: World, p: number, pred: (u: Unit) => boolean) {
-  let x = 0;
-  for (const u of w.state.units) if (u.location === p && pred(u)) x += u.strength;
-  return x;
-}
-
 function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
   const s = w.state;
   const map = w.map;
   const isEnemy = (t: Tag) => enemies.has(t);
-  const friendlyCtrl = (p: number) => allied(s, tag, s.controller[p]);
+  const ally = new Map<Tag, boolean>();
+  const isAlly = (t: Tag) => { let a = ally.get(t); if (a === undefined) { a = allied(s, tag, t); ally.set(t, a); } return a; };
+  const friendlyCtrl = (p: number) => isAlly(s.controller[p]);
+  // forza nemica e amica per provincia, calcolate una volta per piano (corte 02, capo 9): prima ogni bersaglio e ogni
+  // punto del fronte scorreva tutte le unità del mondo. Somme nello stesso ordine delle unità: risultati identici
+  const foeAt = new Float64Array(map.size), ownAt = new Float64Array(map.size);
+  for (const u of s.units) {
+    if (isEnemy(u.nation)) foeAt[u.location] += u.strength;
+    if (isAlly(u.nation)) ownAt[u.location] += u.strength;
+  }
+  const capitals = new Set<number>();
+  for (const n of Object.values(s.nations)) if (isEnemy(n.tag)) capitals.add(n.capital);
   // fronte: province amiche adiacenti a province controllate dal nemico
   const front: number[] = [];
   const targets: { p: number; score: number }[] = [];
-  for (let p = 0; p < map.size; p++) {
+  // solo le province nemiche e le loro vicine possono essere fronte o bersaglio: prima si scorreva tutta la mappa
+  // chiedendo l'alleanza di ogni controllore, per ognuna delle trenta nazioni che seguono il Regno Unito in guerra
+  const near = new Set<number>();
+  for (let p = 0; p < map.size; p++) if (isEnemy(s.controller[p])) { near.add(p); for (const e of map.adj[p]) near.add(e.to); }
+  for (const p of [...near].sort((a, b) => a - b)) {
     if (friendlyCtrl(p)) {
       if (map.adj[p].some((e) => !e.strait && isEnemy(s.controller[e.to]))) front.push(p);
     } else if (isEnemy(s.controller[p])) {
       const touches = map.adj[p].some((e) => friendlyCtrl(e.to));
       if (!touches) continue;
-      const defense = strengthAt(w, p, (u) => isEnemy(u.nation));
+      const defense = foeAt[p];
       const liberation = s.owner[p] === tag || allied(s, tag, s.owner[p]) ? 3 : 1;
-      const capital = Object.values(s.nations).some((n) => n.capital === p && isEnemy(n.tag)) ? 2 : 1;
+      const capital = capitals.has(p) ? 2 : 1;
       // le province con carbone, ferro o petrolio valgono di più
       const resBonus = 1 + map.resources[p].reduce((x, r) => x + (RESOURCES[r].strategic ? RESOURCES[r].value * 3 : 0), 0);
       // la popolazione conta per quanto renderebbe: una provincia di un popolo estraneo fuori d'Europa vale l'8%
       targets.push({ p, score: (liberation * capital * resBonus * (1 + Math.log10(map.provinces[p].pop * colonialWeight(w, tag, p) + 10))) / (1 + defense / 20000) });
     }
   }
-  const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length);
+  const frontSet = new Set(front);
+  // in ordine di sigla: il piano non dipende dall'ordine delle unità in memoria (salvataggi, ricaricamenti)
+  const idle = s.units.filter((u) => u.nation === tag && !u.inBattle && !u.recovering && !u.orders.length).sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
   if (!idle.length) return;
-  const assigned = new Map<number, number>(); // provincia -> uomini già mandati
   const stuck: Unit[] = []; // unità pronte che per terra non arrivano né a un obiettivo né al fronte
+  const used = new Set<Unit>();
+  const sup = targets.length || idle.some(worn) ? supplyMap(w, tag) : null;
+
+  // 1. guarnigioni (corte 02, capo 6): la capitale non resta mai vuota e sul confine con un rivale in pace resta un
+  //    corpo. Al più un quarto dell'esercito; solo per chi ha almeno quattro unità
+  const mine = s.units.filter((u) => u.nation === tag);
+  const army = mine.reduce((a, u) => a + u.strength, 0);
+  if (mine.length >= 4) {
+    let kept = 0;
+    const keep = (u: Unit, move?: number) => {
+      if (kept + u.strength > army * 0.25) return;
+      used.add(u); kept += u.strength;
+      u.orders = move === undefined ? [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 }, label: 'guarnigione' }]
+        : [{ type: 'move', target: move, status: 'pending', label: 'guarnigione' }, { type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }];
+    };
+    const cap = s.nations[tag].capital;
+    if (s.controller[cap] === tag && !frontSet.has(cap) && !foeAt[cap]) {
+      const there = mine.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0)).filter((u) => u.location === cap || u.orders.some((o) => o.target === cap && o.label === 'guarnigione'));
+      if (!there.length) {
+        // la più piccola unità ferma che arriva in capitale entro venti giorni
+        const back = idle.filter((u) => !worn(u)).map((u) => ({ u, d: map.distancesFrom(u.location, moveCost(w, u, false), 20)[cap] }))
+          .filter((x) => isFinite(x.d)).sort((a, b) => a.u.strength - b.u.strength || a.d - b.d || (a.u.id < b.u.id ? -1 : 1))[0];
+        if (back) keep(back.u, back.u.location === cap ? undefined : cap);
+      } else for (const u of there) if (idle.includes(u) && !used.has(u)) { keep(u); break; }
+    }
+    // confini coi rivali che non sono in guerra con noi
+    const rivals = (w.profiles[tag]?.rivals ?? []).filter((r) => s.nations[r]?.alive && !isEnemy(r) && w.profiles[r]?.major);
+    for (const r of rivals) {
+      const guard = idle.filter((u) => !used.has(u) && !worn(u) && s.controller[u.location] === tag && map.adj[u.location].some((e) => s.owner[e.to] === r))
+        .sort((a, b) => b.strength - a.strength || (a.id < b.id ? -1 : 1))[0];
+      if (guard) keep(guard);
+    }
+  }
+
+  // 2. ritirata (corte 02, capo 2): chi è logoro torna dove arrivano i rifornimenti; prima restava nel territorio
+  //    nemico a "riorganizzarsi" senza mai riprendersi
   for (const u of idle) {
-    if (u.strength < u.maxStrength * 0.45 || u.supply < 0.35) continue; // si riorganizza
-    const dist = map.distancesFrom(u.location, moveCost(w, u, true), 60);
-    // attacco se c'è superiorità locale
-    const cand = targets
-      .map((t) => {
-        const plan = { days: dist[t.p] };
-        if (!isFinite(plan.days) || plan.days > 40) return null;
-        const defense = strengthAt(w, t.p, (x) => isEnemy(x.nation));
-        const ours = u.strength + (assigned.get(t.p) ?? 0);
-        const ratio = ours / Math.max(1, defense);
-        return { t, plan, ratio, value: t.score * Math.min(2, ratio) / (1 + plan.days / 10) };
-      })
-      .filter((x): x is NonNullable<typeof x> => !!x && (x.ratio >= 1.3 || strengthAt(w, x.t.p, (y) => isEnemy(y.nation)) === 0))
-      .sort((a, b) => b.value - a.value || a.t.p - b.t.p)[0];
+    if (used.has(u) || !worn(u)) continue;
+    used.add(u);
+    // un posto dove i rifornimenti arrivano e la provincia regge tanti uomini (troppi in una valle andina muoiono di fame)
+    const fits = (p: number) => !!sup && sup[p] >= 0.6 && friendlyCtrl(p) && !foeAt[p] && provinceCapacity(w, p) * 1000 >= u.strength + (p === u.location ? ownAt[p] - u.strength : ownAt[p]);
+    if (!sup || (u.supply >= 0.35 && fits(u.location))) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 }, label: 'riordino' }]; continue; }
+    const d = map.distancesFrom(u.location, moveCost(w, u, false), 45);
+    let best = -1;
+    for (let p = 0; p < map.size; p++) if (p !== u.location && d[p] <= 30 && fits(p) && (best < 0 || d[p] < d[best])) best = p;
+    // tagliati fuori: verso la provincia amica meglio rifornita entro 45 giorni, purché migliore di dove si è
+    if (best < 0) for (let p = 0; p < map.size; p++) if (p !== u.location && isFinite(d[p]) && friendlyCtrl(p) && !foeAt[p] && sup[p] >= sup[u.location] + 0.2 && (best < 0 || sup[p] > sup[best] || (sup[p] === sup[best] && d[p] < d[best]))) best = p;
+    if (best >= 0) ownAt[best] += u.strength;
+    u.orders = best >= 0
+      ? [{ type: 'move', target: best, status: 'pending', label: 'ritirata' }, { type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]
+      : [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 }, label: 'riordino' }];
+  }
+
+  // 3. attacco per gruppi (corte 02, capo 2): un bersaglio si attacca quando la forza stimata con la formula del
+  //    combattimento (terreno, trinceramento, fortezza, morale, rifornimento) supera di metà la difesa. Le unità già
+  //    a contatto attaccano insieme; se non bastano, le altre si concentrano accanto al bersaglio, non arrivano alla
+  //    spicciolata. I bersagli lontani dai rifornimenti valgono meno (il Cile sull'altopiano peruviano)
+  const defPow = new Map<number, number>();
+  for (const u of [...s.units].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) if (isEnemy(u.nation) && near.has(u.location)) defPow.set(u.location, (defPow.get(u.location) ?? 0) + defensePower(w, u));
+  for (const x of targets) x.score *= 0.3 + 0.7 * (sup ? sup[x.p] : 1);
+  const order = [...targets].sort((a, b) => b.score - a.score || a.p - b.p);
+  const deficit = new Map<number, number>();
+  for (const x of order) {
+    const need = 1.5 * (defPow.get(x.p) ?? 0);
+    const local = idle.filter((u) => !used.has(u) && map.adj[x.p].some((e) => e.to === u.location && !e.strait) && friendlyCtrl(u.location))
+      .map((u) => ({ u, pw: attackPower(w, u, x.p) })).sort((a, b) => b.pw - a.pw || (a.u.id < b.u.id ? -1 : 1));
+    const total = local.reduce((a, l) => a + l.pw, 0);
+    if (need > 0 && total < need) { deficit.set(x.p, need - total); continue; }
+    if (!local.length) { if (need === 0) deficit.set(x.p, 0); continue; }
+    let got = 0;
+    for (const l of local) {
+      if (got >= need && got > 0) break;
+      l.u.orders = [{ type: 'attack', target: x.p, status: 'pending', label: 'offensiva' }];
+      used.add(l.u); got += l.pw;
+    }
+  }
+  for (const u of idle) {
+    if (used.has(u)) continue;
+    const dist = map.distancesFrom(u.location, moveCost(w, u, true), 45);
+    // un bersaglio indifeso si prende direttamente; uno difeso si raggiunge da una provincia amica accanto
+    const cand = order
+      .filter((x) => deficit.has(x.p) && isFinite(dist[x.p]) && dist[x.p] <= 40)
+      // la provincia deve reggere l'unità: oltre la sua capienza il rifornimento cala (supply.ts)
+      .map((x) => ({ x, value: x.score * Math.min(1, provinceCapacity(w, x.p) * 1000 / u.strength) / (1 + dist[x.p] / 10) }))
+      .sort((a, b) => b.value - a.value || a.x.p - b.x.p)[0];
     if (cand) {
-      u.orders = [{ type: 'attack', target: cand.t.p, status: 'pending', label: 'offensiva' }];
-      assigned.set(cand.t.p, (assigned.get(cand.t.p) ?? 0) + u.strength);
-      continue;
+      const t = cand.x.p, left = deficit.get(t)!;
+      used.add(u);
+      if (left === 0 && !(defPow.get(t) ?? 0)) {
+        u.orders = [{ type: 'attack', target: t, status: 'pending', label: 'offensiva' }];
+        deficit.delete(t);
+        continue;
+      }
+      const stage = map.adj[t].filter((e) => !e.strait && friendlyCtrl(e.to) && isFinite(dist[e.to])).sort((a, b) => dist[a.to] - dist[b.to] || a.to - b.to)[0];
+      if (stage) {
+        u.orders = u.location === stage.to
+          ? [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 3 }, label: 'concentramento' }]
+          : [{ type: 'move', target: stage.to, status: 'pending', label: 'concentramento' }, { type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 3 } }];
+        const rest = left - attackPower(w, u, t);
+        if (rest <= 0) deficit.delete(t); else deficit.set(t, rest);
+        continue;
+      }
+      used.delete(u);
     }
     // altrimenti rinforza il punto del fronte più scoperto
-    if (front.includes(u.location)) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; continue; }
+    if (frontSet.has(u.location)) { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; used.add(u); continue; }
     if (!front.length) { stuck.push(u); continue; }
     const best = front
       .map((p) => {
-        const threat = map.adj[p].reduce((x, e) => x + strengthAt(w, e.to, (y) => isEnemy(y.nation)), 0);
-        const mine = strengthAt(w, p, (y) => allied(s, tag, y.nation)) + (assigned.get(p) ?? 0);
-        return { p, need: threat - mine };
+        const threat = map.adj[p].reduce((x, e) => x + foeAt[e.to], 0);
+        return { p, need: threat - ownAt[p] };
       })
       .sort((a, b) => b.need - a.need || a.p - b.p)
       .slice(0, 8)
@@ -93,7 +189,8 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
       .sort((a, b) => b.need / (1 + b.days / 15) - a.need / (1 + a.days / 15) || a.p - b.p)[0];
     if (best) {
       u.orders = [{ type: 'move', target: best.p, status: 'pending', label: 'al fronte' }, { type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }];
-      assigned.set(best.p, (assigned.get(best.p) ?? 0) + u.strength);
+      ownAt[best.p] += u.strength;
+      used.add(u);
     } else stuck.push(u);
   }
   overseas(w, tag, enemies, targets, stuck);
@@ -128,6 +225,8 @@ function overseas(w: World, tag: Tag, enemies: Set<Tag>, targets: { p: number; s
     engaged += u.strength; sent++;
   }
 }
+/** Logora: sotto il 45% della forza o senza rifornimenti. */
+const worn = (u: Unit) => u.strength < u.maxStrength * 0.45 || u.supply < 0.35;
 const hold = (u: Unit) => { u.orders = [{ type: 'entrench', status: 'pending', until: { type: 'day_gte', value: 7 } }]; };
 
 // --- espansione nelle terre di nessuno degli stati locali ---
@@ -213,6 +312,9 @@ function peaceDue(w: World, war: War): boolean {
   return Math.max(weA, weD) >= 55 || (long && Math.max(weA, weD) > 35) || decided || age > 540;
 }
 
+/** Anni di entrate di debito oltre i quali chi si difende non arruola più a credito. */
+export const WAR_DEBT_YEARS = 4;
+
 /** Settimane fra l'offerta di pace al giocatore e la pressione, e fra la pressione e la pace imposta. */
 export const PEACE_OFFER_WEEKS = 4, PEACE_PRESSURE_WEEKS = 4;
 
@@ -250,22 +352,72 @@ function playerWar(w: World, war: War, sink: GameEvent[]) {
   }
 }
 
+/**
+ * Reazione alla concentrazione ai confini (corte 02, nota del giocatore di exploit): in pace, se truppe straniere non
+ * alleate ammassate nelle province confinanti (o entrate con un diritto di passaggio) superano metà del nostro
+ * esercito, si passa alla mobilitazione parziale e lo si dice; quando se ne vanno si torna al piede di pace.
+ */
+export function borderAlert(w: World, tag: Tag, sink: GameEvent[], threats = borderThreats(w)) {
+  const s = w.state, n = s.nations[tag];
+  if (!n?.alive || w.profiles[tag]?.micro) return;
+  const mine = threats.armies.get(tag) ?? 0;
+  // una concentrazione, non la guarnigione di pace: più di 30.000 uomini, metà del nostro esercito e almeno il 40% del loro
+  const [who, men] = [...(threats.near.get(tag) ?? [])].filter(([t, m]) => m > 30000 && m > mine * 0.5 && m >= (threats.armies.get(t) ?? 0) * 0.4 && !allied(s, tag, t))
+    .sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0] ?? ['', 0];
+  const threat = men > 0;
+  if (threat && n.policies.mobilization === 'peace') {
+    n.policies.mobilization = 'partial';
+    emit(w, { type: 'mobilization', nations: [tag, who], text: `${The(w, tag)} richiama i riservisti: ${Math.round(men / 1000)} mila uomini ${di(w, who)} sono ammassati ai suoi confini.` }, sink);
+  } else if (!threat && n.policies.mobilization === 'partial') n.policies.mobilization = 'peace';
+}
+
+/** Per ogni nazione, gli uomini stranieri sulle sue terre o nelle province confinanti (esclusa la guarnigione
+ *  della propria capitale), una sola passata sulle unità per tutto il mondo. */
+export function borderThreats(w: World) {
+  const s = w.state;
+  const near = new Map<Tag, Map<Tag, number>>(), armies = new Map<Tag, number>();
+  for (const u of s.units) {
+    armies.set(u.nation, (armies.get(u.nation) ?? 0) + u.strength);
+    if (u.location === s.nations[u.nation]?.capital) continue;
+    const seen = new Set<Tag>([s.owner[u.location]]);
+    for (const e of w.map.adj[u.location]) seen.add(s.owner[e.to]);
+    for (const t of seen) {
+      if (t === u.nation || !s.nations[t]) continue;
+      let m = near.get(t); if (!m) near.set(t, (m = new Map()));
+      m.set(u.nation, (m.get(u.nation) ?? 0) + u.strength);
+    }
+  }
+  return { near, armies };
+}
+
 export function aiEndOfTurn(w: World, sink: GameEvent[]) {
   const s = w.state;
+  const threats = borderThreats(w);
   for (const tag of Object.keys(s.nations)) {
     if (tag === s.player || !s.nations[tag].alive) continue;
     const n = s.nations[tag];
     aiFinances(w, tag);
-    if (!warsOf(s, tag).length) continue;
+    if (!warsOf(s, tag).length) { borderAlert(w, tag, sink, threats); continue; }
     aiMobilize(w, tag); // la mobilitazione segue la guerra: sale se il nemico entra in casa, scende se si riduce
     // arruolamento nella provincia più popolosa e sicura, ma solo se serve: finché l'esercito non supera di metà
     // quello dei nemici (del doppio se il nemico è in casa). Prima chi era in guerra arruolava ogni settimana, anche contro
     // un nemico cento volte più piccolo, fino alla bancarotta
     const foes = enemiesOf(s, tag);
+    // forze del teatro (corte 02, capo 8): contano i nemici a tre passi dalle nostre terre, non tutti gli uomini del
+    // mondo (la Francia in guerra con Tunisi non arruola contro l'esercito della Porta in Anatolia)
+    const own: number[] = [];
+    for (let p = 0; p < w.map.size; p++) if (s.owner[p] === tag || s.controller[p] === tag) own.push(p);
+    const theater = w.map.hops(own, () => true, 3);
     let mine = 0, theirs = 0;
-    for (const u of s.units) { if (u.nation === tag) mine += u.strength; else if (foes.has(u.nation)) theirs += u.strength; }
+    for (const u of s.units) { if (u.nation === tag) mine += u.strength; else if (foes.has(u.nation) && theater[u.location] >= 0) theirs += u.strength; }
     const invaded = s.owner.some((o, p) => o === tag && foes.has(s.controller[p]));
-    if (mine < theirs * (invaded ? 3 : 1.5) && n.treasury > 30 && n.manpower > 20000) {
+    // in guerra difensiva si arruola anche a debito, fino a quattro anni di entrate: le guerre del secolo si pagavano
+    // con i prestiti, e prima l'AI smetteva di arruolare proprio quando il debito saliva
+    const defending = s.wars.some((x) => x.defenders.includes(tag));
+    const income = Math.max(0, n.lastBudget?.income ?? budget(w, tag).income);
+    const credit = defending && n.debt < WAR_DEBT_YEARS * 52 * income;
+    if (mine < theirs * (invaded ? 3 : 1.5) && (n.treasury > 30 || credit) && n.manpower > 20000) {
+      if (n.treasury <= 30 && credit) takeLoan(w, tag, Math.min(loanRoom(w, tag), Math.max(10, Math.round(income * 4))));
       // si arruola dove la leva rende davvero: la popolazione pesata col peso coloniale, come nelle leve del bilancio
       const wpop = (p: { id: number; pop: number }) => p.pop * colonialWeight(w, tag, p.id);
       const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag).sort((a, b) => wpop(b) - wpop(a) || a.id - b.id);
