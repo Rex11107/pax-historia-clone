@@ -36,3 +36,14 @@ Test nuovi in `tests/ia.test.ts` (7). Tempo: 163 ms a turno contro 189 di `main`
 provincia indifesa appena ci entrano, quindi i corpi delle due parti razziano le retrovie del nemico invece di
 tenere un fronte; il Cile perde Tarapacá e Iquique a un'unità boliviana di 4.000 uomini. È il punto «occupazione
 dopo una sosta» dell'area guerra (01), da fare per prima.
+
+## Correzioni piccole (ramo `fix/c-piccole`, 19 novembre 2026)
+
+| correzione | com'è stata fatta | misura |
+|---|---|---|
+| cessioni | `applyDemand` calcola i resti piccoli staccati dalla capitale (prima `checkCession` senza `antiGore` non li calcolava e restavano exclavi del perdente) | test in `pace.test.ts`, fallisce su `main` (Finnmark (est) restava svedese) |
+| Belgio col Congo (politica, 05) | `COLONIAL_STABILITY` = 0,5: sulla stabilità un suddito coloniale pesa la metà del suo peso sul bilancio. Salvataggi alla versione 4 (il riferimento `ethnicBase` si ricalcola) | da −2,6 a −1,4 (obiettivo: meno di −2) |
+| Samori (coloniale, 00) | `LOCAL_STANCE.notBefore`: nessun protettorato prima del 1886. `stanceRefusal` unico per trattato, imposizione e **pace**: la richiesta di vassallaggio nella pace scavalcava le posizioni dei regni locali | protettorato fra il 1888 e il 1889 su 4 semi (prima: 1882) |
+
+**Rimane una decisione del giocatore**: la Triplice Alleanza (1882) non può nascere con la regola delle alleanze
+incompatibili (scheda B2): eccezione per le alleanze difensive, o fase D.
