@@ -5,7 +5,7 @@
 import type { GameState, MapData } from './types';
 
 /** Versione della forma dello stato. Si alza di uno a ogni cambiamento che un salvataggio vecchio non ha. */
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /**
  * Impronta della mappa: numero di province e centri arrotondati al decimo di grado. Cambia se le province si
@@ -49,6 +49,9 @@ const STEPS: Record<number, (s: Raw, map: MapData) => void> = {
   // calcolato col peso pieno e, confrontato col nuovo, darebbe a tutti gli imperi un salto di stabilità: si toglie,
   // e alla prima settimana si ricalcola dallo stato del salvataggio
   2: (s) => { delete s.ethnicBase; },
+  // 3 → 4 (fase C): sulla stabilità le colonie pesano ancora a metà (`COLONIAL_STABILITY`): stesso motivo, il
+  // riferimento si ricalcola
+  3: (s) => { delete s.ethnicBase; },
 };
 
 export interface Migrated { state: GameState; warnings: string[] }

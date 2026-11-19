@@ -65,6 +65,9 @@ export function colonialWeight(w: World, tag: Tag, p: number): number {
 }
 
 /** Quota della popolazione di uno Stato che appartiene ad altri popoli (0-1). */
+/** Quanto pesa un suddito coloniale sulla stabilità rispetto al bilancio. */
+export const COLONIAL_STABILITY = 0.5;
+
 export function foreignShare(w: World, tag: Tag, own?: number[]): number {
   const s = w.state;
   let tot = 0, foreign = 0;
@@ -73,7 +76,10 @@ export function foreignShare(w: World, tag: Tag, own?: number[]): number {
     if (s.owner[p.id] !== tag) continue;
     // le colonie pesano sulla stabilità come sul bilancio (corte 05, capo 7): l'8% fuori dall'Europa. Prima il Belgio
     // che prendeva il Congo perdeva 8 punti di stabilità per otto milioni di sudditi che non votavano né pagavano a Bruxelles
-    const pop = p.pop * colonialWeight(w, tag, p.id);
+    // sulla stabilità ancora a metà: i sudditi coloniali non entravano nella politica della metropoli (fase C, corte
+    // 05: il Belgio con venti province del Congo deve perdere meno di 2 punti; con il solo peso dell'8% ne perdeva 2,6)
+    const cw = colonialWeight(w, tag, p.id);
+    const pop = p.pop * (cw < 1 ? cw * COLONIAL_STABILITY : cw);
     tot += pop;
     for (const c of composition(w, p.id)) foreign += pop * (c.share / 100) * foreignness(tag, c.eth);
   }
