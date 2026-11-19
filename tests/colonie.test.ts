@@ -242,4 +242,14 @@ describe('corte 00: ritardi, dati e posizioni', () => {
     runTurn(w);
     expect(war()).toBeUndefined();
   }, 60000);
+
+  it('Samori non diventa protettorato prima del 1886, né per trattato né dopo una guerra', () => {
+    const w = newGame(MAP, 'SMR', 'c-samori');
+    w.state.day = 365 * 2; // 1883
+    declareWar(w, 'FRA', 'WAS', 'prova');
+    w.state.controller[w.state.nations.WAS.capital] = 'FRA';
+    expect(imposeProtectorate(w, 'FRA', 'WAS')).toMatch(/prima del 1886/);
+    w.state.day = 365 * 6; // 1887
+    expect(imposeProtectorate(w, 'FRA', 'WAS')).toBeNull();
+  });
 });

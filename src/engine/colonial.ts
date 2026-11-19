@@ -323,6 +323,7 @@ export function evaluate(w: World, a: ColonialAction): Evaluation {
       const st = LOCAL_STANCE[t];
       if (st?.hostile === '*' || st?.hostile?.includes(tag)) return fail(`${name(w, t)} non accetta protettori: solo la guerra`);
       if (st?.toward && st.toward !== tag) return fail(`${name(w, t)} cerca la protezione ${di(w, st.toward)}`);
+      if (st?.notBefore && year(w) < st.notBefore) return fail(`${name(w, t)} non accetta un protettore prima del ${st.notBefore}`);
       const pres = presence(w, tag, interestProvinces(w, seed));
       if (pres < -50) return fail('nessuna presenza: servono truppe o terre a due passi, o una marina per le coste');
       parts.push(['presenza', pres]);

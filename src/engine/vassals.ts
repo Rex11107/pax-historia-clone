@@ -12,7 +12,7 @@
 import { LOCAL_STANCE } from '../scenario/colonial1881';
 import { checkAlive, declareWar, makePeace, settleOccupations } from './diplomacy';
 import type { GameEvent, Tag } from './types';
-import { atWar, changeOpinion, clamp, emit, nationName, opinion, rand, warsOf, type World } from './world';
+import { atWar, changeOpinion, clamp, dateOf, emit, nationName, opinion, rand, warsOf, type World } from './world';
 
 export type SubjectLevel = 'tributario' | 'vassallo' | 'protettorato';
 export const LEVELS: SubjectLevel[] = ['tributario', 'vassallo', 'protettorato'];
@@ -260,6 +260,7 @@ export function protectorateRefusal(w: World, overlord: Tag, target: Tag): strin
   // chi rifiuta ogni protettore si annette o si lascia, non si protegge (corte 00, principio 8)
   const st = LOCAL_STANCE[target];
   if (st?.hostile === '*' || st?.hostile?.includes(overlord) || (st?.toward && st.toward !== overlord)) return 'non accetterà mai un protettore: si prendono le province';
+  if (st?.notBefore && dateOf(s.day).getUTCFullYear() < st.notBefore) return `non accetta un protettore prima del ${st.notBefore}: per ora si prendono le province`;
   return null;
 }
 
