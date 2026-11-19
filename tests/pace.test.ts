@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/engine/setup';
 import { declareWar } from '../src/engine/diplomacy';
 import { MAP } from './helpers';
+import { applyDemand, checkCession } from '../src/engine/peace';
 
 describe('pace', () => {
   const occupy = (w: ReturnType<typeof newGame>, by: string, pred: (p: { id: number; iso?: string; modern: string }) => boolean) => w.map.provinces.filter((p) => pred(p)).forEach((p) => { w.state.controller[p.id] = by; });
@@ -216,5 +217,27 @@ describe('pace', () => {
     expect(w.state.owner[g[0].location]).toBe('ALB');
     expect(g[0].strength).toBeGreaterThanOrEqual(2000);
     expect(sink.find((e) => e.type === 'liberation')?.text).toMatch(/nasce con/);
+  });
+
+  it('una cessione porta con sé i resti piccoli che resterebbero staccati dalla capitale', () => {
+    const w = newGame(MAP, 'SMR', 'c-cessione');
+    const s = w.state;
+    // cerca una provincia di confine la cui cessione isola al più tre province del perdente
+    let found: { from: string; to: string; p: number; added: number[] } | null = null;
+    for (let p = 0; p < w.map.size && !found; p++) {
+      const from = s.owner[p];
+      if (!s.nations[from]?.alive || s.nations[from].capital === p) continue;
+      for (const e of w.map.adj[p]) {
+        const to = s.owner[e.to];
+        if (to === from || !s.nations[to]?.alive) continue;
+        const c = checkCession(w, from, to, [p]);
+        if (!c.refusal && c.added.length) { found = { from, to, p, added: c.added }; break; }
+      }
+    }
+    expect(found).not.toBeNull();
+    const { from, to, p, added } = found!;
+    applyDemand(w, { type: 'cede', from, to, provinces: [p] } as never, []);
+    expect(s.owner[p]).toBe(to);
+    for (const q of added) expect(s.owner[q], w.map.provinces[q].name).toBe(to);
   });
 });

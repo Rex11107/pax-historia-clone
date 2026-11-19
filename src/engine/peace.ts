@@ -7,7 +7,7 @@ import { buildings, touchBuildings, type BuildingId } from './construction';
 import { addTreaty, checkAlive, settleOccupations } from './diplomacy';
 import { composition, ETHNICITIES, STATE_PEOPLES } from './ethnic';
 import { RESOURCES, type ResourceId } from './resources';
-import { subjectOf, setSubject, type SubjectLevel } from './vassals';
+import { stanceRefusal, subjectOf, setSubject, type SubjectLevel } from './vassals';
 import type { GameEvent, NationState, Tag, War } from './types';
 import { atWar, changeOpinion, clamp, di, emit, nationName, type World } from './world';
 import { contracts } from './trade';
@@ -280,6 +280,8 @@ export function demandCost(w: World, d: Demand, antiGore = true): { cost: number
     }
     case 'vassal': {
       if (w.profiles[d.from]?.major) return { cost: 0, refusal: 'una grande potenza non diventa vassalla', warnings: [] };
+      const stance = stanceRefusal(w, d.to, d.from);
+      if (stance) return { cost: 0, refusal: `${nationName(w, d.from)} ${stance}`, warnings: [] };
       const border = w.map.provinces.some((p) => s.owner[p.id] === d.from && w.map.adj[p.id].some((e) => s.owner[e.to] === d.to));
       const colonial = seaPower(w, d.to) && (w.profiles[d.to]?.naval ?? 0) >= 40 && w.map.provinces.some((p) => s.owner[p.id] === d.from && p.coast);
       if (!border && !colonial) return { cost: 0, refusal: 'troppo lontano: serve un confine comune o una marina coloniale e una costa', warnings: [] };
@@ -444,7 +446,9 @@ export function applyDemand(w: World, d: Demand, sink: GameEvent[]) {
   const s = w.state;
   switch (d.type) {
     case 'cede': {
-      const chk = checkCession(w, d.from, d.to, d.provinces, false);
+      // i resti piccoli che resterebbero staccati dalla capitale passano col resto: il costo li aveva già contati
+      // (a metà prezzo). Prima il controllo senza `antiGore` non li calcolava e restavano exclavi del perdente
+      const chk = checkCession(w, d.from, d.to, d.provinces, true);
       const ids = [...new Set([...d.provinces, ...chk.added])].filter((p) => s.owner[p] === d.from);
       for (const p of ids) { s.owner[p] = d.to; s.controller[p] = d.to; }
       recordLoss(w, d.from, ids);

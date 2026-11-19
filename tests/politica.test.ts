@@ -220,8 +220,9 @@ describe('politica che conta (corte 05)', () => {
     const congo = w.map.provinces.filter((p) => !p.impassable && p.lonlat[0] > 14 && p.lonlat[0] < 30 && p.lonlat[1] > -8 && p.lonlat[1] < 4).slice(0, 20);
     expect(congo.length).toBe(20);
     for (const p of congo) { s.owner[p.id] = 'BEL'; s.controller[p.id] = 'BEL'; }
-    // prima −8 (il tetto); ora −2,6. La misura della corte chiedeva meno di −2: il resto è bilanciamento (fase C)
-    expect(E.ethnicStability(w, 'BEL')).toBeGreaterThan(-3);
+    // prima −8 (il tetto), poi −2,6 (B3); la misura della corte chiede meno di −2
+    expect(E.ethnicStability(w, 'BEL')).toBeGreaterThan(-2);
+    expect(E.ethnicStability(w, 'BEL')).toBeLessThan(0);
   });
 });
 

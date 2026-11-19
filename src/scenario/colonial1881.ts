@@ -113,8 +113,12 @@ export const INTERESTS_1881: InterestSeed[] = [
  *  (si arriva solo con la guerra), chi cerca un protettore lo accetta più volentieri da quello e da nessun altro.
  *  - Rabih az-Zubayr combatte i francesi fino a Kousséri (1900): con Parigi solo la guerra.
  *  - Lewanika chiede la protezione britannica (concessione Lochner, 1890) per tenersi lontani i portoghesi e i Ndebele.
- *  - Gli Aro e il loro oracolo rifiutano ogni ingerenza: la spedizione britannica del 1901-02 li sottomette con le armi. */
-export const LOCAL_STANCE: Record<Tag, { hostile?: Tag[] | '*'; toward?: Tag }> = {
+ *  - Gli Aro e il loro oracolo rifiutano ogni ingerenza: la spedizione britannica del 1901-02 li sottomette con le armi.
+ *  `notBefore`: anno prima del quale nessun protettorato, né per trattato né per pace. */
+export const LOCAL_STANCE: Record<Tag, { hostile?: Tag[] | '*'; toward?: Tag; notBefore?: number }> = {
+  // Samori combatte i francesi dal 1882 (Keniéra) e cede la riva sinistra del Niger a Kenieba-Koura (marzo 1886);
+  // il protettorato è del trattato di Bissandugu (marzo 1887): prima di allora perde province, non la sovranità
+  WAS: { notBefore: 1886 },
   RAB: { hostile: ['FRA'] },
   LOZ: { toward: 'GBR' },
   // Kong è uno Stato a sé: il trattato di Binger (gennaio 1889) lo mette sotto la protezione francese contro Samori
