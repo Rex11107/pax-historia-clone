@@ -19,7 +19,9 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
   // una marina media i porti, senza marina servono porti grandi (livello 2+)
   const naval = w.profiles[tag].naval ?? 0;
   const need = naval >= 30 ? 0 : naval >= 15 ? 1 : 2;
-  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && s.owner[p] === tag && level(w, p, 'porto') >= need) seeds.push(p);
+  // anche i porti occupati, con una marina almeno media: il Cile del 1880-83 riforniva per mare da Pisagua, Iquique e
+  // Arica l'esercito che occupava Tarapacá e Lima; prima i porti presi al nemico non rifornivano nessuno
+  for (let p = 0; p < n; p++) if (w.map.provinces[p].coast && s.controller[p] === tag && (s.owner[p] === tag || naval >= 15) && level(w, p, 'porto') >= need) seeds.push(p);
   if (!seeds.length) for (let p = 0; p < n; p++) if (s.controller[p] === tag && s.owner[p] === tag) { seeds.push(p); break; }
   const core = w.map.hops(seeds, friendly, 200);
   const lv = new Float32Array(n);
