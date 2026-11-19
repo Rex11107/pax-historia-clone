@@ -7,6 +7,7 @@ import { MAP, EU, find } from './helpers';
 import { INTERESTS_1881, LOCAL_STANCE } from '../src/scenario/colonial1881';
 import { declareWar } from '../src/engine/diplomacy';
 import { imposeProtectorate } from '../src/engine/vassals';
+import { demandCost, engineTerms } from '../src/engine/peace';
 
 describe('interessi coloniali', () => {
   const st = (w: ReturnType<typeof newGame>, id: string) => C.interestStatus(w, C.BY_ID.get(id)!);
@@ -249,6 +250,9 @@ describe('corte 00: ritardi, dati e posizioni', () => {
     declareWar(w, 'FRA', 'WAS', 'prova');
     w.state.controller[w.state.nations.WAS.capital] = 'FRA';
     expect(imposeProtectorate(w, 'FRA', 'WAS')).toMatch(/prima del 1886/);
+    // nemmeno come richiesta nella pace (prima la via della pace scavalcava le posizioni dei regni locali)
+    expect(demandCost(w, { type: 'vassal', from: 'WAS', to: 'FRA', level: 'protettorato' } as never).refusal).toMatch(/prima del 1886/);
+    expect(engineTerms(w, w.state.wars.find((x) => x.attackers.includes('FRA') && x.defenders.includes('WAS'))!).some((d) => d.type === 'vassal')).toBe(false);
     w.state.day = 365 * 6; // 1887
     expect(imposeProtectorate(w, 'FRA', 'WAS')).toBeNull();
   });

@@ -257,10 +257,15 @@ export function protectorateRefusal(w: World, overlord: Tag, target: Tag): strin
   if (w.profiles[target]?.major) return 'una grande potenza non diventa un protettorato';
   if (s.controller[s.nations[target].capital] !== overlord) return 'bisogna occuparne la capitale';
   if (subjectOf(w, overlord)) return 'uno stato soggetto non impone protettorati';
-  // chi rifiuta ogni protettore si annette o si lascia, non si protegge (corte 00, principio 8)
+  return stanceRefusal(w, overlord, target);
+}
+
+/** La posizione di un regno locale (corte 00, principio 8): chi rifiuta ogni protettore si annette o si lascia, non
+ *  si protegge. Vale per i trattati, per `imposeProtectorate` e per la richiesta di vassallaggio nella pace. */
+export function stanceRefusal(w: World, overlord: Tag, target: Tag): string | null {
   const st = LOCAL_STANCE[target];
   if (st?.hostile === '*' || st?.hostile?.includes(overlord) || (st?.toward && st.toward !== overlord)) return 'non accetterà mai un protettore: si prendono le province';
-  if (st?.notBefore && dateOf(s.day).getUTCFullYear() < st.notBefore) return `non accetta un protettore prima del ${st.notBefore}: per ora si prendono le province`;
+  if (st?.notBefore && dateOf(w.state.day).getUTCFullYear() < st.notBefore) return `non accetta un protettore prima del ${st.notBefore}: per ora si prendono le province`;
   return null;
 }
 
