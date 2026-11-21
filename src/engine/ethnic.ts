@@ -92,7 +92,9 @@ export function ethnicStability(w: World, tag: Tag, own?: number[]): number {
   s.ethnicBase ??= {};
   if (s.ethnicBase[tag] === undefined) s.ethnicBase[tag] = foreignShare(w, tag, own);
   const d = foreignShare(w, tag, own) - s.ethnicBase[tag];
-  return Math.max(-8, Math.min(3, -d * 40));
+  // perdere popoli altrui non rende più stabili (fase C, corte 05, giurato 2.1): la Lombardia del 1859 e il Veneto
+  // del 1866 furono crisi per Vienna, non sollievi. Prima il guadagno arrivava a +3
+  return Math.max(-8, Math.min(0, -d * 40));
 }
 
 /** Breve descrizione per l'interfaccia e il modello. */

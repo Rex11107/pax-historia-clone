@@ -5,7 +5,7 @@
 // Nella crisi il giocatore sceglie la via d'uscita (elezioni anticipate, nuovo governo, decreto,
 // epurazione…); le nazioni non giocanti e il giocatore che non sceglie seguono il motore.
 
-import { dayOf, genericPolitics, LEADER_YEARS, POLITICS, type Program, type Regime } from '../scenario/politics1881';
+import { dayOf, genericPolitics, LEADER_YEARS, POLITICAL_EVENTS, POLITICS, type Program, type Regime } from '../scenario/politics1881';
 import { MINISTERS } from '../scenario/ministers1881';
 import { ministerEffects, reshuffleCabinet } from './ministers';
 import { techEffects } from './research';
@@ -187,7 +187,10 @@ function policyMood(w: World, tag: Tag, ps: PoliticsState): number {
 export function confidence(w: World, tag: Tag, ps: PoliticsState): number {
   const seats = share(ps, ps.gov, 'seats'), pop = share(ps, ps.gov, 'pop');
   const n = w.state.nations[tag];
-  let c = seats + (pop - seats) * 0.7 + policyMood(w, tag, ps) + ps.honeymoon + ministerEffects(w, tag).confidence;
+  // con le elezioni «fatte» (encasillado, rotativismo) conta la Camera più del paese (fase C: altrimenti il governo
+  // spagnolo, con il 70% dei seggi e il 40% del consenso, era sempre in crisi e il turno girava ogni anno)
+  const opinion = (POLITICS[tag]?.managed ?? 0) >= 20 ? 0.3 : 0.7;
+  let c = seats + (pop - seats) * opinion + policyMood(w, tag, ps) + ps.honeymoon + ministerEffects(w, tag).confidence;
   // a corte conta l'ordine nel paese: con peso 0,5 una Russia a stabilità 0 perde 25 punti e la crisi diventa
   // possibile (corte 05, capo 3: con 0,2 la Russia a stabilità 0 restava sopra la soglia e non aveva mai crisi)
   if (ps.regime === 'autocracy') c += (n.stability - 50) * 0.5;
@@ -239,6 +242,14 @@ function setGov(w: World, tag: Tag, ps: PoliticsState, gov: string[], sink: Game
   void lead;
   // solo capi vivi e in attività (corte 05, capo 2); in un rimpasto si passa al capo successivo
   const head = ps.fixedHead && leaderActive(w, tag, ps.head) ? ps.head : pickHead(w, tag, ps, gov, same && !ps.fixedHead && ps.regime !== 'presidential' ? ps.head : undefined);
+  // stessa maggioranza e stesso capo: un rimpasto, non un nuovo governo (prima il conteggio dei governi li contava)
+  if (same && head === ps.head) {
+    ps.honeymoon = Math.max(ps.honeymoon, 4); ps.since = s.day;
+    reshuffleCabinet(w, tag);
+    ps.confidence = confidence(w, tag, ps);
+    emit(w, { type: 'crisis_end', nations: [tag], text: `${w.profiles[tag].name}: ${why}; rimpasto, il governo ${head} resta.` }, sink);
+    return;
+  }
   ps.gov = gov; ps.head = head; ps.honeymoon = 8; ps.since = s.day;
   reshuffleCabinet(w, tag);
   ps.confidence = confidence(w, tag, ps);
@@ -255,7 +266,10 @@ export function holdElection(w: World, tag: Tag, ps: PoliticsState, sink: GameEv
   const tot = adj.reduce((a, b) => a + b, 0);
   // il consenso si avvicina ai seggi di un quarto, non li copia (corte 05, capo 4): prima i seggi «fatti» dal governo
   // (encasillado, prefetti) diventavano il consenso del paese, e il voto successivo li ingrandiva ancora
-  ps.parties.forEach((p, i) => { p.seats = Math.round((adj[i] / tot) * 1000) / 10; p.pop = Math.round((p.pop + (p.seats - p.pop) * 0.25) * 10) / 10; });
+  // con il rinnovo di metà Camera (Paesi Bassi, Belgio) i seggi si muovono solo per metà verso il risultato (fase C,
+  // corte 05: con la legislatura di due anni ogni voto rifaceva la Camera da capo e i governi cadevano ogni due anni)
+  const half = POLITICS[tag]?.halfRenewal;
+  ps.parties.forEach((p, i) => { const v = (adj[i] / tot) * 100; p.seats = Math.round((half ? (p.seats + v) / 2 : v) * 10) / 10; p.pop = Math.round((p.pop + (p.seats - p.pop) * 0.25) * 10) / 10; });
   // il mandato presidenziale ha una scadenza fissa: si conta dalla data prevista, non dal giorno del voto
   ps.nextElection = ps.regime === 'presidential' && ps.nextElection !== null ? ps.nextElection + Math.round((ps.term ?? 4) * 365.25) : s.day + Math.round((ps.term ?? 4) * 365);
   ps.calmUntil = s.day + 8 * 7;
@@ -353,6 +367,50 @@ export function crisisChance(ps: PoliticsState): number {
   return Math.min(0.6, 0.25 * Math.pow(gap / 25, 1.5));
 }
 
+/**
+ * Crisi di gabinetto (fase C, corte 05): nei regimi parlamentari con `cabinetYears` i gabinetti cadono anche con la
+ * maggioranza, per fazioni e logoramento, in media dopo quel numero di anni (non prima di tre mesi). Si cambia capo
+ * nella stessa maggioranza (il trasformismo italiano: Depretis, Crispi, Giolitti), oppure, col turno, la Corona chiama
+ * l'opposizione dinastica, che fa le sue elezioni (Cánovas e Sagasta).
+ */
+function cabinetCrisis(w: World, tag: Tag, ps: PoliticsState, sink: GameEvent[]) {
+  const s = w.state, seed = POLITICS[tag];
+  if (!seed?.cabinetYears || ps.regime !== 'parliamentary' || ps.crisis || s.day < ps.calmUntil || ps.decreeUntil) return;
+  if (s.day - ps.since < 91 || rand(s.seed, 'gabinetto', tag, s.day) >= 1 / (seed.cabinetYears * 52)) return;
+  const name = w.profiles[tag].name;
+  if (seed.turno) {
+    const partner = [...ps.parties].filter((p) => !ps.gov.includes(p.id) && !EXTREME.has(p.program) && p.program !== 'tradizionalista')
+      .sort((a, b) => b.seats - a.seats || (a.id < b.id ? -1 : 1))[0];
+    if (partner) {
+      emit(w, { type: 'crisis_open', nations: [tag], text: `${name}: il governo ${ps.head} si dimette; la Corona chiama l'opposizione (turno).` }, sink);
+      setGov(w, tag, ps, [partner.id], sink, 'il turno porta al governo l\'opposizione dinastica');
+      holdElection(w, tag, ps, sink);
+      return;
+    }
+  }
+  const head = pickHead(w, tag, ps, ps.gov, ps.head);
+  if (head === ps.head) return;
+  emit(w, { type: 'crisis_open', nations: [tag], text: `${name}: crisi di gabinetto, il governo ${ps.head} si dimette pur avendo la maggioranza.` }, sink);
+  setGov(w, tag, ps, ps.gov, sink, 'crisi di gabinetto');
+}
+
+/**
+ * Una pace pesa sul governo (fase C, corte 05, giurato 3.2: Ferry cadde per Lang Son, Crispi per Adua): chi cede
+ * province, paga o si sottomette perde fiducia, chi guadagna ne prende un po'; una guerra d'aggressione finita senza
+ * nulla è un fallimento del governo che l'ha voluta.
+ */
+export function peaceVerdict(w: World, demands: { from: Tag; to: Tag }[], attackers: Tag[], parts: Tag[]) {
+  for (const t of parts) {
+    const ps = politicsOf(w, t);
+    if (!ps) continue;
+    const lost = demands.some((d) => d.from === t), won = demands.some((d) => d.to === t);
+    const delta = lost ? -PEACE_BLAME : won ? PEACE_CREDIT : attackers[0] === t && !demands.length ? -PEACE_BLAME / 2 : 0;
+    ps.honeymoon = clamp(ps.honeymoon + delta, -12, 12);
+    ps.confidence = confidence(w, t, ps);
+  }
+}
+export const PEACE_BLAME = 8, PEACE_CREDIT = 4;
+
 /** Fine settimana per tutte le nazioni. */
 export function weeklyPolitics(w: World, sink: GameEvent[]) {
   const s = w.state;
@@ -373,13 +431,22 @@ export function weeklyPolitics(w: World, sink: GameEvent[]) {
         emit(w, { type: 'government', nations: [tag], text: `${w.profiles[tag].name}: ${old} lascia la guida del governo; gli succede ${ps.head}.` }, sink);
       }
     }
-    ps.honeymoon = Math.max(0, ps.honeymoon - 1);
+    // fatti datati (l'assassinio di Alessandro II): solo per le nazioni non giocanti
+    if (tag !== s.player) for (const e of POLITICAL_EVENTS) {
+      const d = dayOf(...e.date);
+      if (e.tag !== tag || d > s.day || d <= s.day - 7 || !e.gov.every((g) => ps.parties.some((p) => p.id === g))) continue;
+      emit(w, { type: 'crisis_open', nations: [tag], text: `${w.profiles[tag].name}: ${e.text}` }, sink);
+      setGov(w, tag, ps, e.gov, sink, 'cambia la linea del governo');
+      delete ps.crisis;
+    }
+    cabinetCrisis(w, tag, ps, sink);
+    ps.honeymoon = ps.honeymoon > 0 ? ps.honeymoon - 1 : Math.min(0, ps.honeymoon + 1);
     if (ps.decreeUntil && s.day >= ps.decreeUntil) delete ps.decreeUntil;
     if (ps.nextElection !== null && s.day >= ps.nextElection) holdElection(w, tag, ps, sink);
     ps.confidence = confidence(w, tag, ps);
     if (ps.crisis || s.day < ps.calmUntil || ps.decreeUntil) continue;
     // disordini (stabilità sotto 30): il rischio di crisi raddoppia (corte 05, capo 1)
-    const p = crisisChance(ps) * (s.nations[tag].stability < UNREST ? 2 : 1);
+    const p = crisisChance(ps) * (s.nations[tag].stability < UNREST ? 2 : 1) * (POLITICS[tag]?.crisisScale ?? 1);
     if (p > 0 && rand(s.seed, 'crisi', tag, s.day) < p) {
       ps.crisis = { day: s.day, options: crisisOptions(ps) };
       const what = ps.regime === 'autocracy' ? 'crisi a corte: il governo perde il favore' : ps.regime === 'constitutional' ? 'il parlamento blocca il governo' : 'il governo perde la maggioranza';
