@@ -3,7 +3,7 @@ import { newGame } from '../src/engine/setup';
 import { runTurn } from '../src/engine/turn';
 import { declareWar } from '../src/engine/diplomacy';
 import { recruit } from '../src/engine/economy';
-import { attackPower, firepower, resolveBattles } from '../src/engine/combat';
+import { firepower, resolveBattles } from '../src/engine/combat';
 import { assignOrders, OCCUPY_DAYS, occupyDays, processUnit, SIEGE_DAYS_PER_LEVEL } from '../src/engine/orders';
 import { tropicalSickness } from '../src/engine/supply';
 import { budget } from '../src/engine/economy';
