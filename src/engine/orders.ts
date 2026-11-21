@@ -2,6 +2,7 @@ import { geoKm, nearX } from './map';
 import { hasSea, seaKm, seaLine, seaPassages, seaRoute } from './sea';
 import { techEffects } from './research';
 import { level } from './construction';
+import { disengage } from './combat';
 import { TERRAIN_SPEED, type Edge } from './map';
 import type { Condition, GameEvent, Order, Unit, UnitType } from './types';
 import { al, allied, atWar, canEnter, clamp, di, emit, hostilePresent, hostileUnitsAt, NOBODY, sameSide, The, type World } from './world';
@@ -208,14 +209,44 @@ function capture(w: World, u: Unit, p: number, sink: GameEvent[]) {
   emit(w, { type: 'province_captured', province: p, nations: [newCtrl, ctrl], text: `${w.map.provinces[p].name} passa sotto il controllo ${di(w, newCtrl)} (tolta ${al(w, ctrl)}).` }, sink);
 }
 
+/** Giorni di sosta per prendere una provincia: tre, una settimana per una terra di nessuno (non basta passarci per
+ *  annetterla), e per una fortezza un assedio di un mese a livello (Plevna resistette cinque mesi, Metz settanta giorni). */
+export const OCCUPY_DAYS = 3;
+export const NOBODY_DAYS = 7;
+export const SIEGE_DAYS_PER_LEVEL = 30;
+export function occupyDays(w: World, p: number): number {
+  if (w.state.controller[p] === NOBODY) return NOBODY_DAYS;
+  return OCCUPY_DAYS + SIEGE_DAYS_PER_LEVEL * level(w, p, 'fortezza');
+}
+
+/** La provincia è da prendere: nemica (o terra di nessuno) e senza difensori fermi. */
+function hostileGround(w: World, u: Unit, p: number): boolean {
+  const s = w.state, ctrl = s.controller[p];
+  if (ctrl !== NOBODY && !atWar(s, u.nation, ctrl)) return false;
+  return !s.units.some((o) => o.location === p && !o.move?.progress && atWar(s, u.nation, o.nation));
+}
+
+function besiege(w: World, u: Unit, sink: GameEvent[]) {
+  const p = u.location;
+  // in marcia non si assedia: conta solo chi è fermo o ha appena finito la tappa
+  if (u.move?.progress || !hostileGround(w, u, p) || (w.state.controller[p] === NOBODY && !w.map.passable(p))) { delete u.siege; return; }
+  if (u.move?.path.length && !(u.orders[0]?.type === 'attack' && u.orders[0].target === p)) { delete u.siege; return; }
+  const days = u.siege?.p === p ? u.siege.days + 1 : 1;
+  const need = occupyDays(w, p);
+  if (days === 1 && need > OCCUPY_DAYS && w.state.controller[p] !== NOBODY) emit(w, { type: 'siege', nations: [u.nation, w.state.controller[p]], province: p, text: `${u.name} pone l'assedio alla fortezza di ${w.map.provinces[p].name}: ${need} giorni.` }, sink);
+  if (days >= need) { delete u.siege; capture(w, u, p, sink); return; }
+  u.siege = { p, days };
+}
+
 /** Un giorno di esecuzione degli ordini per un'unità. */
 export function processUnit(w: World, u: Unit, sink: GameEvent[]) {
   const s = w.state;
   if (u.recovering > 0) { u.recovering--; return; }
-  if (u.inBattle) return;
-  // chi sta in una provincia nemica rimasta senza difensori la occupa (prima succedeva solo entrando: un'unità
-  // arrivata mentre il nemico usciva restava in terra nemica senza prenderla, e un terzo poteva soffiargliela)
-  if (!u.move?.progress && atWar(s, u.nation, s.controller[u.location]) && !s.units.some((o) => o.location === u.location && !o.move?.progress && atWar(s, u.nation, o.nation))) capture(w, u, u.location, sink);
+  if (u.inBattle) { disengage(w, u, sink); return; }
+  // occupazione dopo una sosta (corte 01, capo 3): chi resta fermo in una provincia nemica senza difensori la prende
+  // dopo `occupyDays` giorni, una fortezza dopo l'assedio; chi passa senza fermarsi non prende nulla. Prima ogni
+  // provincia attraversata cambiava padrone, e un corpo di cavalleria prendeva mezza Africa al galoppo
+  besiege(w, u, sink);
   for (let guard = 0; guard < 6; guard++) {
     const o = u.orders[0];
     if (!o) { u.entrench = clamp(u.entrench + 0.03, 0, 1); return; }
@@ -234,6 +265,8 @@ export function processUnit(w: World, u: Unit, sink: GameEvent[]) {
 
     // move / attack
     const target = o.target!;
+    // un attacco è finito quando la provincia è presa: fino ad allora si resta ad assediarla
+    if (u.location === target && !u.move?.path.length && o.type === 'attack' && hostileGround(w, u, target)) { u.move = null; return; }
     if (u.location === target && !u.move?.path.length) { u.move = null; finish(u); continue; }
     if (!u.move || !u.move.path.length || u.move.path[u.move.path.length - 1] !== target) {
       const plan = planPath(w, u, target, o.type === 'attack');
@@ -271,7 +304,6 @@ function advance(w: World, u: Unit, o: Order, sink: GameEvent[]) {
     u.move.path.shift();
     u.entrench = 0;
     if (hostile.length) { u.move.path = []; u.move = null; return; } // si combatte qui
-    capture(w, u, next, sink);
     if (u.move.sea && u.move.sea.to === next) delete u.move.sea; // sbarcati
     if (u.move.path.length) startLeg(w, u); else u.move = null;
   }

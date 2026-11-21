@@ -50,9 +50,16 @@ function planNation(w: World, tag: Tag, enemies: Set<Tag>) {
   // chiedendo l'alleanza di ogni controllore, per ognuna delle trenta nazioni che seguono il Regno Unito in guerra
   const near = new Set<number>();
   for (let p = 0; p < map.size; p++) if (isEnemy(s.controller[p])) { near.add(p); for (const e of map.adj[p]) near.add(e.to); }
+  // anche le province nostre dove il nemico è entrato e sta assediando (con l'occupazione dopo una sosta, corte 01)
+  for (const u of s.units) if (isEnemy(u.nation)) near.add(u.location);
   for (const p of [...near].sort((a, b) => a - b)) {
     if (friendlyCtrl(p)) {
       if (map.adj[p].some((e) => !e.strait && isEnemy(s.controller[e.to]))) front.push(p);
+      // soccorso: il nemico è dentro una nostra provincia e la prenderà dopo la sosta; vale come una liberazione
+      if (foeAt[p] > 0 && map.adj[p].some((e) => friendlyCtrl(e.to))) {
+        const capital = capitals.has(p) || Object.values(s.nations).some((n) => n.capital === p && isAlly(n.tag)) ? 2 : 1;
+        targets.push({ p, score: (3 * capital * (1 + Math.log10(map.provinces[p].pop * colonialWeight(w, tag, p) + 10))) / (1 + foeAt[p] / 20000) });
+      }
     } else if (isEnemy(s.controller[p])) {
       const touches = map.adj[p].some((e) => friendlyCtrl(e.to));
       if (!touches) continue;

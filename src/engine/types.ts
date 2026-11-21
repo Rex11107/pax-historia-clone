@@ -156,6 +156,9 @@ export interface Unit {
   inBattle: boolean;
   /** giorni di riorganizzazione dopo una ritirata */
   recovering: number;
+  /** occupazione in corso (corte 01, capo 3): la provincia nemica passa di mano dopo una sosta, la fortezza dopo
+   *  un assedio. Giorni passati fermi nella provincia senza nemici */
+  siege?: { p: number; days: number };
 }
 
 export type TreatyType = 'alliance' | 'non_aggression' | 'trade' | 'military_access' | 'guarantee';
