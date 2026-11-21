@@ -46,7 +46,7 @@ export function cabinetOf(w: World, tag: Tag): CabinetState | null {
   if (!s.cabinets[tag]) {
     const c: CabinetState = { posts: { ...(CABINET_1881[tag] ?? {}) }, since: {}, acc: {} };
     s.cabinets[tag] = c;
-    for (const o of OFFICES) if (!c.posts[o] || !eligible(w, tag, minister(c.posts[o])!, o)) c.posts[o] = candidates(w, tag, o)[0]?.id;
+    for (const o of OFFICES) if (!c.posts[o] || !eligible(w, tag, minister(c.posts[o])!, o)) setPost(c, o, candidates(w, tag, o)[0]?.id);
   }
   return s.cabinets[tag];
 }
@@ -107,7 +107,7 @@ export function weeklyMinisters(w: World, sink: GameEvent[]) {
       const cur = minister(c.posts[o]);
       if (cur && eligible(w, tag, cur, o)) continue;
       const next = candidates(w, tag, o).find((x) => x.id !== cur?.id);
-      c.posts[o] = next?.id;
+      setPost(c, o, next?.id);
       c.since[o] = s.day;
       if (next && (tag === s.player || w.profiles[tag].major)) emit(w, { type: 'minister', nations: [tag], text: `${w.profiles[tag].name}: ${cur ? `${cur.name} lascia il ministero; ` : ''}${next.name} ${o === 'guerra' ? 'alla Guerra' : o === 'esteri' ? 'agli Esteri' : o === 'finanze' ? 'alle Finanze' : 'all\'Interno'}.` }, sink);
     }
@@ -127,6 +127,12 @@ export function weeklyMinisters(w: World, sink: GameEvent[]) {
  * Nuovo governo nelle nazioni non giocanti: il nuovo capo forma il suo gabinetto, preferendo gli uomini
  * del proprio partito. Il giocatore tiene i ministri ancora nominabili e sceglie lui gli altri cambi.
  */
+/** Un posto vuoto si toglie con `delete`, mai con `undefined`: la chiave resterebbe in memoria ma non nel salvataggio,
+ *  e l'ordine dei posti divergerebbe fra la partita e il suo ricaricamento (determinismo.mts). */
+function setPost(c: CabinetState, o: Office, id: string | undefined) {
+  if (id) c.posts[o] = id; else delete c.posts[o];
+}
+
 export function reshuffleCabinet(w: World, tag: Tag) {
   const c = cabinetOf(w, tag);
   const ps = politicsOf(w, tag);
