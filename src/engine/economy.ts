@@ -42,6 +42,15 @@ export const RECRUIT: Record<UnitType, { men: number; cost: number; label: strin
 };
 
 /** costo settimanale (milioni) di mille uomini in armi in tempo di pace */
+/** Stanchezza di fondo di una guerra, a settimana: per una grande potenza un quinto contro soli Stati minori (fase C,
+ *  corte 05, capo 12: prima la Francia contro il Uassulu si stancava quanto contro la Germania). */
+export function baseWeariness(w: World, tag: Tag): number {
+  const s = w.state;
+  if (!w.profiles[tag]?.major) return 0.3;
+  const foes = warsOf(s, tag).flatMap((x) => (x.attackers.includes(tag) ? x.defenders : x.attackers));
+  return foes.some((f) => w.profiles[f]?.major) ? 0.3 : 0.06;
+}
+
 export const UPKEEP_PER_THOUSAND = 0.035;
 /** Mantenimento per arma, rispetto alla fanteria: foraggio e rimonta per la cavalleria, pezzi, munizioni e traino per l'artiglieria. */
 export const UPKEEP_ARM: Record<UnitType, number> = { infantry: 1, cavalry: 1.4, artillery: 1.5 };
@@ -150,7 +159,7 @@ export function weeklyEconomy(w: World, sink: GameEvent[]) {
     let pop = 0;
     for (const i of idx.owned.get(tag) ?? []) pop += w.map.provinces[i].pop * colonialWeight(w, tag, i);
     pop ||= 1;
-    if (warsOf(s, tag).length) n.warExhaustion = clamp(n.warExhaustion + (n.turnLosses / (pop / 1e6)) * 0.01 * POLICY_EFFECTS.press[n.policies.press].exhaustion * govEffects(w, tag).exhaustion * (1.3 - pr.cohesion / 100) + 0.3, 0, 100);
+    if (warsOf(s, tag).length) n.warExhaustion = clamp(n.warExhaustion + (n.turnLosses / (pop / 1e6)) * 0.01 * POLICY_EFFECTS.press[n.policies.press].exhaustion * govEffects(w, tag).exhaustion * (1.3 - pr.cohesion / 100) + baseWeariness(w, tag), 0, 100);
     else n.warExhaustion = clamp(n.warExhaustion - 1.5, 0, 100);
     n.turnLosses = 0;
     const target = stabilityTarget(w, tag, idx.owned.get(tag) ?? []);
