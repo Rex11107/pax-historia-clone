@@ -36,7 +36,28 @@ export interface PoliticsSeed {
   managed?: number;
   /** premio di maggioranza dei sistemi uninominali */
   majoritarian?: boolean;
+  /** si rinnova metà della Camera a ogni voto (Paesi Bassi fino al 1888, Belgio fino al 1894): i seggi si muovono
+   *  solo per metà verso il risultato */
+  halfRenewal?: boolean;
+  /** durata media storica di un gabinetto, in anni, 1881-1899: anche con la maggioranza i gabinetti cadono per
+   *  fazioni e logoramento (Italia: trasformismo; Francia: ministeri brevi). Senza, solo le crisi di fiducia */
+  cabinetYears?: number;
+  /** turno o rotativismo (Spagna, Portogallo): alla crisi di gabinetto la Corona chiama l'opposizione dinastica,
+   *  che poi «fa» le elezioni */
+  turno?: boolean;
+  /** moltiplica il rischio di crisi di fiducia: partiti disciplinati e maggioranze lunghe (i cattolici belgi al
+   *  governo dal 1884 al 1914), tarato sul numero storico di governi 1881-1899 */
+  crisisScale?: number;
 }
+
+/** Fatti politici datati che il motore applica (corte 05, capo 6: «prima situazione di prova»). */
+export interface PoliticalEvent { tag: Tag; date: [number, number, number]; gov: string[]; head: string; text: string }
+export const POLITICAL_EVENTS: PoliticalEvent[] = [
+  // l'assassinio di Alessandro II (13 marzo 1881) e il manifesto del 29 aprile: cade Loris-Melikov, il ministero
+  // dell'Interno passa a Ignat'ev; dal giugno 1882 a Dmitrij Tolstoj, la «controriforma»
+  { tag: 'RUS', date: [1881, 3, 13], gov: ['panslavisti'], head: 'Nikolaj Ignat\'ev', text: 'Alessandro II è ucciso a Pietroburgo da una bomba della Narodnaja Volja. Il nuovo zar Alessandro III congeda i riformisti: cade Loris-Melikov.' },
+  { tag: 'RUS', date: [1882, 6, 12], gov: ['reazionari'], head: 'Dmitrij Tolstoj', text: 'Ignat\'ev cade per il progetto di Zemskij Sobor: all\'Interno va Dmitrij Tolstoj, comincia la controriforma.' },
+];
 
 export const dayOf = (y: number, m: number, d: number) => Math.round((Date.UTC(y, m - 1, d) - Date.UTC(1881, 0, 1)) / 86400000);
 
@@ -57,6 +78,30 @@ export const LEADER_YEARS: Record<string, [number, number]> = {
   'USA:Grover Cleveland': [1884, 1897], // presidente 1885-1889 e 1893-1897
   'USA:William J. Bryan': [1896, 1912], // candidato nel 1896, 1900, 1908
   'USA:James B. Weaver': [1880, 1892], // candidato greenback 1880 e populista 1892
+  // capi di governo dopo il 1885 (fase C, corte 05: i partiti restavano senza capi e governava «un notabile»)
+  'ITA:Giovanni Giolitti': [1889, 1914], // presidente del Consiglio 1892-93, poi dal 1903
+  'ITA:Antonio di Rudinì': [1886, 1898], // presidente del Consiglio 1891-92 e 1896-98
+  'ITA:Luigi Pelloux': [1898, 1900],
+  'FRA:Maurice Rouvier': [1884, 1905],
+  'FRA:René Goblet': [1886, 1893],
+  'FRA:Charles Floquet': [1885, 1893],
+  'FRA:Alexandre Ribot': [1890, 1917],
+  'FRA:Charles Dupuy': [1892, 1899],
+  'FRA:Jules Méline': [1890, 1903],
+  'FRA:Henri Brisson': [1881, 1898],
+  'FRA:Léon Bourgeois': [1890, 1914],
+  'GBR:Arthur Balfour': [1891, 1911],
+  'RUS:Nikolaj Ignat\'ev': [1881, 1882],
+  'RUS:Ivan Durnovo': [1889, 1895],
+  'RUS:Ivan Goremykin': [1895, 1899],
+  'SPA:Francisco Silvela': [1891, 1903],
+  'NED:Aeneas Mackay': [1888, 1891], // primo gabinetto confessionale
+  'NED:Gijsbert van Tienhoven': [1891, 1894],
+  'NED:Joan Röell': [1894, 1897],
+  'NED:Nicolaas Pierson': [1897, 1901],
+  'BEL:Auguste Beernaert': [1884, 1894],
+  'BEL:Jules de Burlet': [1894, 1896],
+  'BEL:Paul de Smet de Naeyer': [1896, 1899],
 };
 
 export const POLITICS: Record<Tag, PoliticsSeed> = {
@@ -73,28 +118,28 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
     gov: ['repubblicani'], head: 'James A. Garfield',
   },
   ITA: {
-    regime: 'parliamentary', crown: true, majoritarian: true, managed: 3, election: [1882, 10, 29], term: 5,
+    regime: 'parliamentary', crown: true, majoritarian: true, managed: 3, election: [1882, 10, 29], term: 5, cabinetYears: 1.3,
     parties: [
-      p('sinistra', 'Sinistra storica', 'liberale', -0.5, ['Benedetto Cairoli', 'Agostino Depretis'], 60),
-      p('destra', 'Destra storica', 'conservatore', 1, ['Marco Minghetti', 'Quintino Sella'], 36),
+      p('sinistra', 'Sinistra storica', 'liberale', -0.5, ['Benedetto Cairoli', 'Agostino Depretis', 'Francesco Crispi', 'Giovanni Giolitti'], 60),
+      p('destra', 'Destra storica', 'conservatore', 1, ['Marco Minghetti', 'Quintino Sella', 'Antonio di Rudinì', 'Luigi Pelloux'], 36),
       p('estrema', 'Estrema sinistra', 'radicale', -2, ['Agostino Bertani', 'Felice Cavallotti'], 4),
     ],
     gov: ['sinistra'], head: 'Benedetto Cairoli',
   },
   FRA: {
-    regime: 'parliamentary', majoritarian: true, election: [1881, 8, 21], term: 4,
+    regime: 'parliamentary', majoritarian: true, election: [1881, 8, 21], term: 4, cabinetYears: 2.5,
     parties: [
-      p('opportunisti', 'Repubblicani opportunisti', 'liberale', -0.5, ['Jules Ferry', 'Léon Gambetta', 'Charles de Freycinet'], 50),
-      p('radicali', 'Radicali', 'radicale', -1.5, ['Georges Clemenceau'], 11),
+      p('opportunisti', 'Repubblicani opportunisti', 'liberale', -0.5, ['Jules Ferry', 'Léon Gambetta', 'Charles de Freycinet', 'Maurice Rouvier', 'Alexandre Ribot', 'Charles Dupuy', 'Jules Méline'], 50),
+      p('radicali', 'Radicali', 'radicale', -1.5, ['Henri Brisson', 'Charles Floquet', 'René Goblet', 'Léon Bourgeois', 'Georges Clemenceau'], 11),
       p('destra', 'Monarchici e bonapartisti', 'clericale', 1.8, ['Duca di Broglie'], 39),
     ],
     gov: ['opportunisti'], head: 'Jules Ferry',
   },
   GBR: {
-    regime: 'parliamentary', crown: true, majoritarian: true, election: [1885, 11, 24], term: 6,
+    regime: 'parliamentary', crown: true, majoritarian: true, election: [1885, 11, 24], term: 6, cabinetYears: 5,
     parties: [
-      p('liberali', 'Liberali', 'liberale', -0.5, ['William Gladstone', 'Lord Hartington'], 54),
-      p('conservatori', 'Conservatori', 'conservatore', 1, ['Lord Salisbury', 'Sir Stafford Northcote'], 36),
+      p('liberali', 'Liberali', 'liberale', -0.5, ['William Gladstone', 'Lord Rosebery', 'Lord Hartington'], 54),
+      p('conservatori', 'Conservatori', 'conservatore', 1, ['Lord Salisbury', 'Sir Stafford Northcote', 'Arthur Balfour'], 36),
       p('homerule', 'Home Rule irlandese', 'minoranze', -1, ['Charles Stewart Parnell'], 10),
     ],
     gov: ['liberali'], head: 'William Gladstone',
@@ -123,8 +168,8 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
   RUS: {
     regime: 'autocracy', crown: true,
     parties: [
-      p('riformisti', 'Riformisti', 'riformista', -0.5, ['Michail Loris-Melikov', 'Dmitrij Miljutin'], 45),
-      p('reazionari', 'Reazionari', 'reazionario', 2, ['Konstantin Pobedonoscev', 'Dmitrij Tolstoj'], 35),
+      p('riformisti', 'Riformisti', 'riformista', -0.5, ['Michail Loris-Melikov'], 45),
+      p('reazionari', 'Reazionari', 'reazionario', 2, ['Dmitrij Tolstoj', 'Ivan Durnovo', 'Ivan Goremykin', 'Konstantin Pobedonoscev'], 35),
       p('panslavisti', 'Panslavisti', 'panslavista', 1, ['Nikolaj Ignat\'ev'], 20),
     ],
     gov: ['riformisti'], head: 'Michail Loris-Melikov',
@@ -139,9 +184,9 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
     gov: ['palazzo'], head: 'Küçük Said Pascià',
   },
   SPA: {
-    regime: 'parliamentary', crown: true, managed: 25, election: [1881, 8, 21], term: 5,
+    regime: 'parliamentary', crown: true, managed: 25, election: [1881, 8, 21], term: 5, cabinetYears: 3.5, turno: true,
     parties: [
-      p('conservatori', 'Conservatori', 'conservatore', 1, ['Antonio Cánovas del Castillo'], 75),
+      p('conservatori', 'Conservatori', 'conservatore', 1, ['Antonio Cánovas del Castillo', 'Francisco Silvela'], 75),
       p('fusionisti', 'Liberali fusionisti', 'liberale', -0.5, ['Práxedes Mateo Sagasta'], 15),
       p('repubblicani', 'Repubblicani', 'radicale', -2, ['Emilio Castelar'], 6),
       p('carlisti', 'Carlisti', 'tradizionalista', 2, ['Cándido Nocedal'], 4),
@@ -149,7 +194,7 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
     gov: ['conservatori'], head: 'Antonio Cánovas del Castillo',
   },
   POR: {
-    regime: 'parliamentary', crown: true, managed: 25, election: [1881, 8, 21], term: 4,
+    regime: 'parliamentary', crown: true, managed: 25, election: [1881, 8, 21], term: 4, cabinetYears: 2.5, turno: true,
     parties: [
       p('progressisti', 'Progressisti', 'liberale', -0.5, ['Anselmo Braamcamp'], 65),
       p('rigeneratori', 'Rigeneratori', 'conservatore', 0.8, ['António Fontes Pereira de Melo'], 30),
@@ -158,19 +203,19 @@ export const POLITICS: Record<Tag, PoliticsSeed> = {
     gov: ['progressisti'], head: 'Anselmo Braamcamp',
   },
   BEL: {
-    regime: 'parliamentary', crown: true, election: [1882, 6, 13], term: 2,
+    regime: 'parliamentary', crown: true, election: [1882, 6, 13], term: 2, halfRenewal: true, crisisScale: 0.3,
     parties: [
       p('liberali', 'Liberali', 'liberale', -0.5, ['Walthère Frère-Orban'], 55),
-      p('cattolici', 'Cattolici', 'clericale', 1, ['Jules Malou'], 45),
+      p('cattolici', 'Cattolici', 'clericale', 1, ['Jules Malou', 'Auguste Beernaert', 'Jules de Burlet', 'Paul de Smet de Naeyer'], 45),
     ],
     gov: ['liberali'], head: 'Walthère Frère-Orban',
   },
   NED: {
-    regime: 'parliamentary', crown: true, election: [1881, 6, 14], term: 2,
+    regime: 'parliamentary', crown: true, election: [1881, 6, 14], term: 2, halfRenewal: true, crisisScale: 0.4,
     parties: [
-      p('liberali', 'Liberali', 'liberale', -0.5, ['Theodoor van Lynden van Sandenburg', 'Jan Kappeyne van de Coppello'], 55),
+      p('liberali', 'Liberali', 'liberale', -0.5, ['Theodoor van Lynden van Sandenburg', 'Jan Kappeyne van de Coppello', 'Gijsbert van Tienhoven', 'Joan Röell', 'Nicolaas Pierson'], 55),
       p('cattolici', 'Cattolici', 'clericale', 1, ['Herman Schaepman'], 20),
-      p('antirivoluzionari', 'Antirivoluzionari', 'clericale', 1.5, ['Abraham Kuyper'], 15),
+      p('antirivoluzionari', 'Antirivoluzionari', 'clericale', 1.5, ['Aeneas Mackay', 'Abraham Kuyper'], 15),
       p('conservatori', 'Conservatori', 'conservatore', 1.2, ['Johan Heemskerk'], 10),
     ],
     gov: ['liberali'], head: 'Theodoor van Lynden van Sandenburg',

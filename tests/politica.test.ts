@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { newGame } from '../src/engine/setup';
 import { runTurn } from '../src/engine/turn';
-import { setPolicy } from '../src/engine/economy';
+import { baseWeariness, setPolicy } from '../src/engine/economy';
+import { declareWar } from '../src/engine/diplomacy';
+import * as P2 from '../src/engine/politics';
+import type { GameEvent } from '../src/engine/types';
 import { MAP } from './helpers';
 
 describe('politica', () => {
@@ -223,6 +226,70 @@ describe('politica che conta (corte 05)', () => {
     // prima −8 (il tetto), poi −2,6 (B3); la misura della corte chiede meno di −2
     expect(E.ethnicStability(w, 'BEL')).toBeGreaterThan(-2);
     expect(E.ethnicStability(w, 'BEL')).toBeLessThan(0);
+  });
+});
+
+// Fase C, area politica (corte 05, «Da fare nella fase di bilanciamento», punti 9-11 e 13).
+describe('fase C: politica', () => {
+  const weeks = (w: ReturnType<typeof newGame>, n: number, sink: GameEvent[] = []) => { for (let i = 0; i < n; i++) { w.state.day += 7; w.state.turn++; P2.weeklyPolitics(w, sink); } return sink; };
+
+  it('nei Paesi Bassi si rinnova metà della Camera: i seggi si muovono per metà verso il voto', () => {
+    const w = newGame(MAP, 'SMR', 'c-meta');
+    const ps = P2.politicsOf(w, 'NED')!;
+    const before = ps.parties.map((p) => p.seats);
+    for (const p of ps.parties) p.pop = p.id === 'liberali' ? 10 : 30;
+    P2.holdElection(w, 'NED', ps, []);
+    const lib = ps.parties.findIndex((p) => p.id === 'liberali');
+    // da 55 verso circa 10: a metà strada, non a 10
+    expect(ps.parties[lib].seats).toBeGreaterThan(25);
+    expect(ps.parties[lib].seats).toBeLessThan(before[lib]);
+  });
+
+  it('in Italia i gabinetti cadono anche con la maggioranza, e cambia il capo nella stessa Sinistra', () => {
+    const w = newGame(MAP, 'SMR', 'c-trasformismo');
+    const heads = new Set<string>();
+    for (let y = 0; y < 10; y++) { weeks(w, 52); heads.add(P2.politicsOf(w, 'ITA')!.head); }
+    expect(heads.size).toBeGreaterThanOrEqual(2);
+  });
+
+  it('in Spagna il turno porta al governo i fusionisti, che fanno le loro elezioni', () => {
+    const w = newGame(MAP, 'SMR', 'c-turno');
+    const sink = weeks(w, 52 * 8);
+    expect(sink.some((e) => e.type === 'government' && e.nations[0] === 'SPA' && /turno/.test(e.text))).toBe(true);
+  });
+
+  it('il 13 marzo 1881 Alessandro II è ucciso e cade Loris-Melikov', () => {
+    const w = newGame(MAP, 'SMR', 'c-zar');
+    const sink = weeks(w, 11);
+    expect(P2.politicsOf(w, 'RUS')!.head).toBe('Nikolaj Ignat\'ev');
+    expect(sink.some((e) => e.type === 'crisis_open' && e.nations[0] === 'RUS')).toBe(true);
+  });
+
+  it('una pace persa pesa sul governo, una vinta lo aiuta', () => {
+    const w = newGame(MAP, 'SMR', 'c-pace-politica');
+    const fra = P2.politicsOf(w, 'FRA')!, ger = P2.politicsOf(w, 'GER')!;
+    const f0 = P2.confidence(w, 'FRA', fra), g0 = P2.confidence(w, 'GER', ger);
+    P2.peaceVerdict(w, [{ from: 'FRA', to: 'GER' }], ['GER'], ['FRA', 'GER']);
+    expect(fra.confidence).toBeLessThan(f0);
+    expect(ger.confidence).toBeGreaterThan(g0);
+  });
+
+  it('una grande potenza in guerra contro soli Stati minori si stanca meno', () => {
+    const w = newGame(MAP, 'SMR', 'c-stanchezza');
+    declareWar(w, 'FRA', 'WAS', 'prova');
+    expect(baseWeariness(w, 'FRA')).toBeLessThan(0.1);
+    declareWar(w, 'FRA', 'GER', 'prova');
+    expect(baseWeariness(w, 'FRA')).toBe(0.3);
+  });
+
+  it('perdere popoli altrui non rende più stabili', async () => {
+    const E = await import('../src/engine/ethnic');
+    const w = newGame(MAP, 'SMR', 'c-nazioni');
+    E.ethnicStability(w, 'AUH');
+    // l'Austria-Ungheria perde le province dove i tedeschi non sono la maggioranza più vicine a Trieste
+    const lost = w.map.provinces.filter((p) => w.state.owner[p.id] === 'AUH').slice(0, 40);
+    for (const p of lost) { w.state.owner[p.id] = 'ITA'; w.state.controller[p.id] = 'ITA'; }
+    expect(E.ethnicStability(w, 'AUH')).toBeLessThanOrEqual(0);
   });
 });
 
