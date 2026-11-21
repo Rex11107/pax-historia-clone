@@ -18,7 +18,7 @@ import { ethLabel, ethnicTable, ETHNICITIES, foreignness } from '../engine/ethni
 import { CLAIM_LABEL, claimsOn } from '../engine/claims';
 import { projectsOf, researchSlots, tech } from '../engine/research';
 import { bondRate, cancelTrade, contractsOf, effectiveResources, freeLots, MAX_LOTS, proposeTradeTreaty, quote, signTrade, tradeTreatyRefusal, type Quote } from '../engine/trade';
-import { assignOrders, planPath } from '../engine/orders';
+import { assignOrders, occupyDays, planPath } from '../engine/orders';
 import type { Condition, MapData, Order, Policies, Tag, Unit, UnitType } from '../engine/types';
 import { al, atWar, di, enemiesOf, formatDate, nationName, opinion, shortName, treatyBetween } from '../engine/world';
 import { declareWar } from '../engine/diplomacy';
@@ -282,8 +282,9 @@ export class App {
 
   private orderSummary(u: Unit): string {
     const w = this.game.world;
-    if (u.inBattle) return 'in battaglia';
+    if (u.inBattle) return u.orders[0]?.type === 'move' && u.orders[0].target != null ? `in battaglia: si sgancia verso ${w.map.provinces[u.orders[0].target].name}` : 'in battaglia (un ordine di marcia la sgancia)';
     if (u.recovering) return 'si riorganizza';
+    if (u.siege && u.siege.p === u.location) return `occupa ${w.map.provinces[u.location].name}: ${u.siege.days}/${occupyDays(w, u.location)} giorni`;
     if (!u.orders.length) return u.entrench > 0.5 ? 'trincerata' : 'in attesa di ordini';
     const o = u.orders[0];
     const where = o.target != null ? w.map.provinces[o.target].name : '';

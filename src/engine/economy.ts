@@ -43,6 +43,8 @@ export const RECRUIT: Record<UnitType, { men: number; cost: number; label: strin
 
 /** costo settimanale (milioni) di mille uomini in armi in tempo di pace */
 export const UPKEEP_PER_THOUSAND = 0.035;
+/** Mantenimento per arma, rispetto alla fanteria: foraggio e rimonta per la cavalleria, pezzi, munizioni e traino per l'artiglieria. */
+export const UPKEEP_ARM: Record<UnitType, number> = { infantry: 1, cavalry: 1.4, artillery: 1.5 };
 
 /**
  * Province per nazione, in ordine di indice: `owned` quelle di cui è padrone, `touched` quelle di cui è padrone o che
@@ -98,7 +100,8 @@ export function budget(w: World, tag: Tag, idx?: ProvinceIndex): Budget {
   // Prima l'Italia a stabilità 80 e a 15 aveva entrate e leva identiche
   const order = stabilityFactor(n.stability);
   const income = ((popEff / 1e6) * (0.6 + (0.8 * ind) / 100) * POLICY_EFFECTS.tax[pol.tax].income * (1 + Math.min(0.15, trade * 0.03)) * coalMalus * gov.income + res.income + works) * order * (n.stability < UNREST ? 0.95 : 1);
-  const men = s.units.filter((u) => u.nation === tag).reduce((x, u) => x + u.strength, 0);
+  // costo per arma (corte 01, capo 12): cavalli e pezzi costano più dei fanti
+  const men = s.units.filter((u) => u.nation === tag).reduce((x, u) => x + u.strength * UPKEEP_ARM[u.type], 0);
   const war = warsOf(s, tag).length > 0;
   const upkeep = (men / 1000) * UPKEEP_PER_THOUSAND * POLICY_EFFECTS.mobilization[pol.mobilization].upkeep * (war ? 1.6 : 1) * gov.upkeep;
   // amministrazione: cresce con la dimensione dello Stato; governare territori occupati costa

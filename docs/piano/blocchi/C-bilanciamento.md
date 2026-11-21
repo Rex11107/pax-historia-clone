@@ -10,7 +10,7 @@ Quasi tutto è 🔴: si cambiano numeri che muovono l'intera simulazione.
 | area (corte) | interventi | misura |
 |---|---|---|
 | Economia (03) | esercito e flotta al costo storico; gettito per paese; spesa dell'IA a fasce; opere al 5-15% l'anno; interesse per paese e default (sostituisce il tetto provvisorio di 12 anni di entrate del debito volontario, `DEBT_CAP_YEARS` in `economy.ts`); crescita della popolazione | risparmio in pace delle grandi potenze fra 5 e 15% (dopo A2: Regno Unito 30%, Stati Uniti 43%, Germania 30%) |
-| Guerra (01) | fuoco tecnologico; malattia e clima; rifornimento per km; occupazione dopo una sosta; assedi a contatore; artiglieria proporzionata | battaglie e perdite plausibili nelle guerre del rapporto |
+| ~~Guerra (01)~~ fatto (#40, esito sotto) | fuoco tecnologico; malattia e clima; rifornimento per km; occupazione dopo una sosta; assedi a contatore; artiglieria proporzionata | battaglie e perdite plausibili nelle guerre del rapporto |
 | ~~Intelligenza (02)~~ fatto (#38, esito sotto) | piano per gruppi con un obiettivo per fronte; guarnigioni; arruolamento a debito. Dopo B4: il Cile manda l'esercito sull'altopiano (Tarma), dove muore senza rifornimenti, e perde la Guerra del Pacifico nel 1881; con il Regno Unito in guerra coloniale pianificano anche i trenta Stati indiani (141 ms a turno contro 106) | nessun fronte sguarnito; Guerra del Pacifico verso il 1883 (l'ancora di Ancón c'è già, `War.resistance`); tempo del turno di nuovo vicino a `main` |
 | Coloniale (00) | guerra coloniale come campagna, con un fronte per coppia (passo 4 del verdetto); scadenze di verifica con cause registrate e il «regolamento» su Congo e coste 1884-86 (passo 5); Samori oggi diventa protettorato già nel 1882 | `scripts/sim/traguardi.mts` su 4 semi: 0 paci senza condizioni (dopo B4: 0-2 per seme), 0 fasi ripetute; Congo e Sudan compiuti (dopo B4: mai) |
 | Politica (05) | frequenza delle crisi per paese: troppe nei Paesi Bassi e in Belgio (legislatura di 2 anni), nessuna in Italia, Spagna (manca il turno) e Russia; Belgio col Congo −2,6 di stabilità (obiettivo meno di −2) | `scripts/sim/governi.mts`: governi per paese vicini a quelli storici (scheda B3, tabella delle misure) |
@@ -47,3 +47,22 @@ dopo una sosta» dell'area guerra (01), da fare per prima.
 
 **Rimane una decisione del giocatore**: la Triplice Alleanza (1882) non può nascere con la regola delle alleanze
 incompatibili (scheda B2): eccezione per le alleanze difensive, o fase D.
+
+## Esito dell'area guerra (ramo `bil/guerra`, 21 novembre 2026)
+
+| punto del verdetto 01 | com'è stato fatto |
+|---|---|
+| 10, occupazione e assedio | `besiege` in `orders.ts`: una provincia nemica senza difensori passa di mano dopo `OCCUPY_DAYS` = 3 giorni di sosta, una terra di nessuno dopo `NOBODY_DAYS` = 7, una fortezza dopo `SIEGE_DAYS_PER_LEVEL` = 30 giorni a livello (evento `siege`); chi passa senza fermarsi non prende nulla; la battaglia vinta non vale più la provincia; un ordine d'attacco resta attivo finché la provincia non è presa. L'IA soccorre le proprie province dove il nemico è entrato. L'interfaccia mostra «occupa X: d/n giorni» |
+| 8, divario di fuoco | `firepower` in `combat.ts` (retrocarica 0,35, ripetizione 0,2, mitragliatrice 0,3, cannoni d'acciaio 0,15, tiro rapido 0,15, senza fumo 0,1): le perdite inflitte si moltiplicano per il rapporto di fuoco. Regno Unito 1,5 contro 1,0 dei regni africani; fra europei non cambia nulla |
+| 11, ritirata ordinata | `disengage`: un'unità in battaglia con un ordine di marcia si sgancia verso la provincia amica più vicina alla meta, pagando l'inseguimento e un po' di morale |
+| 12, armi | l'artiglieria vale fino a un cannoniere ogni due fanti (`artEfficiency`); la cavalleria nemica infligge fino al 10% a chi ripiega (`PURSUIT_LOSS`); mantenimento per arma (`UPKEEP_ARM`: cavalleria 1,4, artiglieria 1,5) |
+| 9, febbri | `tropicalSickness` in `supply.ts`: 0,15% al giorno per le truppe di una nazione temperata in campagna fra i tropici, sotto montagne e deserti esclusi; chinino e medicina tropicale la riducono |
+| 13, fronte | in una provincia combattono al più il doppio della sua capienza, mai meno di 40.000 uomini |
+
+Test nuovi in `tests/guerra.test.ts` (8). Traguardi su 4 semi: Tunisi fra aprile e ottobre 1881; Samori protettorato
+nel 1887 in due semi (storico), nel 1890 e nel 1894 negli altri; il Congo compiuto in un seme (1898); guerre coloniali
+11-15 per seme (prima 8-11), paci senza condizioni 1-3.
+
+**Non fatto**: il rifornimento per km e terreno e le province occupate «non subito retrovia» (punto 9, seconda
+parte): cambiano la mappa dei rifornimenti di tutte le guerre e vanno misurati da soli. **Guerra del Pacifico**:
+finisce fra gennaio e febbraio 1882 (prima settembre 1881); per arrivare ad Ancón servono armate e un fronte (fase D).

@@ -1,11 +1,11 @@
 import { geoKm } from './map';
-import { techEffects } from './research';
-import { level } from './construction';
+import { research, techEffects } from './research';
+import { level, provinceCapacity } from './construction';
 import { govEffects } from './politics';
 import { TERRAIN_DEFENSE } from './map';
-import { evictFrom, UNIT_STATS } from './orders';
+import { UNIT_STATS } from './orders';
 import type { GameEvent, Tag, Unit } from './types';
-import { allied, atWar, clamp, di, emit, rand, sameSide, the, The, treatyBetween, type World } from './world';
+import { allied, atWar, clamp, di, emit, rand, the, The, treatyBetween, type World } from './world';
 
 // Costanti di bilanciamento: un corpo da 20.000 uomini contro uno uguale in pianura
 // perde circa l'1% al giorno; trincee e colline possono quasi raddoppiare la difesa.
@@ -14,11 +14,14 @@ export const RETREAT_MORALE = 0.25;
 export const RIVER_PENALTY = 0.75;
 export const RETREAT_STRENGTH = 0.3;
 
-function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean, enemyArtillery = false, enemyBreak = 0): number {
+function power(w: World, u: Unit, defending: boolean, sideHasInfantry: boolean, enemyArtillery = false, enemyBreak = 0, artEff = 1): number {
   const pr = w.profiles[u.nation];
   const st = UNIT_STATS[u.type];
   const terrain = w.map.provinces[u.location].terrain;
-  let p = (u.strength / 1000) * (defending ? st.defense : st.attack);
+  const base = defending ? st.defense : st.attack;
+  // il vantaggio dell'artiglieria vale fino a un cannoniere ogni due fanti (corte 01, capo 12): oltre, i pezzi in più
+  // non hanno bersagli né protezione e valgono come fanteria
+  let p = (u.strength / 1000) * (u.type === 'artillery' ? 1 + (base - 1) * artEff : base);
   p *= 0.5 + 0.5 * u.morale;
   p *= 0.4 + 0.6 * u.supply;
   p *= (0.75 + 0.5 * (pr.militaryQuality / 100)) * govEffects(w, u.nation).quality;
@@ -41,6 +44,19 @@ export function attackPower(w: World, u: Unit, at: number): number { return powe
 export function defensePower(w: World, u: Unit): number { return power(w, u, true, true); }
 
 /** Risolve un giorno di combattimento in tutte le province contese. */
+/** Armi da fuoco che contano nel divario (corte 01, capo 6), col peso di ciascuna sul fuoco di un esercito. */
+export const FIRE_TECH: Record<string, number> = { retrocarica: 0.35, ripetizione: 0.2, mitragliatrice: 0.3, cannoni_acciaio: 0.15, tiro_rapido: 0.15, senza_fumo: 0.1 };
+export function firepower(w: World, tag: Tag): number {
+  let f = 1;
+  for (const id of research(w).known[tag] ?? []) f += FIRE_TECH[id] ?? 0;
+  return f;
+}
+function sideFire(w: World, side: Unit[]): number {
+  let m = 0, f = 0;
+  for (const u of side) { m += u.strength; f += u.strength * firepower(w, u.nation); }
+  return m > 0 ? f / m : 1;
+}
+
 export function resolveBattles(w: World, sink: GameEvent[]) {
   const s = w.state;
   const byProv = new Map<number, Unit[]>();
@@ -73,21 +89,30 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
     b.start ??= {};
     for (const u of [...att, ...def]) { u.inBattle = true; b.start[u.id] ??= u.strength; }
     const infA = att.some((u) => u.type === 'infantry'), infD = def.some((u) => u.type === 'infantry');
-    const pA = att.reduce((x, u) => x + power(w, u, false, infA), 0);
+    // fronte di combattimento (corte 01, capo 13): in una provincia combattono al più tanti uomini quanti ne regge,
+    // il doppio della sua capienza e mai meno di 40.000; gli altri aspettano in seconda linea. Prima 300.000 uomini
+    // ammassati in una valle combattevano tutti insieme
+    const width = Math.max(40000, provinceCapacity(w, prov) * 2000);
+    const menA = att.reduce((x, u) => x + u.strength, 0), menD = def.reduce((x, u) => x + u.strength, 0);
+    const pA = att.reduce((x, u) => x + power(w, u, false, infA, false, 0, artEfficiency(att)), 0) * Math.min(1, width / Math.max(1, menA));
     const artA = att.some((u) => u.type === 'artillery');
     // granate ad alto esplosivo degli attaccanti contro forti in muratura
     const brk = artA ? Math.max(0, ...att.map((u) => techEffects(w, u.nation).fortBreak)) : 0;
-    const pD = def.reduce((x, u) => x + power(w, u, true, infD, artA, brk), 0);
+    const pD = def.reduce((x, u) => x + power(w, u, true, infD, artA, brk, artEfficiency(def)), 0) * Math.min(1, width / Math.max(1, menD));
     const noise = (k: string) => 0.85 + 0.3 * rand(s.seed, s.day, prov, k);
-    const lossA = pD * LOSS_FACTOR * noise('a');
-    const lossD = pA * LOSS_FACTOR * noise('d');
+    // divario di fuoco (corte 01, capo 6): chi ha retrocarica, ripetizione e mitragliatrici infligge di più e subisce
+    // di meno; fra eserciti della stessa generazione non cambia nulla
+    const fA = sideFire(w, att), fD = sideFire(w, def);
+    const lossA = pD * LOSS_FACTOR * noise('a') * (fD / fA);
+    const lossD = pA * LOSS_FACTOR * noise('d') * (fA / fD);
     applyLosses(w, att, [...new Set(def.map((u) => u.nation))], lossA, b.losses);
     applyLosses(w, def, [...new Set(att.map((u) => u.nation))], lossD, b.losses);
     // ritirate: sotto il 30% dell'organico, ma un'unità entrata in battaglia già sotto quella soglia (una leva
     // arruolata a un quarto) regge finché non ha perso metà di ciò che aveva. Prima ogni leva ripiegava al primo colpo
+    const cavA = att.reduce((x, u) => x + (u.type === 'cavalry' ? u.strength : 0), 0), cavD = def.reduce((x, u) => x + (u.type === 'cavalry' ? u.strength : 0), 0);
     for (const u of [...att, ...def]) {
       const floor = Math.min(u.maxStrength * RETREAT_STRENGTH, (b.start[u.id] ?? u.strength) * 0.5);
-      if (u.strength <= 0 || u.morale < RETREAT_MORALE || u.strength < floor) retreat(w, u, sink);
+      if (u.strength <= 0 || u.morale < RETREAT_MORALE || u.strength < floor) retreat(w, u, sink, att.includes(u) ? cavD : cavA);
     }
   }
   // battaglie concluse
@@ -108,14 +133,8 @@ export function resolveBattles(w: World, sink: GameEvent[]) {
       data: { losses: b.losses, winner },
     }, sink);
     units.forEach((u) => (u.inBattle = false));
-    // l'attaccante vittorioso prende la provincia
-    if (winner && b.sides[0].includes(winner) && atWar(s, winner, s.controller[b.province])) {
-      const owner = s.owner[b.province];
-      const prev = s.controller[b.province];
-      s.controller[b.province] = owner !== prev && (allied(s, winner, owner) || sameSide(s, winner, owner)) ? owner : winner;
-      evictFrom(w, b.province);
-      emit(w, { type: 'province_captured', province: b.province, nations: [winner, prev], text: `${w.map.provinces[b.province].name} è occupata dalle truppe ${di(w, winner)}.` }, sink);
-    }
+    // l'attaccante vittorioso resta sul campo e prende la provincia dopo la sosta, la fortezza dopo l'assedio
+    // (orders.ts, besiege): prima la prendeva subito, e una vittoria davanti a una fortezza valeva la fortezza
     delete s.battles[key];
   }
 }
@@ -138,9 +157,24 @@ function applyLosses(w: World, side: Unit[], enemies: Tag[], total: number, ledg
   }
 }
 
-function retreat(w: World, u: Unit, sink: GameEvent[]) {
+/** Quota del vantaggio dell'artiglieria che resta a uno schieramento: piena fino a un artigliere ogni due fanti. */
+function artEfficiency(side: Unit[]): number {
+  let inf = 0, art = 0;
+  for (const u of side) { if (u.type === 'artillery') art += u.strength; else if (u.type === 'infantry') inf += u.strength; }
+  return art > 0 ? Math.min(1, (inf * 0.5) / art) : 1;
+}
+
+/** Inseguimento (corte 01, capo 12): la cavalleria nemica colpisce chi ripiega, fino a un decimo dei suoi uomini. */
+export const PURSUIT_LOSS = 0.1;
+
+function retreat(w: World, u: Unit, sink: GameEvent[], pursuers = 0) {
   const s = w.state;
   const here = w.map.provinces[u.location];
+  if (pursuers > 0 && u.strength > 0) {
+    const l = Math.round(u.strength * PURSUIT_LOSS * Math.min(1, pursuers / u.strength));
+    u.strength -= l;
+    s.nations[u.nation].turnLosses += l;
+  }
   // si ripiega per terra: non attraverso uno stretto né lungo una pista del deserto (una ritirata da Dover non
   // finisce a Calais, una da un'oasi non attraversa il Sahara in un giorno)
   const options = w.map.adj[u.location]
@@ -163,6 +197,37 @@ function retreat(w: World, u: Unit, sink: GameEvent[]) {
   u.entrench = 0;
   u.morale = Math.max(u.morale, 0.15);
   emit(w, { type: 'retreat', province: dest, nations: [u.nation], text: `${u.name} ripiega da ${here.name} su ${w.map.provinces[dest].name}.` }, sink);
+}
+
+/**
+ * Ritirata ordinata dalla battaglia (corte 01, capo 9): un'unità in battaglia con un ordine di movimento si sgancia
+ * verso la provincia amica vicina più prossima alla meta, pagando l'inseguimento della cavalleria nemica e un po' di
+ * morale. Prima una battaglia non si poteva abbandonare: si restava fino alla rotta.
+ */
+export function disengage(w: World, u: Unit, sink: GameEvent[]): boolean {
+  const s = w.state;
+  const o = u.orders[0];
+  if (!u.inBattle || !o || o.type !== 'move' || o.target === undefined || o.target === u.location) return false;
+  const goal = w.map.provinces[o.target].lonlat;
+  const options = w.map.adj[u.location].filter((e) => !e.strait && !e.route).map((e) => e.to)
+    .filter((p) => w.map.passable(p) && allied(s, u.nation, s.controller[p]) && !s.units.some((x) => x.location === p && atWar(s, u.nation, x.nation)))
+    .sort((a, b) => geoKm(w.map.provinces[a].lonlat, goal) - geoKm(w.map.provinces[b].lonlat, goal) || a - b);
+  if (!options.length) return false;
+  const pursuers = s.units.reduce((x, e) => x + (e.location === u.location && e.type === 'cavalry' && atWar(s, u.nation, e.nation) ? e.strength : 0), 0);
+  const here = w.map.provinces[u.location].name;
+  const l = Math.round(u.strength * PURSUIT_LOSS * Math.min(1, pursuers / Math.max(1, u.strength)));
+  u.strength -= l;
+  s.nations[u.nation].turnLosses += l;
+  u.morale = clamp(u.morale - 0.05, 0, 1);
+  u.from = u.location;
+  u.location = options[0];
+  u.move = null;
+  u.inBattle = false;
+  u.recovering = 1;
+  u.entrench = 0;
+  if (u.location === o.target) u.orders.shift();
+  emit(w, { type: 'retreat', province: u.location, nations: [u.nation], text: `${u.name} si sgancia da ${here} su ${w.map.provinces[u.location].name}${l ? ` (${l} uomini persi nell'inseguimento)` : ''}.` }, sink);
+  return true;
 }
 
 /** Attaccare chi ha con noi un patto di non aggressione o un'alleanza è una violazione. */

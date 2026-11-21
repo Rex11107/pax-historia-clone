@@ -1,5 +1,5 @@
 import { techEffects } from './research';
-import type { GameEvent, Tag } from './types';
+import type { GameEvent, Tag, Unit } from './types';
 import { cacheVersion, industryOf, level, logistics, provinceCapacity } from './construction';
 import { allied, canEnter, clamp, emit, enemiesOf, presence, type World } from './world';
 
@@ -37,6 +37,16 @@ export function supplyMap(w: World, tag: Tag, pres = presence(w)): Float32Array 
 
 // in pace la mappa dei rifornimenti cambia solo con i confini e le opere: si ricalcola una volta a turno
 const peaceCache = new WeakMap<object, { key: string; maps: Map<Tag, Float32Array> }>();
+
+/** Perdite giornaliere per malattia di un'unità in campagna ai tropici (0 se non ci sono). */
+export const TROPICAL_SICKNESS = 0.0015;
+export function tropicalSickness(w: World, u: Unit): number {
+  const s = w.state, pv = w.map.provinces[u.location];
+  if (Math.abs(pv.lonlat[1]) > 20 || pv.terrain === 'mountain' || pv.terrain === 'desert' || s.owner[u.location] === u.nation) return 0;
+  const home = w.map.provinces[s.nations[u.nation]?.capital ?? u.location];
+  if (Math.abs(home.lonlat[1]) <= 23.5) return 0; // chi è nato ai tropici non si ammala più degli altri
+  return TROPICAL_SICKNESS * techEffects(w, u.nation).attrition;
+}
 
 const warCache = new WeakMap<object, Map<Tag, { key: string; map: Float32Array }>>();
 
@@ -84,6 +94,17 @@ export function updateSupply(w: World, sink: GameEvent[]) {
       const loss = Math.round(u.strength * 0.012 * (1 - u.supply / 0.25 + 0.3) * techEffects(w, u.nation).attrition);
       u.strength -= loss;
       u.morale = clamp(u.morale - 0.01, 0, 1);
+      s.nations[u.nation].turnLosses += loss;
+      const war = s.wars.find((x) => x.attackers.includes(u.nation) || x.defenders.includes(u.nation));
+      if (war) war.casualties[u.nation] = (war.casualties[u.nation] ?? 0) + loss;
+    }
+    // malattia nelle campagne tropicali (corte 01, capo 4): le truppe di una nazione temperata fuori dalle proprie
+    // terre, tra i tropici e sotto i 1.500 metri, perdono lo 0,15% al giorno di febbri (Madagascar 1895: seimila morti
+    // di malattia su quindicimila, venti caduti in combattimento). Chinino e medicina tropicale la riducono
+    const sick = tropicalSickness(w, u);
+    if (sick > 0) {
+      const loss = Math.round(u.strength * sick);
+      u.strength -= loss;
       s.nations[u.nation].turnLosses += loss;
       const war = s.wars.find((x) => x.attackers.includes(u.nation) || x.defenders.includes(u.nation));
       if (war) war.casualties[u.nation] = (war.casualties[u.nation] ?? 0) + loss;

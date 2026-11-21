@@ -1,20 +1,20 @@
 # Stato del lavoro
 
-Aggiornato al 19 novembre 2026, dopo le correzioni piccole della fase C (`fix/c-piccole`). Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
+Aggiornato al 21 novembre 2026, dopo la fase C, area guerra (`bil/guerra`). Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
 
 ## In breve
 
 - **Gioco**: Regnum Historia, grande strategia dal 1° gennaio 1881. TypeScript, Vite, Capacitor; APK nelle Releases.
-- **Ultima release**: quella nata dall'unione della #38 (fase C, intelligenza). Le correzioni piccole arrivano con la #39.
-- **Prossimo**: **fase C — bilanciamento**, area **guerra (01)** dopo l'unione della #38 → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md).
+- **Ultima release**: v0.1.93, nata dall'unione della #39 (correzioni piccole). L'area guerra arriva con la #40.
+- **Prossimo**: **fase C — bilanciamento**, area **costruzione (04)** o **politica (05)** dopo l'unione della #40 → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md). Le alleanze incompatibili (Triplice) restano alla fase D, per scelta del giocatore.
 
 ## PR aperte
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| #39 | `fix/c-piccole` → `main` | fase C, correzioni piccole | unire |
+| #40 | `bil/guerra` → `main` | fase C, area guerra | unire |
 
-Le PR #28-#38 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1-B4 dalla #34 alla #37, fase C intelligenza dalla #38).
+Le PR #28-#39 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1-B4 dalla #34 alla #37, fase C dalla #38 e #39).
 
 ## Blocchi
 
@@ -31,25 +31,25 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto (#35) — [scheda ed esito](blocchi/B2-diplomazia.md) |
 | B3 — politica che conta | 05 | `fix/b3-politica` | fatto (#36) — [scheda ed esito](blocchi/B3-politica.md) |
 | B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | fatto (#37) — [scheda ed esito](blocchi/B4-coloniale.md) |
-| **C — bilanciamento** | 00-05 | un ramo per area | **in corso**: intelligenza fatta (#38), correzioni piccole (#39); poi guerra, coloniale, economia, politica, costruzione — [scheda](blocchi/C-bilanciamento.md) |
+| **C — bilanciamento** | 00-05 | un ramo per area | **in corso**: intelligenza (#38), correzioni piccole (#39), guerra (#40); poi, coloniale, economia, politica, costruzione — [scheda](blocchi/C-bilanciamento.md) |
 | D — sistemi nuovi | varie | un ramo per sistema | da fare — [scheda](blocchi/D-sistemi-nuovi.md) |
 
-## Misure di riferimento (dopo C, intelligenza e correzioni piccole)
+## Misure di riferimento (dopo C, guerra)
 
 Servono a capire se un blocco ha rotto o rallentato qualcosa.
 
 | misura | valore |
 |---|---|
-| test | 159 in 20 file, tutti verdi |
+| test | 167 in 20 file, tutti verdi |
 | determinismo | 260 turni identici |
 | invarianti (`--fasi --caos` compreso) | 0 violazioni |
-| turno medio nel rapporto 1881-1899 | 163 ms contro 189 di `main` sulla stessa macchina (rifornimenti 68, economia 33, piani 15 contro 42). Su una guerra coloniale britannica (1885-87) il turno passa da 564 a 221 ms. I tempi assoluti dipendono dalla macchina: per un confronto si misura `main` sulla stessa macchina (`docs/piano/README.md`, sezione 7) |
-| guerre nel rapporto 1881-1899 | 9 dichiarate, 10 paci (con la Guerra del Pacifico); Francia-Tunisi febbraio-aprile 1881; la riconquista britannica del Sudan (aprile 1897 - febbraio 1898); una pace «senza condizioni» (Regno Unito con il Bornu) |
+| turno medio nel rapporto 1881-1899 | 168 ms contro 159 di `main` sulla stessa macchina (rifornimenti 71, economia 32, piani 17): assedi e guerre coloniali più lunghe. I tempi assoluti dipendono dalla macchina: per un confronto si misura `main` sulla stessa macchina (`docs/piano/README.md`, sezione 7) |
+| guerre nel rapporto 1881-1899 | 14 dichiarate, 15 paci (con la Guerra del Pacifico); Francia-Tunisi febbraio-luglio 1881; Samori protettorato nell'aprile 1887; la riconquista del Sudan dal luglio 1898; tre paci «senza condizioni» (Regno Unito con Bornu e Buganda, Francia col Uassulu nel 1882) |
 | versione dei salvataggi | `SAVE_VERSION = 4` in `src/engine/migrate.ts`: chi cambia la forma dello stato aggiunge un passo e alza il numero |
 | politica, 19 anni (`scripts/sim/governi.mts`) | Francia 17 governi, Paesi Bassi 18, Belgio 11, Regno Unito 5, Italia 1, Spagna 1, Russia 0 crisi: vedi la scheda B3 |
 | risparmio in pace nel 1881 (saldo/entrate) | Regno Unito 30%, Stati Uniti 43%, Germania 30%, Russia 11%, Austria-Ungheria 8%, Italia 5% |
 | obiettivo del risparmio (fase C) | fra 5 e 15% |
-| Guerra del Pacifico | ancora di Ancón (`War.resistance`) e l'esercito cileno davanti a Lima, ma la guerra finisce ancora nel settembre 1881 in 4 semi su 4: i corpi delle due parti razziano le province indifese alle spalle del nemico invece di tenere un fronte. Si cura con l'occupazione dopo una sosta (area guerra) |
+| Guerra del Pacifico | ancora di Ancón, esercito cileno davanti a Lima, occupazione dopo una sosta: finisce fra gennaio e febbraio 1882 su 4 semi (prima settembre 1881). Per il 1883 servono armate e un fronte (fase D, sistema 16 della corte 01) |
 | traguardi coloniali (`scripts/sim/traguardi.mts`, 4 semi) | Tunisi 1881 4 su 4, Tel el-Kebir 1882 4 su 4, Khartum gennaio-febbraio 1885; Congo e Sudan mai; 0 protettorati impossibili; al più 3,7 anni senza eventi coloniali. Su 20 semi (`tunisi.mts`): Tunisi entro il 1882 20 su 20 (18 alla Francia) Samori protettorato fra il 1888 e il 1889 (storico: Bissandugu, 1887; prima 1882) |
 
 ## Voti delle corti (1-10)
