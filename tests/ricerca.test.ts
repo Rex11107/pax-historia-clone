@@ -54,4 +54,51 @@ describe('ricerca', () => {
     for (let i = 0; i < 80 && R.projectsOf(w, 'ITA').length; i++) R.weeklyResearch(w, []);
     expect(R.knows(w, 'ITA', 'batteriologia') && R.knows(w, 'GER', 'batteriologia')).toBe(true);
   });
+
+  it('conoscenze del 1881 per paese e date storiche (corte 04, capo 6)', async () => {
+    const R = await import('../src/engine/research');
+    const w = newGame(MAP);
+    // chi aveva comprato o imitato non «riscopre» ciò che già usava
+    expect(R.knows(w, 'USA', 'pezzi_intercambiabili')).toBe(true);
+    expect(R.knows(w, 'USA', 'telefono')).toBe(true);
+    expect(R.knows(w, 'GER', 'thomas')).toBe(true);
+    expect(R.knows(w, 'JAP', 'retrocarica')).toBe(true);
+    expect(R.knows(w, 'CHI', 'telegrafo')).toBe(true);
+    // ma non ciò che non avevano: il Giappone non ha il telefono, l'Italia non ha Thomas
+    expect(R.knows(w, 'JAP', 'telefono')).toBe(false);
+    expect(R.knows(w, 'ITA', 'thomas')).toBe(false);
+    // il cherosene di Baku esiste dal 1860-70: la Russia lo conosce
+    expect(R.knows(w, 'RUS', 'raffinazione')).toBe(true);
+  });
+
+  it('velocità: l\'industria rende meno e la massa economica conta', async () => {
+    const R = await import('../src/engine/research');
+    const w = newGame(MAP, 'SMR');
+    const lb = (inc: number) => ({ income: inc } as never);
+    w.state.nations.BEL.lastBudget = lb(6);
+    const poor = R.baseSpeed(w, 'BEL');
+    w.state.nations.BEL.lastBudget = lb(60);
+    const rich = R.baseSpeed(w, 'BEL');
+    expect(rich).toBeGreaterThan(poor * 1.2);
+    // a parità di entrate, l'industria alta va più veloce ma con rendimenti decrescenti: da 20 a 50 si guadagna più che da 50 a 80
+    w.state.nations.GER.lastBudget = lb(60);
+    w.state.nations.JAP.lastBudget = lb(60);
+    expect(R.baseSpeed(w, 'GER')).toBeGreaterThan(R.baseSpeed(w, 'JAP'));
+    expect(R.baseSpeed(w, 'GER')).toBeLessThan(1);
+  });
+
+  it('l\'IA propone patti di ricerca agli alleati', async () => {
+    const R = await import('../src/engine/research');
+    const D = await import('../src/engine/diplomacy');
+    const w = newGame(MAP, 'SMR');
+    D.addTreaty(w, 'alliance', 'GER', 'AUH', 10);
+    let pact = false;
+    for (let i = 0; i < 400 && !pact; i++) {
+      for (const t of ['GER', 'AUH']) w.state.nations[t].treasury = 500;
+      R.weeklyResearch(w, []);
+      pact = R.research(w).projects.some((p) => p.nations.length > 1 && p.nations.includes('GER') && p.nations.includes('AUH'));
+      w.state.day += 7;
+    }
+    expect(pact).toBe(true);
+  });
 });

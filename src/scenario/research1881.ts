@@ -65,7 +65,7 @@ export const TECHS: Tech[] = [
   t('telaio_meccanico', 'industria', 'tessile', 'Telaio meccanico', 1840, 20, 0.4, [], { industry: 1 }, 'Filature e tessiture a vapore.', { start: 20, unlocks: [['tessile', 2]] }),
   t('filatura_anelli', 'industria', 'tessile', 'Filatoio ad anelli', 1870, 30, 0.6, ['telaio_meccanico'], { industrialYield: 1.04 }, 'Più filo, meno operai specializzati.', { start: 55, consumes: ['cotone'] }),
   t('tessile_elettrico', 'industria', 'tessile', 'Tessitura elettrica', 1895, 40, 0.8, ['filatura_anelli', 'motore_elettrico'], { industrialYield: 1.05, industry: 2 }, 'Il motore elettrico in ogni telaio.', { unlocks: [['tessile', 3]] }),
-  t('pezzi_intercambiabili', 'industria', 'organizzazione', 'Pezzi intercambiabili', 1880, 36, 0.8, ['bessemer'], { industry: 2, quality: 1.01 }, 'Macchine utensili di precisione: armi e macchine in serie.', { start: 88 }),
+  t('pezzi_intercambiabili', 'industria', 'organizzazione', 'Pezzi intercambiabili', 1860, 36, 0.8, ['bessemer'], { industry: 2, quality: 1.01 }, 'Macchine utensili di precisione: armi e macchine in serie (il «sistema americano» di Springfield e Colt).', { start: 70 }),
   t('organizzazione_scientifica', 'industria', 'organizzazione', 'Organizzazione scientifica del lavoro', 1905, 52, 1.0, ['pezzi_intercambiabili', 'motore_elettrico'], { income: 1.03, industry: 3 }, 'Taylor e la catena di montaggio.', { minIndustry: 55 }),
 
   // --- Energia ---
@@ -79,7 +79,7 @@ export const TECHS: Tech[] = [
   t('cokerie', 'energia', 'carbone', 'Cokerie a recupero', 1882, 30, 0.6, [], { income: 1.01, industrialYield: 1.03 }, 'Dal carbone si recuperano gas, catrame e ammoniaca.', { consumes: ['carbone'] }),
   t('turbina', 'energia', 'carbone', 'Turbina a vapore', 1884, 40, 0.9, ['cokerie'], { industry: 2, logistics: 1.03 }, 'La turbina di Parsons: centrali e navi più potenti.', { consumes: ['carbone', 'metalli'] }),
   t('trivellazione', 'energia', 'petrolio', 'Trivellazione petrolifera', 1859, 20, 0.4, [], { oilValue: 1.2 }, 'Il pozzo di Drake: si cerca il petrolio in profondità.', { start: 30 }),
-  t('raffinazione', 'energia', 'petrolio', 'Raffinazione del cherosene', 1883, 30, 0.7, ['trivellazione'], { oilValue: 1.4 }, 'Distillazione continua, oleodotti e navi cisterna (Baku, Nobel).', { consumes: ['petrolio'] }),
+  t('raffinazione', 'energia', 'petrolio', 'Raffinazione del cherosene', 1865, 30, 0.7, ['trivellazione'], { oilValue: 1.4 }, 'Distillazione continua, oleodotti e navi cisterna (Baku, Nobel).', { start: 30, consumes: ['petrolio'] }),
   t('motore_scoppio', 'energia', 'petrolio', 'Motore a scoppio', 1886, 46, 1.0, ['raffinazione', 'pezzi_intercambiabili'], { logistics: 1.03, oilValue: 1.2 }, 'Daimler e Benz: il motore leggero a benzina.', { consumes: ['petrolio', 'metalli'] }),
   t('prospezione', 'energia', 'petrolio', 'Prospezione geologica moderna', 1900, 52, 1.0, ['raffinazione'], {}, 'Geologia e sondaggi: si trovano i giacimenti di Grozny, Maikop, Kirkuk e della Persia.', { sites: [['petrolio', 45.7, 43.3, 'Grozny'], ['petrolio', 40.1, 44.6, 'Maikop'], ['petrolio', 44.4, 35.47, 'Kirkuk'], ['petrolio', 49.3, 31.95, 'Masjed Soleyman']] }),
 
@@ -93,7 +93,7 @@ export const TECHS: Tech[] = [
   t('bacini', 'trasporti', 'porti', 'Bacini di carenaggio in acciaio', 1890, 46, 1.0, ['navi_acciaio'], { income: 1.02 }, 'Bacini, gru idrauliche, banchine ferroviarie.', { consumes: ['ferro'], unlocks: [['porto', 3]] }),
   t('frigorifere', 'trasporti', 'porti', 'Navi frigorifere', 1882, 30, 0.6, ['navi_acciaio'], { agri: 1.05 }, 'La carne congelata attraversa gli oceani.', {}),
   t('telegrafo', 'trasporti', 'comunicazioni', 'Telegrafo elettrico', 1850, 20, 0.3, [], { logistics: 1.02 }, 'Fili e cavi sottomarini legano capitali e fronti.', { start: 15 }),
-  t('telefono', 'trasporti', 'comunicazioni', 'Telefono e centralini', 1880, 30, 0.6, ['telegrafo', 'dinamo'], { income: 1.01, stability: 1 }, 'Le prime reti telefoniche cittadine.', { start: 90, consumes: ['metalli'] }),
+  t('telefono', 'trasporti', 'comunicazioni', 'Telefono e centralini', 1877, 30, 0.6, ['telegrafo', 'dinamo'], { income: 1.01, stability: 1 }, 'Le prime reti telefoniche cittadine (Bell, 1876).', { start: 70, consumes: ['metalli'] }),
   t('radio', 'trasporti', 'comunicazioni', 'Radiotelegrafia', 1897, 46, 0.9, ['telefono', 'corrente_alternata'], { logistics: 1.03, quality: 1.01 }, 'Marconi: il segnale senza fili.', { consumes: ['metalli'] }),
 
   // --- Militare ---
@@ -116,7 +116,7 @@ export const TECHS: Tech[] = [
   t('mietitrice', 'agricoltura', 'macchine', 'Mietitrice meccanica', 1850, 20, 0.4, [], { agri: 1.05, manpower: 1.02 }, 'McCormick: meno braccia per il raccolto, più uomini per la leva.', { start: 40 }),
   t('trebbiatrice', 'agricoltura', 'macchine', 'Trebbiatrici a vapore', 1880, 30, 0.6, ['mietitrice'], { agri: 1.06, manpower: 1.02 }, 'Le macchine a vapore sulle aie.', { start: 85, consumes: ['carbone'] }),
   t('idrovore', 'agricoltura', 'bonifiche', 'Idrovore a vapore', 1875, 26, 0.6, [], { agri: 1.03 }, 'Le pompe prosciugano paludi e valli.', { start: 35, consumes: ['carbone'], unlocks: [['agricoltura', 2]] }),
-  t('bonifica_integrale', 'agricoltura', 'bonifiche', 'Bonifica integrale', 1900, 52, 1.0, ['idrovore'], { agri: 1.05, stability: 1 }, 'Prosciugamento, strade, case e lotti ai coloni.', { unlocks: [['agricoltura', 3]] }),
+  t('bonifica_integrale', 'agricoltura', 'bonifiche', 'Bonifica e colonizzazione dei terreni', 1900, 52, 1.0, ['idrovore'], { agri: 1.05, stability: 1 }, 'Prosciugamento, strade, case e lotti ai coloni.', { unlocks: [['agricoltura', 3]] }),
   t('scatolame', 'agricoltura', 'bonifiche', 'Conserve in scatola', 1870, 20, 0.4, [], { attrition: 0.95 }, 'Carne e verdure in latta per l\'esercito.', { start: 35, consumes: ['metalli'] }),
 
   // --- Medicina ---
@@ -135,6 +135,18 @@ export const TECHS: Tech[] = [
  * Witwatersrand: George Harrison trova l'affioramento della Main Reef a Langlaagte nel 1886, Johannesburg nasce
  * lo stesso anno (Encyclopaedia Britannica, "Witwatersrand").
  */
+/**
+ * Conoscenze del 1881 che il solo livello industriale non spiega (corte 04, capo 6): paesi che comprarono o imitarono
+ * dall'estero ciò che non avrebbero saputo produrre. Si aggiungono a quelle dedotte da `start`, se i prerequisiti ci sono.
+ */
+export const KNOWN_1881_EXTRA: Record<Tag, string[]> = {
+  JAP: ['retrocarica', 'telegrafo'], // i fucili Snider e Murata, la linea telegrafica Tokyo-Nagasaki
+  CHI: ['retrocarica', 'telegrafo'], // gli arsenali di Jiangnan e Fuzhou, il telegrafo di Li Hongzhang
+  TUR: ['retrocarica', 'telegrafo'], // i Peabody-Martini della guerra del 1877 e il telegrafo di Costantinopoli
+  USA: ['pezzi_intercambiabili', 'telefono'],
+  GER: ['thomas'],
+};
+
 export const DATED_SITES: [ResourceId, number, number, string, number][] = [
   ['oro', 28.0, -26.2, 'Witwatersrand', 1886],
 ];
