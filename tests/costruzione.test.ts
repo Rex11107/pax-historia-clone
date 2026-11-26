@@ -35,4 +35,28 @@ describe('costruzione', () => {
     expect(C.logistics(w, 'ITA').ratio).toBeLessThan(l0.ratio);
     expect(C.provinceCapacity(w, milano)).toBeGreaterThan(30);
   });
+
+  it('l\'IA costruisce in molte province e apre porti (corte 04, capo 4)', async () => {
+    const C = await import('../src/engine/construction');
+    const w = newGame(MAP, 'SMR');
+    const count = (t: string) => {
+      const b = C.buildings(w);
+      let prov = 0, ports = 0, lv = 0;
+      for (let p = 0; p < b.length; p++) if (w.state.owner[p] === t) { const ks = Object.values(b[p]); if (ks.length) prov++; ports += b[p].porto ?? 0; lv += ks.reduce((a, x) => a + x, 0); }
+      return { prov, ports, lv };
+    };
+    const before = count('RUS');
+    for (let i = 0; i < 700; i++) {
+      w.state.nations.RUS.treasury = 2000;
+      w.state.nations.RUS.lastBudget = { income: 90 } as never;
+      w.state.day += 7;
+      C.weeklyConstruction(w, []);
+    }
+    const after = count('RUS');
+    expect(after.lv).toBeGreaterThan(before.lv + 40);
+    expect(after.prov).toBeGreaterThan(before.prov + 8);
+    expect(after.ports).toBeGreaterThan(before.ports);
+    // nessun livello oltre il massimo
+    for (const row of C.buildings(w)) for (const [k, l] of Object.entries(row)) expect(l).toBeLessThanOrEqual(C.BUILDINGS[k as keyof typeof C.BUILDINGS].max);
+  });
 });
