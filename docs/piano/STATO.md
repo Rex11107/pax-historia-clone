@@ -1,20 +1,20 @@
 # Stato del lavoro
 
-Aggiornato al 21 novembre 2026, dopo la fase C, area guerra (`bil/guerra`). Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
+Aggiornato al 21 novembre 2026, dopo la fase C, area politica (`bil/politica`). Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
 
 ## In breve
 
 - **Gioco**: Regnum Historia, grande strategia dal 1° gennaio 1881. TypeScript, Vite, Capacitor; APK nelle Releases.
-- **Ultima release**: v0.1.93, nata dall'unione della #39 (correzioni piccole). L'area guerra arriva con la #40.
-- **Prossimo**: **fase C — bilanciamento**, area **costruzione (04)** o **politica (05)** dopo l'unione della #40 → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md). Le alleanze incompatibili (Triplice) restano alla fase D, per scelta del giocatore.
+- **Ultima release**: quella nata dall'unione della #40 (area guerra). L'area politica arriva con la #41.
+- **Prossimo**: **fase C — bilanciamento**, area **costruzione (04)** dopo l'unione della #41 → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md). Le alleanze incompatibili (Triplice) restano alla fase D, per scelta del giocatore.
 
 ## PR aperte
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| #40 | `bil/guerra` → `main` | fase C, area guerra | unire |
+| #41 | `bil/politica` → `main` | fase C, area politica | unire |
 
-Le PR #28-#39 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1-B4 dalla #34 alla #37, fase C dalla #38 e #39).
+Le PR #28-#40 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1-B4 dalla #34 alla #37, fase C dalla #38 alla #40).
 
 ## Blocchi
 
@@ -31,16 +31,18 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto (#35) — [scheda ed esito](blocchi/B2-diplomazia.md) |
 | B3 — politica che conta | 05 | `fix/b3-politica` | fatto (#36) — [scheda ed esito](blocchi/B3-politica.md) |
 | B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | fatto (#37) — [scheda ed esito](blocchi/B4-coloniale.md) |
-| **C — bilanciamento** | 00-05 | un ramo per area | **in corso**: intelligenza (#38), correzioni piccole (#39), guerra (#40); poi, coloniale, economia, politica, costruzione — [scheda](blocchi/C-bilanciamento.md) |
+| **C — bilanciamento** | 00-05 | un ramo per area | **in corso**: intelligenza (#38), correzioni piccole (#39), guerra (#40), politica (#41); poi, coloniale, economia, politica, costruzione — [scheda](blocchi/C-bilanciamento.md) |
 | D — sistemi nuovi | varie | un ramo per sistema | da fare — [scheda](blocchi/D-sistemi-nuovi.md) |
 
-## Misure di riferimento (dopo C, guerra)
+## Misure di riferimento (dopo C, politica)
+
+Governi in 19 anni (`governi.mts`, semi `regnum` e `b`): Italia 8-12, Francia 14-15, Regno Unito 4-10, Spagna 6-8, Paesi Bassi 6-7, Belgio 4-5, Russia 6 (con l'assassinio di Alessandro II).
 
 Servono a capire se un blocco ha rotto o rallentato qualcosa.
 
 | misura | valore |
 |---|---|
-| test | 167 in 20 file, tutti verdi |
+| test | 174 in 20 file, tutti verdi |
 | determinismo | 260 turni identici |
 | invarianti (`--fasi --caos` compreso) | 0 violazioni |
 | turno medio nel rapporto 1881-1899 | 168 ms contro 159 di `main` sulla stessa macchina (rifornimenti 71, economia 32, piani 17): assedi e guerre coloniali più lunghe. I tempi assoluti dipendono dalla macchina: per un confronto si misura `main` sulla stessa macchina (`docs/piano/README.md`, sezione 7) |

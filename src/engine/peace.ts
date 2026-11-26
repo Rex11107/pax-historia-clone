@@ -8,6 +8,7 @@ import { addTreaty, checkAlive, settleOccupations } from './diplomacy';
 import { composition, ETHNICITIES, STATE_PEOPLES } from './ethnic';
 import { RESOURCES, type ResourceId } from './resources';
 import { stanceRefusal, subjectOf, setSubject, type SubjectLevel } from './vassals';
+import { peaceVerdict } from './politics';
 import type { GameEvent, NationState, Tag, War } from './types';
 import { atWar, changeOpinion, clamp, di, emit, nationName, type World } from './world';
 import { contracts } from './trade';
@@ -537,6 +538,7 @@ export function concludePeace(w: World, war: War, demands: Demand[], sink: GameE
   settleOccupations(w);
   checkAlive(w, sink);
   for (const t of parts) if (t !== s.player && s.nations[t]?.alive && !s.wars.some((x) => x.attackers.includes(t) || x.defenders.includes(t))) s.nations[t].policies.mobilization = 'peace';
+  peaceVerdict(w, demands, war.attackers, parts.filter((t) => s.nations[t]?.alive));
   emit(w, { type: 'peace', nations: parts, text: `Pace: finisce la ${war.name.charAt(0).toLowerCase()}${war.name.slice(1)}${demands.length ? '' : ', senza condizioni'}.` }, sink);
 }
 
@@ -557,6 +559,7 @@ export function separatePeace(w: World, war: War, leaving: Tag[], demands: Deman
   settleOccupations(w);
   checkAlive(w, sink);
   for (const t of leaving) if (t !== s.player && s.nations[t]?.alive && !s.wars.some((x) => x.attackers.includes(t) || x.defenders.includes(t))) s.nations[t].policies.mobilization = 'peace';
+  peaceVerdict(w, demands, [], leaving.filter((t) => s.nations[t]?.alive));
   emit(w, { type: 'peace', nations: [...leaving, ...enemies], text: `Pace separata: ${leaving.map((t) => nationName(w, t)).join(', ')} esce dalla ${war.name.charAt(0).toLowerCase()}${war.name.slice(1)}${demands.length ? '' : ', senza condizioni'}.` }, sink);
 }
 

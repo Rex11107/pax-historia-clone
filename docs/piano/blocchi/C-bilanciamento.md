@@ -13,7 +13,7 @@ Quasi tutto è 🔴: si cambiano numeri che muovono l'intera simulazione.
 | ~~Guerra (01)~~ fatto (#40, esito sotto) | fuoco tecnologico; malattia e clima; rifornimento per km; occupazione dopo una sosta; assedi a contatore; artiglieria proporzionata | battaglie e perdite plausibili nelle guerre del rapporto |
 | ~~Intelligenza (02)~~ fatto (#38, esito sotto) | piano per gruppi con un obiettivo per fronte; guarnigioni; arruolamento a debito. Dopo B4: il Cile manda l'esercito sull'altopiano (Tarma), dove muore senza rifornimenti, e perde la Guerra del Pacifico nel 1881; con il Regno Unito in guerra coloniale pianificano anche i trenta Stati indiani (141 ms a turno contro 106) | nessun fronte sguarnito; Guerra del Pacifico verso il 1883 (l'ancora di Ancón c'è già, `War.resistance`); tempo del turno di nuovo vicino a `main` |
 | Coloniale (00) | guerra coloniale come campagna, con un fronte per coppia (passo 4 del verdetto); scadenze di verifica con cause registrate e il «regolamento» su Congo e coste 1884-86 (passo 5); Samori oggi diventa protettorato già nel 1882 | `scripts/sim/traguardi.mts` su 4 semi: 0 paci senza condizioni (dopo B4: 0-2 per seme), 0 fasi ripetute; Congo e Sudan compiuti (dopo B4: mai) |
-| Politica (05) | frequenza delle crisi per paese: troppe nei Paesi Bassi e in Belgio (legislatura di 2 anni), nessuna in Italia, Spagna (manca il turno) e Russia; Belgio col Congo −2,6 di stabilità (obiettivo meno di −2) | `scripts/sim/governi.mts`: governi per paese vicini a quelli storici (scheda B3, tabella delle misure) |
+| ~~Politica (05)~~ fatto (#41, esito sotto) | frequenza delle crisi per paese: troppe nei Paesi Bassi e in Belgio (legislatura di 2 anni), nessuna in Italia, Spagna (manca il turno) e Russia; Belgio col Congo −2,6 di stabilità (obiettivo meno di −2) | `scripts/sim/governi.mts`: governi per paese vicini a quelli storici (scheda B3, tabella delle misure) |
 | Costruzione e ricerca (04) | `provinceCapacity` con la popolazione grezza (lasciata così in A2: è capienza militare locale); costi e tempi delle opere | — |
 
 **Prima di cominciare**: rileggere in `STATO.md` le misure di riferimento e tenerle aggiornate dopo ogni intervento.
@@ -66,3 +66,34 @@ nel 1887 in due semi (storico), nel 1890 e nel 1894 negli altri; il Congo compiu
 **Non fatto**: il rifornimento per km e terreno e le province occupate «non subito retrovia» (punto 9, seconda
 parte): cambiano la mappa dei rifornimenti di tutte le guerre e vanno misurati da soli. **Guerra del Pacifico**:
 finisce fra gennaio e febbraio 1882 (prima settembre 1881); per arrivare ad Ancón servono armate e un fronte (fase D).
+
+## Esito dell'area politica (ramo `bil/politica`, 21 novembre 2026)
+
+| punto del verdetto 05 | com'è stato fatto |
+|---|---|
+| 10, frequenza dei governi | `halfRenewal` (Paesi Bassi, Belgio: si rinnova metà Camera); `crisisScale` (Belgio 0,3, Paesi Bassi 0,4); `cabinetYears` (Italia 1,3, Francia 2,5, Regno Unito 5, Spagna e Portogallo 3,5): crisi di gabinetto anche con la maggioranza, col capo successivo della stessa maggioranza; `turno` (Spagna, Portogallo): la Corona chiama l'opposizione dinastica, che fa le elezioni; con le elezioni fatte (`managed` ≥ 20) la fiducia guarda la Camera più del paese; un rimpasto con lo stesso capo non è un nuovo governo. Capi dopo il 1885 con gli anni (`LEADER_YEARS`) |
+| capo 6, prima situazione | `POLITICAL_EVENTS`: l'assassinio di Alessandro II (13 marzo 1881, cade Loris-Melikov, Ignat'ev all'Interno) e Tolstoj (giugno 1882) |
+| 11, la politica sente la pace | `peaceVerdict`: chi cede, paga o si sottomette −8 di luna di miele, chi guadagna +4, chi attacca e non ottiene nulla −4 |
+| 9, stanchezza | `baseWeariness`: 0,06 a settimana invece di 0,3 per una grande potenza contro soli Stati minori |
+| 13, nazionalità (prima parte) | perdere popoli altrui non dà più stabilità (era fino a +3) |
+
+**Misure** (`governi.mts`, semi `regnum` e `b`; storia fra parentesi):
+
+| paese | governi | prima | storia |
+|---|---|---|---|
+| Italia | 8-12 | 1 | una dozzina |
+| Francia | 14-15 | 17 | una ventina |
+| Regno Unito | 4-10 | 5 | 7 |
+| Spagna | 6-8 | 1 | 8 (turno) |
+| Paesi Bassi | 6-7 | 18 | 6-7 |
+| Belgio | 4-5 | 11 | 5 |
+| Russia | 6, 4 crisi | 1, nessuna | almeno una crisi (1881) |
+
+In Italia la sequenza esce storica: Cairoli, Depretis dal 1881 al 1887, Crispi, Giolitti. Test nuovi in
+`politica.test.ts` (7).
+
+**Errore trovato**: un posto ministeriale vuoto assegnato a `undefined` faceva divergere la partita dal salvataggio
+(ordine dei posti). Corretto in `ministers.ts` con `delete`.
+
+**Non fatto**: ancoraggi elettorali e tendenze strutturali (punto 12), partiti nazionali legati alle loro terre
+(punto 13, seconda parte), ministri fino al 1900 e parlamenti composti (punto 14).
