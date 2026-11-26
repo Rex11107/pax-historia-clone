@@ -92,6 +92,7 @@ toccano file diversi.
 | `npx tsx scripts/sim/storia.mts 19 regnum docs/rapporti/1881-1899.md` | a fine blocco, da solo | rapporto rigenerato, 0 invarianti violate |
 | `npx tsx scripts/sim/turno.mts` | se si teme di rallentare | ms per fase, da confrontare con `main` sulla stessa macchina |
 | `npx tsx scripts/sim/governi.mts` | se si tocca la politica interna | governi e crisi per paese in 19 anni |
+| `npx tsx scripts/sim/costruzione.mts` | se si tocca costruzione o ricerca | province con opere, porti e conoscenze per paese, patti di ricerca (2,5 min) |
 | `npx tsx scripts/sim/traguardi.mts regnum,a,b,c --intestazione` | se si tocca il coloniale o le guerre | tabella dei traguardi storici (corte 00) per seme, circa 3 minuti a seme |
 | `npx tsx scripts/sim/tunisi.mts 20` | se si tocca il coloniale | Tunisi e Tel el-Kebir entro il 1882 su venti semi |
 

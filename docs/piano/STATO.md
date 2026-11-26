@@ -1,20 +1,20 @@
 # Stato del lavoro
 
-Aggiornato al 21 novembre 2026, dopo la fase C, area politica (`bil/politica`). Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
+Aggiornato al 26 novembre 2026, dopo la fase C, area costruzione e ricerca (`bil/costruzione`). Si aggiorna alla fine di ogni blocco (vedi `README.md`, sezione 6).
 
 ## In breve
 
 - **Gioco**: Regnum Historia, grande strategia dal 1° gennaio 1881. TypeScript, Vite, Capacitor; APK nelle Releases.
-- **Ultima release**: quella nata dall'unione della #40 (area guerra). L'area politica arriva con la #41.
-- **Prossimo**: **fase C — bilanciamento**, area **costruzione (04)** dopo l'unione della #41 → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md). Le alleanze incompatibili (Triplice) restano alla fase D, per scelta del giocatore.
+- **Ultima release**: quella nata dall'unione della #41 (area politica). L'area costruzione e ricerca arriva con la #42.
+- **Prossimo**: **fase C — bilanciamento**, area **coloniale (00)** o **economia (03)** dopo l'unione della #42 → [`blocchi/C-bilanciamento.md`](blocchi/C-bilanciamento.md). Le alleanze incompatibili (Triplice) restano alla fase D, per scelta del giocatore.
 
 ## PR aperte
 
 | PR | ramo → base | contenuto | da fare |
 |---|---|---|---|
-| #41 | `bil/politica` → `main` | fase C, area politica | unire |
+| #42 | `bil/costruzione` → `main` | fase C, area costruzione e ricerca | unire |
 
-Le PR #28-#40 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1-B4 dalla #34 alla #37, fase C dalla #38 alla #40).
+Le PR #28-#41 sono unite (A1 e A2 sono in `main` dalla #31, A3 dalla #33, B1-B4 dalla #34 alla #37, fase C dalla #38 alla #41).
 
 ## Blocchi
 
@@ -31,7 +31,7 @@ Il piano completo e le sue ragioni sono in [`docs/corti/PIANO.md`](../corti/PIAN
 | B2 — diplomazia coerente | 06 | `fix/b2-diplomazia` | fatto (#35) — [scheda ed esito](blocchi/B2-diplomazia.md) |
 | B3 — politica che conta | 05 | `fix/b3-politica` | fatto (#36) — [scheda ed esito](blocchi/B3-politica.md) |
 | B4 — coloniale, passi 1-3 | 00 | `fix/b4-coloniale` | fatto (#37) — [scheda ed esito](blocchi/B4-coloniale.md) |
-| **C — bilanciamento** | 00-05 | un ramo per area | **in corso**: intelligenza (#38), correzioni piccole (#39), guerra (#40), politica (#41); poi, coloniale, economia, politica, costruzione — [scheda](blocchi/C-bilanciamento.md) |
+| **C — bilanciamento** | 00-05 | un ramo per area | **in corso**: intelligenza (#38), correzioni piccole (#39), guerra (#40), politica (#41), costruzione e ricerca (#42); poi, coloniale, economia — [scheda](blocchi/C-bilanciamento.md) |
 | D — sistemi nuovi | varie | un ramo per sistema | da fare — [scheda](blocchi/D-sistemi-nuovi.md) |
 
 ## Misure di riferimento (dopo C, politica)

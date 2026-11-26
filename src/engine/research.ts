@@ -1,10 +1,10 @@
 // Ricerca: albero 1880-1914, progetti con costo settimanale e risorse, scienziati storici,
 // collaborazione scientifica fra due nazioni. Tutto nel motore.
 
-import { CATEGORIES, DATED_SITES, SCIENTISTS, TECHS, type Category, type Scientist, type Tech, type TechEffects } from '../scenario/research1881';
+import { CATEGORIES, DATED_SITES, KNOWN_1881_EXTRA, SCIENTISTS, TECHS, type Category, type Scientist, type Tech, type TechEffects } from '../scenario/research1881';
 import type { BuildingId } from '../scenario/buildings1881';
 import type { ResourceId } from './resources';
-import { cacheVersion, industryOf } from './construction';
+import { cacheVersion, controlled, industryOf } from './construction';
 import type { GameEvent, Tag } from './types';
 import { atWar, changeOpinion, dateOf, emit, nationName, newId, opinion, rand, treatyBetween, type World } from './world';
 
@@ -69,7 +69,8 @@ export function research(w: World): ResearchState {
     const ind = industry1881(w, tag);
     const k = new Set<string>();
     // in ordine di data, così i prerequisiti vengono prima
-    for (const x of [...TECHS].sort((a, b) => a.year - b.year)) if (x.start !== undefined && ind >= x.start && x.prereq.every((p) => k.has(p))) k.add(x.id);
+    const extra = new Set(KNOWN_1881_EXTRA[tag] ?? []);
+    for (const x of [...TECHS].sort((a, b) => a.year - b.year)) if (((x.start !== undefined && ind >= x.start) || extra.has(x.id)) && x.prereq.every((p) => k.has(p))) k.add(x.id);
     known[tag] = [...k];
   }
   s.research = { known, projects: [], start: Object.fromEntries(Object.entries(known).map(([t, l]) => [t, l.length])) };
@@ -96,7 +97,8 @@ export function weeklyCost(w: World, tag: Tag, x: Tech, sci?: Scientist): number
 /** Una risorsa è disponibile (propria, anche dai giacimenti scoperti, o importata)? */
 function hasRes(w: World, tag: Tag, r: ResourceId): boolean {
   const s = w.state;
-  for (let i = 0; i < w.map.size; i++) if (s.controller[i] === tag && (w.map.resources[i].includes(r) || siteLots(w, i).includes(r))) return true;
+  // solo le province che la nazione controlla (indice per nazione), non tutta la mappa (corte 04, capo 15)
+  for (const i of controlled(w, tag)) if (w.map.resources[i].includes(r) || siteLots(w, i).includes(r)) return true;
   return (s.trades ?? []).some((c) => c.buyer === tag && c.res === r);
 }
 
@@ -124,10 +126,21 @@ export function scientistsFor(w: World, tag: Tag, x: Tech, except?: string): Sci
   return SCIENTISTS.filter((s) => s.nation === tag && s.lines.includes(x.line) && y >= s.years[0] && y <= s.years[1] && !busy.has(s.id)).sort((a, b) => b.speed - a.speed);
 }
 
+/**
+ * Velocità di base di una nazione: l'industria conta con un po' di rendimento decrescente (da 0,45 a 0,95), e la massa
+ * economica la modula (da 0,6 a 1): un paese piccolo o povero non tiene il passo di una grande potenza (corte 04, capo 5).
+ * Il cursore completo «cannoni contro laboratori» aspetta la corte 03 sulle casse.
+ */
+export function baseSpeed(w: World, t: Tag): number {
+  const inc = w.state.nations[t]?.lastBudget?.income ?? 10;
+  const mass = Math.min(1, Math.sqrt(Math.max(0, inc) / 30));
+  return (0.45 + industry(w, t) / 200) * (0.6 + 0.4 * mass);
+}
+
 /** Velocità settimanale di un progetto (settimane-equivalenti per settimana). */
 export function speedOf(w: World, p: ResearchProject): number {
   const x = tech(p.tech)!;
-  const base = Math.max(...p.nations.map((t) => 0.6 + industry(w, t) / 125));
+  const base = Math.max(...p.nations.map((t) => baseSpeed(w, t)));
   let v = base * (p.nations.length > 1 ? 1.3 : 1);
   for (const id of Object.values(p.scientists)) v += scientist(id)?.speed ?? 0;
   const miss = missingInputs(w, p.nations, x).length;
@@ -325,8 +338,32 @@ function aiResearch(w: World, sink: GameEvent[]) {
     if (!options.length) continue;
     options.sort((a, b) => b.v - a.v);
     const pick = options[0].x;
-    startResearch(w, tag, pick.id, scientistsFor(w, tag, pick)[0]?.id, sink);
+    if (startResearch(w, tag, pick.id, scientistsFor(w, tag, pick)[0]?.id, sink)) continue;
+    aiCollab(w, tag, pick, sink);
   }
+}
+
+/**
+ * Patti di ricerca fra non giocanti (corte 04, capo 12): chi ha appena avviato una ricerca di medicina, agricoltura o
+ * industria la propone a un alleato o a un partner commerciale. Il motore giudica con lo stesso `collabScore` del
+ * giocatore; i segreti militari restano agli alleati. Il progetto già avviato diventa collaborazione.
+ */
+function aiCollab(w: World, tag: Tag, x: Tech, sink: GameEvent[]) {
+  const s = w.state;
+  if (rand(s.seed, 'patto', tag, s.day) > 0.4) return;
+  const mine = research(w).projects.find((p) => p.tech === x.id && p.nations.length === 1 && p.nations[0] === tag);
+  if (!mine) return;
+  // il progetto solitario si toglie prima di giudicare: `collabScore` rifiuta ciò che è già in corso
+  const r = research(w);
+  const at = r.projects.indexOf(mine);
+  r.projects.splice(at, 1);
+  const partners = Object.keys(s.nations)
+    .filter((t) => t !== tag && t !== s.player && s.nations[t].alive && (treatyBetween(s, tag, t, 'alliance') || treatyBetween(s, tag, t, 'trade')))
+    .map((t) => ({ t, ev: collabScore(w, tag, t, x.id) }))
+    .filter((c) => !c.ev.refusal)
+    .sort((a, b) => b.ev.score - a.ev.score || (a.t < b.t ? -1 : 1));
+  if (!partners.length) { r.projects.splice(at, 0, mine); return; }
+  if (proposeCollab(w, tag, partners[0].t, x.id, mine.scientists[tag], sink)) r.projects.splice(at, 0, mine);
 }
 
 export function researchSummary(w: World, tag: Tag): string {

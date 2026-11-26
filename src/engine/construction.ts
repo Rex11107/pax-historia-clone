@@ -113,7 +113,7 @@ function memoOf(w: World) {
   return m;
 }
 /** Province controllate da una nazione (indice rifatto una volta per chiave di cache, non a ogni nazione). */
-function controlled(w: World, tag: Tag): number[] {
+export function controlled(w: World, tag: Tag): number[] {
   const m = memoOf(w);
   if (!m.ctrl) {
     m.ctrl = new Map();
@@ -383,20 +383,28 @@ function aiConstruction(w: World, sink: GameEvent[]) {
     const wpop = (p: { id: number; pop: number }) => p.pop * colonialWeight(w, tag, p.id);
     const own = w.map.provinces.filter((p) => s.owner[p.id] === tag && s.controller[p.id] === tag && !p.impassable).sort((a, c) => wpop(c) - wpop(a) || a.id - c.id);
     if (!own.length) continue;
+    // valore per milione speso (corte 04, capo 4): ogni opera in ognuna delle province più popolose, porti compresi, non
+    // più sette province e mai un porto. Il valore è la popolazione pesata per ciò che l'opera rende in quel posto.
     const rivals = new Set(w.profiles[tag].rivals);
-    const tries: [number, BuildingId][] = [];
-    const border = own.filter((p) => w.map.adj[p.id].some((e) => rivals.has(s.owner[e.to])));
-    if (border.length) tries.push([border.sort((a, c) => wpop(c) - wpop(a) || a.id - c.id)[0].id, 'fortezza']);
-    if (logistics(w, tag).ratio < 1) tries.push([own[0].id, 'bellica']);
-    const ind = (['siderurgia', 'tessile', 'chimica'] as BuildingId[]).filter((k) => inputEfficiency(w, tag, k) === 1);
-    if (ind.length && rand(s.seed, 'scelta-ind', tag, s.day) < 0.3) tries.push([own[Math.floor(rand(s.seed, 'ind', tag, s.day) * Math.min(4, own.length))].id, ind[Math.floor(rand(s.seed, 'tipo', tag, s.day) * ind.length)]]);
-    const mine = own.find((p) => w.map.resources[p.id].some((r) => r === 'carbone' || r === 'ferro'));
-    if (mine) tries.push([mine.id, 'miniera']);
-    tries.push([own[Math.floor(rand(s.seed, 'fer', tag, s.day) * Math.min(8, own.length))].id, 'ferrovia']);
-    if (own.length > 3) tries.push([own[Math.min(own.length - 1, 2 + Math.floor(rand(s.seed, 'agr', tag, s.day) * 6))].id, 'agricoltura']);
-    const start = Math.floor(rand(s.seed, 'ordine', tag, s.day) * tries.length);
-    for (let i = 0; i < tries.length; i++) {
-      const [p, k] = tries[(start + i) % tries.length];
+    const lowLog = logistics(w, tag).ratio < 1;
+    const cand: { p: number; k: BuildingId; v: number }[] = [];
+    for (const pv of own.slice(0, 40)) {
+      const p = pv.id, pop = wpop(pv) / 1e6, l = buildings(w)[p];
+      const add = (k: BuildingId, v: number) => { if ((l[k] ?? 0) < BUILDINGS[k].max) cand.push({ p, k, v: v / BUILDINGS[k].cost((l[k] ?? 0) + 1) }); };
+      add('ferrovia', (0.5 + pop) * (l.ferrovia ? 0.6 : 1.2));
+      if (pv.coast) add('porto', (0.4 + pop) * (l.porto ? 0.7 : 1.3));
+      if (pv.terrain !== 'mountain' && pv.terrain !== 'desert') add('agricoltura', (0.3 + pop) * 0.7);
+      for (const k of ['tessile', 'chimica', 'siderurgia'] as BuildingId[]) if (inputEfficiency(w, tag, k) === 1) add(k, (0.3 + pop) * (k === 'siderurgia' ? 1.1 : 0.9));
+      if (lowLog) add('bellica', (0.5 + pop) * 1.2);
+      if (w.map.resources[p].some((r) => MINERAL.has(r))) add('miniera', (0.5 + pop) * 0.9);
+      if (w.map.adj[p].some((e) => rivals.has(s.owner[e.to]))) add('fortezza', (0.8 + pop) * 1.1);
+    }
+    const tries: [number, BuildingId][] = cand
+      .map((c) => ({ c, v: c.v * (0.7 + 0.6 * rand(s.seed, 'val', tag, c.p * 16 + Object.keys(BUILDINGS).indexOf(c.k), s.day)) }))
+      .sort((a, b) => b.v - a.v || a.c.p - b.c.p)
+      .slice(0, 6)
+      .map((x) => [x.c.p, x.c.k] as [number, BuildingId]);
+    for (const [p, k] of tries) {
       const cost = BUILDINGS[k].cost(level(w, p, k) + 1);
       if (n.treasury - cost < 40) continue;
       if (!startProject(w, tag, p, k, sink)) break;

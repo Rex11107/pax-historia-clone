@@ -14,7 +14,7 @@ Quasi tutto è 🔴: si cambiano numeri che muovono l'intera simulazione.
 | ~~Intelligenza (02)~~ fatto (#38, esito sotto) | piano per gruppi con un obiettivo per fronte; guarnigioni; arruolamento a debito. Dopo B4: il Cile manda l'esercito sull'altopiano (Tarma), dove muore senza rifornimenti, e perde la Guerra del Pacifico nel 1881; con il Regno Unito in guerra coloniale pianificano anche i trenta Stati indiani (141 ms a turno contro 106) | nessun fronte sguarnito; Guerra del Pacifico verso il 1883 (l'ancora di Ancón c'è già, `War.resistance`); tempo del turno di nuovo vicino a `main` |
 | Coloniale (00) | guerra coloniale come campagna, con un fronte per coppia (passo 4 del verdetto); scadenze di verifica con cause registrate e il «regolamento» su Congo e coste 1884-86 (passo 5); Samori oggi diventa protettorato già nel 1882 | `scripts/sim/traguardi.mts` su 4 semi: 0 paci senza condizioni (dopo B4: 0-2 per seme), 0 fasi ripetute; Congo e Sudan compiuti (dopo B4: mai) |
 | ~~Politica (05)~~ fatto (#41, esito sotto) | frequenza delle crisi per paese: troppe nei Paesi Bassi e in Belgio (legislatura di 2 anni), nessuna in Italia, Spagna (manca il turno) e Russia; Belgio col Congo −2,6 di stabilità (obiettivo meno di −2) | `scripts/sim/governi.mts`: governi per paese vicini a quelli storici (scheda B3, tabella delle misure) |
-| Costruzione e ricerca (04) | `provinceCapacity` con la popolazione grezza (lasciata così in A2: è capienza militare locale); costi e tempi delle opere | — |
+| ~~Costruzione e ricerca (04)~~ fatto (#42, esito sotto) | IA che costruisce per valore, patti dell'IA, velocità legata alla massa economica, conoscenze del 1881 per paese; **rimandati** costi e tempi delle opere (dipendono dalle casse, area economia) e `provinceCapacity` (decisione sotto) | `scripts/sim/costruzione.mts` |
 
 **Prima di cominciare**: rileggere in `STATO.md` le misure di riferimento e tenerle aggiornate dopo ogni intervento.
 
@@ -97,3 +97,31 @@ In Italia la sequenza esce storica: Cairoli, Depretis dal 1881 al 1887, Crispi, 
 
 **Non fatto**: ancoraggi elettorali e tendenze strutturali (punto 12), partiti nazionali legati alle loro terre
 (punto 13, seconda parte), ministri fino al 1900 e parlamenti composti (punto 14).
+
+## Esito dell'area costruzione e ricerca (ramo `bil/costruzione`, 26 novembre 2026)
+
+Misura: `scripts/sim/costruzione.mts` (nuovo; 19 anni, seme `regnum`, solo non giocanti). Prima → dopo:
+
+| indicatore | prima | dopo |
+|---|---|---|
+| province con opere, Russia / Spagna / Paesi Bassi / Giappone / Impero ottomano | 57→59 / 18→19 / 14→14 / 11→15 / 10→17 | 57→74 / 18→47 / 14→41 / 11→41 / 10→45 |
+| livelli di porto a fine periodo, Francia / Italia / Giappone | 22 / 15 / 7 | 33 / 41 / 40 |
+| conoscenze al 1899 (le tecniche sono 62): Germania, Francia / Russia, Italia / Spagna / Impero ottomano / Giappone | 62, 62 / 59, 59 / 53 / 23 / 23 | 61, 60 / 50, 53 / 40 / 28 / 21 |
+| patti di ricerca fra non giocanti | 0 | 1-3 in 19 anni |
+| tempo della simulazione di 19 anni | 3 min 01 | 2 min 35 |
+
+| punto del verdetto 04 | com'è stato fatto |
+|---|---|
+| 8, IA che costruisce | per ognuna delle 40 province più popolose (pesate col peso coloniale) tutte le opere possibili, porti compresi, con valore per milione speso, un po' di rumore deterministico e le sei migliori provate nell'ordine; fortezze sul confine coi rivali, bellica se la logistica è corta, miniere dove c'è il minerale |
+| 9, velocità e massa | `baseSpeed` in `research.ts`: (0,45 + industria/200) × (0,6 + 0,4 × √(entrate/30)); un paese povero va più piano, l'industria rende meno al margine |
+| 10, conoscenze per paese | `KNOWN_1881_EXTRA` (USA: pezzi intercambiabili e telefono; Germania: Thomas; Giappone, Impero Qing, Impero ottomano: retrocarica e telegrafo); date di pezzi intercambiabili (1860), telefono (1877), cherosene (1865, `start` 30) |
+| 13, patti dell'IA | `aiCollab`: chi avvia una ricerca la propone a un alleato o a un partner commerciale con `collabScore`, il 40% delle volte |
+| 15, prestazioni | `hasRes` scorre solo le province controllate (`controlled`, ora esportata) |
+| 16, dati | «Bonifica integrale» (Serpieri, 1928) → «Bonifica e colonizzazione dei terreni»; test nuovi: 4 (`ricerca` 2 + 1, `costruzione` 1) |
+
+**Decisioni**:
+- `provinceCapacity` **resta con la popolazione grezza**: è la capienza militare locale (quanti uomini si nutrono sul posto), e col peso coloniale le guerre in India e in Africa avrebbero perso i rifornimenti, cioè la parte coloniale di B4. Il peso coloniale vale dove si parla di entrate e logistica dello stato, già fatto in A2.
+- Costi e tempi delle opere **non si toccano** adesso: dipendono dalle casse gonfiate (area economia). Rifarli prima significa rifarli dopo.
+
+**Non fatto**: punti 11 (tecniche 1895-1912 e linea navale; lavoro grosso, fase D col mare), 12 (allineamento dei livelli seminati, per il resto di A2) e 14 (medicina tropicale nel coloniale, area coloniale).
+Traguardi coloniali invariati dopo le modifiche (Tunisi luglio 1881, Samori 1887; Congo e Sudan ancora «mai» nel seme `regnum`).
